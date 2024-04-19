@@ -1,5 +1,5 @@
 export const handleChangeEl = (_key, _e, values, setValues, schemaData, setErrorsField) => {
-  schemaData.isValid(values).then(valid => {
+  schemaData?.isValid(values).then(valid => {
     if (!valid) {
       schemaData.validate(values, { abortEarly: false }).catch(err => {
         const _err = err.inner[0].path

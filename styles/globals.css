@@ -45,3 +45,8 @@ code[class*='language-'] {
   background-color: green;
   opacity: 0.5;
 }
+
+.image-thumbnail2 {
+  width: auto;
+  height: 100px;
+}

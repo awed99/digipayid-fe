@@ -12,7 +12,7 @@ export const number_format = x => {
 export const currency_format = x => {
   // return x?.toString()?.replace(/\,/g, '')?.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'USD'
   }).format(x ?? 0)
@@ -31,8 +31,8 @@ export const format_rupiah = (angka, prefix) => {
 
     // tambahkan titik jika yang di input sudah menjadi angka ribuan
     if (ribuan) {
-      const separator = sisa ? ',' : ''
-      rupiah += separator + ribuan.join(',')
+      const separator = sisa ? '.' : ''
+      rupiah += separator + ribuan.join('.')
     }
 
     rupiah = splitx[1] != undefined ? rupiah + '.' + splitx[1] : rupiah

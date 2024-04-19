@@ -1,69 +1,69 @@
 // ** MUI Imports
+import { MenuItem, Select } from '@mui/material'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Switch from '@mui/material/Switch'
 import Typography from '@mui/material/Typography'
-import { styled, useTheme } from '@mui/material/styles'
+import { styled } from '@mui/material/styles'
 
-import { useState } from 'react'
-
-// Styled component for the triangle shaped background image
-const TriangleImg = styled('img')({
-  right: 0,
-  bottom: 0,
-  height: 170,
-  position: 'absolute'
-})
+import { format_rupiah } from '/helpers/general'
 
 // Styled component for the trophy image
 const TrophyImg = styled('img')({
   right: 36,
-  bottom: 20,
-  height: 98,
+  top: 65,
   position: 'absolute'
 })
 
-const Trophy = ({
-  data,
-  payment_method_code,
-  payment_method_name,
-  payment_method_type,
-  payment_method_image_url,
-  fee_original,
-  fee_original_percent,
-  fee_merchant,
-  settlement_day,
-  settlement_on_weekend,
-  min_transaction,
-  max_transaction,
-  fee_on_merchant,
-  is_active,
-  created_at
-}) => {
-  const [checked, setChecked] = useState(true)
-
-  // ** Hook
-  const theme = useTheme()
-  const imageSrc = theme.palette.mode === 'light' ? 'triangle-light.png' : 'triangle-dark.png'
-
-  const handleChange = event => {
-    setChecked(event.target.checked)
+const Trophy = ({ data, updateData }) => {
+  const onItemChange = (_field, _value) => {
+    const _item = data
+    _item[_field] = _value
+    updateData(_item)
   }
 
   return (
     <Card sx={{ position: 'relative' }}>
       <CardContent>
-        <Typography variant='h4'>{data?.payment_method_code}</Typography>
+        <span style={{ float: 'right' }}>
+          <Switch
+            checked={data?.is_active === '1'}
+            onChange={e => onItemChange('is_active', e?.target?.checked ? 1 : 0)}
+            inputProps={{ 'aria-label': 'controlled' }}
+          />
+        </span>
         <Typography variant='h6'>{data?.payment_method_name}</Typography>
+        {/* <Typography variant='h6'>
+          Fee: {parseInt(data?.fee_original) + parseInt(data?.fee_app)} +{' '}
+          {parseFloat(data?.fee_original_percent) + parseFloat(data?.fee_app_percent)}%
+        </Typography> */}
         <Typography variant='body2' sx={{ letterSpacing: '0.25px' }}>
-          Worst personels of this month
+          <Typography variant='h6' sx={{ my: 4, color: 'primary.main' }}>
+            H+{data?.settlement_day} (
+            {format_rupiah((parseInt(data?.fee_original) + parseInt(data?.fee_app)).toString())} +{' '}
+            {parseFloat(data?.fee_original_percent) + parseFloat(data?.fee_app_percent)}%)
+          </Typography>
+          {data?.settlement_on_weekend === '0' ? (
+            <Typography color='error'>Libur Tidak Kliring</Typography>
+          ) : (
+            <Typography color='primary'>Libur Tetap Kliring</Typography>
+          )}
         </Typography>
-        <Typography variant='h5' sx={{ my: 4, color: 'primary.main' }}>
-          20 Personels
+        {/* <TriangleImg alt={data?.payment_method_code} src={data?.payment_method_image_url} width={100} height={30} /> */}
+        <TrophyImg alt={data?.payment_method_code} src={data?.payment_method_image_url} width={100} height={40} />
+        <Typography variant='p'>
+          {format_rupiah(data?.min_transaction)} - {format_rupiah(data?.max_transaction)}
         </Typography>
-        <Switch checked={checked} onChange={handleChange} inputProps={{ 'aria-label': 'controlled' }} />
-        <TriangleImg alt='triangle background' src={payment_method_image_url} />
-        <TrophyImg alt='trophy' src={payment_method_image_url} />
+        <span style={{ float: 'right', marginTop: -20 }}>
+          <Select
+            size='small'
+            value={data?.fee_on_merchant}
+            onChange={e => onItemChange('fee_on_merchant', e?.target?.value)}
+          >
+            <MenuItem value={'0'}>Fee Pelanggan</MenuItem>
+            <MenuItem value={'1'}>Fee Merchant</MenuItem>
+          </Select>
+        </span>
       </CardContent>
     </Card>
   )
