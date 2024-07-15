@@ -49,7 +49,7 @@ const LayoutAppBar = props => {
         'x-signature': _secret?.signature,
         'x-timestamp': _secret?.timestamp
       },
-      body: JSON.stringify({ filter: '1=1' })
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
       .then(res => res.json())
       .then(res => {

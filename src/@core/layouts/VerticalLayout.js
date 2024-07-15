@@ -1,10 +1,13 @@
 // ** React Imports
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
+// ** Next Import
+import { useRouter } from 'next/router'
 
 // ** MUI Imports
+import Box from '@mui/material/Box'
 import Fab from '@mui/material/Fab'
 import { styled } from '@mui/material/styles'
-import Box from '@mui/material/Box'
 
 // ** Icons Imports
 import ArrowUp from 'mdi-material-ui/ArrowUp'
@@ -13,13 +16,15 @@ import ArrowUp from 'mdi-material-ui/ArrowUp'
 import themeConfig from 'src/configs/themeConfig'
 
 // ** Components
+import ScrollToTop from 'src/@core/components/scroll-to-top'
+import Footer from './components/shared-components/footer'
 import AppBar from './components/vertical/appBar'
 import Navigation from './components/vertical/navigation'
-import Footer from './components/shared-components/footer'
-import ScrollToTop from 'src/@core/components/scroll-to-top'
 
 // ** Styled Component
 import DatePickerWrapper from 'src/@core/styles/libs/react-datepicker'
+
+import { generateSignature } from '/helpers/general'
 
 const VerticalLayoutWrapper = styled('div')({
   height: '100%',
@@ -46,6 +51,9 @@ const ContentWrapper = styled('main')(({ theme }) => ({
 }))
 
 const VerticalLayout = props => {
+  // ** Hooks
+  const router = useRouter()
+
   // ** Props
   const { settings, children, scrollToTop } = props
 
@@ -58,6 +66,38 @@ const VerticalLayout = props => {
 
   // ** Toggle Functions
   const toggleNavVisibility = () => setNavVisible(!navVisible)
+
+  const checkSession = async () => {
+    const _uri0 = '/api/check-auth'
+    const _secret0 = await generateSignature(_uri0)
+
+    fetch(`${_uri0}`, {
+      method: 'POST',
+      headers: {
+        'x-signature': _secret0?.signature,
+        'x-timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        // console.log('res: ', res)
+        if (res?.auth) {
+          return res
+
+          // console.log(res?.auth?.user)
+        } else {
+          router.push('/auth')
+
+          return false
+        }
+      })
+      .catch(() => false)
+  }
+
+  useEffect(() => {
+    checkSession()
+  }, [])
 
   return (
     <>

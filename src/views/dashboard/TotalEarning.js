@@ -1,52 +1,34 @@
 // ** MUI Imports
+import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
-import Avatar from '@mui/material/Avatar'
-import Typography from '@mui/material/Typography'
-import IconButton from '@mui/material/IconButton'
-import CardHeader from '@mui/material/CardHeader'
 import CardContent from '@mui/material/CardContent'
+import CardHeader from '@mui/material/CardHeader'
+import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
+import Typography from '@mui/material/Typography'
 
 // ** Icons Imports
-import MenuUp from 'mdi-material-ui/MenuUp'
 import DotsVertical from 'mdi-material-ui/DotsVertical'
+import MenuUp from 'mdi-material-ui/MenuUp'
 
-const data = [
-  {
-    progress: 75,
-    imgHeight: 20,
-    title: 'Progar',
-    color: 'primary',
-    amount: '24,895.65',
-    subtitle: 'Progar',
-    imgSrc: '/images/cards/logo-zipcar.png'
-  },
-  {
-    progress: 50,
-    color: 'info',
-    imgHeight: 27,
-    title: 'Renbut Gaji',
-    amount: '8,650.20',
-    subtitle: 'Renbut Gaji',
-    imgSrc: '/images/cards/logo-bitbank.png'
-  },
-  {
-    progress: 20,
-    imgHeight: 20,
-    title: 'Tunkin',
-    color: 'secondary',
-    amount: '1,245.80',
-    subtitle: 'Tunkin',
-    imgSrc: '/images/cards/logo-aviato.png'
-  }
-]
+import { format_rupiah } from '/helpers/general'
 
-const TotalEarning = () => {
+const TotalEarning = ({ data = [] }) => {
+  const _data = data?.map((item, index) => ({
+    progress: (parseInt(item?.qty) / parseInt(item?.pembelian)) * 100,
+    imgHeight: 30,
+    title: item?.product,
+    color: index === 0 ? 'success' : index === 1 ? 'primary' : 'warning',
+    amount: item?.qty,
+    subtitle: item?.code,
+    imgSrc: `${process.env.NEXT_PUBLIC_API_HOST}${item?.image}`
+  }))
+
   return (
     <Card>
       <CardHeader
-        title='Total Progar'
+        title='3 Produk Terlaris'
         titleTypographyProps={{ sx: { lineHeight: '1.6 !important', letterSpacing: '0.15px !important' } }}
         action={
           <IconButton size='small' aria-label='settings' className='card-more-options' sx={{ color: 'text.secondary' }}>
@@ -57,21 +39,21 @@ const TotalEarning = () => {
       <CardContent sx={{ pt: theme => `${theme.spacing(2.25)} !important` }}>
         <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center' }}>
           <Typography variant='h4' sx={{ fontWeight: 600, fontSize: '2.125rem !important' }}>
-            24,895
+            {format_rupiah(data[0]?.pembelian)}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', color: 'success.main' }}>
             <MenuUp sx={{ fontSize: '1.875rem', verticalAlign: 'middle' }} />
             <Typography variant='body2' sx={{ fontWeight: 600, color: 'success.main' }}>
-              10%
+              100%
             </Typography>
           </Box>
         </Box>
 
         <Typography component='p' variant='caption' sx={{ mb: 10 }}>
-          Compared to 22,325 last year
+          Data Penjualan Tahun Ini
         </Typography>
 
-        {data.map((item, index) => {
+        {_data.map((item, index) => {
           return (
             <Box
               key={item.title}

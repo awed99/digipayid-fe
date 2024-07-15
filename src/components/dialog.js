@@ -53,8 +53,7 @@ export default function CustomizedDialogs({
         aria-labelledby='customized-dialog-title'
         open={open}
         fullWidth={true}
-
-        // maxWidth={'xl'}
+        maxWidth={'md'}
       >
         <DialogTitle sx={{ m: 0, p: 2 }} id='customized-dialog-title'>
           {titleModal}

@@ -1,5 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+.env
+
 # dependencies
 /node_modules
 /.pnp
@@ -14,6 +16,9 @@
 
 # production
 /build
+/build-0
+/build-1
+/build-1-static
 
 # misc
 .DS_Store
@@ -35,3 +40,9 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# Sentry Config File
+.env.sentry-build-plugin
+
+# Sentry Config File
+.env.sentry-build-plugin

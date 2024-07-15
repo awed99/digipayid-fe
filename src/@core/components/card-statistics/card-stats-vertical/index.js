@@ -1,10 +1,10 @@
 // ** MUI Imports
+import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
-import Avatar from '@mui/material/Avatar'
+import CardContent from '@mui/material/CardContent'
 import IconButton from '@mui/material/IconButton'
 import Typography from '@mui/material/Typography'
-import CardContent from '@mui/material/CardContent'
 
 // ** Icons Imports
 import DotsVertical from 'mdi-material-ui/DotsVertical'

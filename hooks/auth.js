@@ -82,7 +82,7 @@ export const handleSubmitRegister = async (e, schemaData, values) => {
       const _uri = 'users/register'
       const _secret = await generateSignature(_uri)
 
-      const resX = await fetch(`${process.env.NEXT_PUBLIC_BE_API_DOMAIN}users/register`, {
+      const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
         method: 'POST',
         headers: {
           'x-signature': _secret?.signature,
@@ -117,7 +117,7 @@ export const handleSubmitResetPassword = async (e, schemaData, values) => {
       const _uri = 'users/change_password'
       const _secret = await generateSignature(_uri)
 
-      const resX = await fetch(`${process.env.NEXT_PUBLIC_BE_API_DOMAIN}${_uri}`, {
+      const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
         method: 'POST',
         headers: {
           'x-signature': _secret?.signature,
@@ -152,12 +152,11 @@ export const handleSubmitNewPassword = async (e, schemaData, values, token) => {
       const _uri = 'users/new_password'
       const _secret = await generateSignature(_uri)
 
-      const resX = await fetch(`${process.env.NEXT_PUBLIC_BE_API_DOMAIN}${_uri}`, {
+      const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
         method: 'POST',
         headers: {
           'x-signature': _secret?.signature,
-          'x-timestamp': _secret?.timestamp,
-          Authorization: token
+          'x-timestamp': _secret?.timestamp
         },
         body: JSON.stringify(values)
 
@@ -174,4 +173,108 @@ export const handleSubmitNewPassword = async (e, schemaData, values, token) => {
       }
     }
   })
+}
+
+export const handleCheckValidOTP = async (values, token) => {
+  const _uri = 'users/check_valid_otp'
+  const _secret = await generateSignature(_uri)
+
+  const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
+    method: 'POST',
+    headers: {
+      'x-signature': _secret?.signature,
+      'x-timestamp': _secret?.timestamp
+    },
+    body: JSON.stringify(values)
+
+    // body: dataX,
+  })
+    .then(async res => await res.json())
+    .then(async res => res)
+
+  return resX
+}
+
+export const handleResendOTP = async (values, token) => {
+  const _uri = 'users/resend_otp'
+  const _secret = await generateSignature(_uri)
+
+  const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
+    method: 'POST',
+    headers: {
+      'x-signature': _secret?.signature,
+      'x-timestamp': _secret?.timestamp,
+      Authorization: token
+    },
+    body: JSON.stringify(values)
+
+    // body: dataX,
+  })
+    .then(async res => await res.json())
+    .then(async res => res)
+
+  return resX
+}
+
+export const handleGetForgotPasswordOTP = async (values, token) => {
+  const _uri = 'users/get_valid_otp_forgot_password'
+  const _secret = await generateSignature(_uri)
+
+  const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
+    method: 'POST',
+    headers: {
+      'x-signature': _secret?.signature,
+      'x-timestamp': _secret?.timestamp,
+      Authorization: token
+    },
+    body: JSON.stringify(values)
+
+    // body: dataX,
+  })
+    .then(async res => await res.json())
+    .then(async res => res)
+
+  return resX
+}
+
+export const handleCheckValidForgotPasswordOTP = async (values, token) => {
+  const _uri = 'users/check_valid_otp_forgot_password'
+  const _secret = await generateSignature(_uri)
+
+  const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
+    method: 'POST',
+    headers: {
+      'x-signature': _secret?.signature,
+      'x-timestamp': _secret?.timestamp,
+      Authorization: token
+    },
+    body: JSON.stringify(values)
+
+    // body: dataX,
+  })
+    .then(async res => await res.json())
+    .then(async res => res)
+
+  return resX
+}
+
+export const handleChange_password = async (values, token) => {
+  const _uri = 'users/change_password'
+  const _secret = await generateSignature(_uri)
+
+  const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
+    method: 'POST',
+    headers: {
+      'x-signature': _secret?.signature,
+      'x-timestamp': _secret?.timestamp,
+      Authorization: token
+    },
+    body: JSON.stringify(values)
+
+    // body: dataX,
+  })
+    .then(async res => await res.json())
+    .then(async res => res)
+
+  return resX
 }

@@ -2,10 +2,10 @@
 import store from 'store'
 
 export default function setSession(req, res) {
-  const { key } = JSON.parse(req.body)
+  const { email } = JSON.parse(req.body)
 
   // Then save the post data to a database
-  store.remove(key)
+  store.remove(email)
   res.status(200).json({
     message: 'Store removed successfully.'
   })

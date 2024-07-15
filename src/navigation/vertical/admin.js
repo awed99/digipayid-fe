@@ -1,18 +1,17 @@
 // ** Icon imports
-import Login from 'mdi-material-ui/Login'
-import Table from 'mdi-material-ui/Table'
-import CubeOutline from 'mdi-material-ui/CubeOutline'
-import CashPlus from 'mdi-material-ui/CashPlus'
-import FileSign from 'mdi-material-ui/FileSign'
-import FileDocumentEditOutline from 'mdi-material-ui/FileDocumentEditOutline'
-import CreditCardOutline from 'mdi-material-ui/CreditCardOutline'
-import FileDocumentMultipleOutline from 'mdi-material-ui/FileDocumentMultipleOutline'
-import AlertCircleOutline from 'mdi-material-ui/AlertCircleOutline'
-import GoogleCirclesExtended from 'mdi-material-ui/GoogleCirclesExtended'
+import AccountKeyOutline from 'mdi-material-ui/AccountKeyOutline'
+import AccountMultipleOutline from 'mdi-material-ui/AccountMultipleOutline'
+import BankCircleOutline from 'mdi-material-ui/BankCircleOutline'
+import BankTransferOut from 'mdi-material-ui/BankTransferOut'
+import BookOpenVariant from 'mdi-material-ui/BookOpenVariant'
+import Cash100 from 'mdi-material-ui/Cash100'
+import Cog from 'mdi-material-ui/Cog'
+import InvoiceTextCheckOutline from 'mdi-material-ui/InvoiceTextCheckOutline'
+import Storefront from 'mdi-material-ui/Storefront'
+import StoreSettingsOutline from 'mdi-material-ui/StoreSettingsOutline'
 import ViewDashboard from 'mdi-material-ui/ViewDashboard'
-import { Dvr } from '@mui/icons-material'
-
-import store from 'store'
+import Wallet from 'mdi-material-ui/Wallet'
+import WalletPlus from 'mdi-material-ui/WalletPlus'
 
 const navigation = () => {
   return [
@@ -25,110 +24,98 @@ const navigation = () => {
       path: '/admin'
     },
     {
-      sectionTitle: 'Operator'
+      sectionTitle: 'Merchants'
     },
     {
-      title: 'Transaksi',
-      icon: CashPlus,
-      path: '/admin' + store.get('module') + '/dokumen'
+      title: 'List Merchant',
+      icon: Storefront,
+      path: '/admin/master/list-merchant'
     },
     {
-      title: 'Transaksi',
-      icon: FileDocumentMultipleOutline,
-      path: '/admin' + store.get('module') + '/dokumen'
+      title: 'Merchant Users',
+      icon: AccountMultipleOutline,
+      path: '/admin/master/users'
     },
     {
-      title: 'Dokumen Peraturan',
-      icon: FileDocumentEditOutline,
+      sectionTitle: 'Laporan Admin'
+    },
+    {
+      title: 'Jurnal Admin',
+      icon: BookOpenVariant,
+      path: '/admin/jurnal-keuangan-admin'
+    },
+    {
+      title: 'Pengaturan',
+      icon: Cog,
       children: [
         {
-          title: 'Kemenkeu',
-          icon: Dvr,
-          path: '/admin' + store.get('module') + '/dokumen-peraturan/kemenkeu'
-        },
-        {
-          title: 'Kemhan',
-          icon: Dvr,
-          path: '/admin' + store.get('module') + '/dokumen-peraturan/kemhan'
-        },
-        {
-          title: 'Mabesad',
-          icon: Dvr,
-          path: '/admin' + store.get('module') + '/dokumen-peraturan/mabesad'
-        },
-        {
-          title: 'Ditkuad',
-          icon: Dvr,
-          path: '/admin' + store.get('module') + '/dokumen-peraturan/ditkuad'
+          title: 'App',
+          icon: StoreSettingsOutline,
+          path: '/admin/pengaturan/merchant'
         }
       ]
     },
     {
-      sectionTitle: 'Admin'
+      sectionTitle: 'Transaksi Admin'
     },
     {
-      title: 'Cari Dokumen',
-      icon: FileDocumentMultipleOutline,
-      path: '/admin' + store.get('module') + '/dokumen'
+      title: 'Withdraw Admin',
+      icon: AccountMultipleOutline,
+      path: '/admin/withdraw-admin'
     },
     {
-      title: 'Dokumen Peraturan',
-      icon: FileDocumentEditOutline,
-      children: [
-        {
-          title: 'Kemenkeu',
-          icon: Dvr,
-          path: '/admin' + store.get('module') + '/dokumen-peraturan/kemenkeu'
-        },
-        {
-          title: 'Kemhan',
-          icon: Dvr,
-          path: '/admin' + store.get('module') + '/dokumen-peraturan/kemhan'
-        },
-        {
-          title: 'Mabesad',
-          icon: Dvr,
-          path: '/admin' + store.get('module') + '/dokumen-peraturan/mabesad'
-        },
-        {
-          title: 'Ditkuad',
-          icon: Dvr,
-          path: '/admin' + store.get('module') + '/dokumen-peraturan/ditkuad'
-        }
-      ]
+      sectionTitle: 'Transaksi Merchants'
     },
     {
-      sectionTitle: 'Master'
+      title: 'Withdraw Request',
+      icon: Cash100,
+      path: '/admin/withdraw-request'
     },
     {
-      title: 'Kategori Dokumen',
-      icon: FileSign,
-      path: '/admin' + store.get('module') + '/master/kategori-dokumen'
+      title: 'List Transaksi',
+      icon: InvoiceTextCheckOutline,
+      path: '/admin/list-transaksi'
     },
     {
-      title: 'KUKOTAMA/SATKER',
-      icon: FileSign,
-      path: '/admin' + store.get('module') + '/master/kukotama'
+      title: 'Topup Merchants',
+      icon: WalletPlus,
+      path: '/admin/topup-merchants'
     },
     {
-      title: 'Pengawasan Pimpinan',
-      icon: FileSign,
-      path: '/admin' + store.get('module') + '/master/pengawasan'
+      sectionTitle: 'Laporan Merchants'
+    },
+    {
+      title: 'Proses Kliring',
+      icon: BankTransferOut,
+      path: '/admin/proses-kliring'
+    },
+    {
+      title: 'Dompet Digital',
+      icon: Wallet,
+      path: '/admin/dompet-digital'
+    },
+    {
+      title: 'Jurnal Keuangan',
+      icon: BookOpenVariant,
+      path: '/admin/jurnal-keuangan'
+    },
+    {
+      sectionTitle: 'Master Admin'
+    },
+    {
+      title: 'Metode Pembayaran',
+      icon: BankCircleOutline,
+      path: '/admin/master/metode-pembayaran'
     },
     {
       title: 'Hak Akses',
-      icon: FileSign,
-      path: '/admin' + store.get('module') + '/master/hak-akses'
+      icon: AccountKeyOutline,
+      path: '/admin/master/hak-akses'
     },
     {
       title: 'User',
-      icon: FileSign,
-      path: '/admin' + store.get('module') + '/master/user'
-    },
-    {
-      title: 'DALWASKU KUKOTAMA BALAKUS',
-      icon: FileSign,
-      path: '/admin' + store.get('module') + '/master/dalwasku'
+      icon: AccountMultipleOutline,
+      path: '/admin/master/user'
     }
   ]
 }

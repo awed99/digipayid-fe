@@ -1,9 +1,13 @@
 // ** MUI Imports
-import Card from '@mui/material/Card'
 import Button from '@mui/material/Button'
-import Typography from '@mui/material/Typography'
+import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import { styled, useTheme } from '@mui/material/styles'
+import Typography from '@mui/material/Typography'
+
+import { useRouter } from 'next/router'
+
+import { format_rupiah } from '/helpers/general'
 
 // Styled component for the triangle shaped background image
 const TriangleImg = styled('img')({
@@ -21,26 +25,27 @@ const TrophyImg = styled('img')({
   position: 'absolute'
 })
 
-const Trophy = () => {
+const Trophy = ({ saldo = '0' }) => {
   // ** Hook
   const theme = useTheme()
+  const router = useRouter()
   const imageSrc = theme.palette.mode === 'light' ? 'triangle-light.png' : 'triangle-dark.png'
 
   return (
     <Card sx={{ position: 'relative' }}>
       <CardContent>
-        <Typography variant='h6'>Need Attention!</Typography>
+        <Typography variant='h6'>Saldo Saat Ini</Typography>
         <Typography variant='body2' sx={{ letterSpacing: '0.25px' }}>
-          Worst personels of this month
+          Uang yang tersedia setelah porses kliring
         </Typography>
         <Typography variant='h5' sx={{ my: 4, color: 'primary.main' }}>
-          20 Personels
+          IDR {format_rupiah(saldo)}
         </Typography>
-        <Button size='small' variant='contained'>
-          View Data
+        <Button size='small' variant='contained' onClick={() => router.push('/dompet-digital')}>
+          Dompet Digital
         </Button>
         <TriangleImg alt='triangle background' src={`/images/misc/${imageSrc}`} />
-        <TrophyImg alt='trophy' src='/images/misc/chart.png' />
+        <TrophyImg alt='trophy' src='/images/logo.png' />
       </CardContent>
     </Card>
   )

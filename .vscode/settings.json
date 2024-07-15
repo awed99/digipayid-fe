@@ -37,10 +37,26 @@
   "eslint.format.enable": true,
   // Package manager Configs
   "npm.packageManager": "npm",
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/env": true,
+    "**/venv": true
+  },
+  //exludes fies & folders for watcher service
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/env/**": true,
+    "**/venv/**": true,
+    "env-*": true
+  },
   // Extension: cSpell
   "cSpell.words": [
     "Customizer"
   ],
   "search-node-modules.path": "typescript-version/full-version/node_modules",
-  "markdown.extension.toc.updateOnSave": false
+  "markdown.extension.toc.updateOnSave": false,
+  "editor.formatOnType": true,
 }

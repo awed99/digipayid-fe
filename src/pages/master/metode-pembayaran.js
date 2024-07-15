@@ -1,5 +1,5 @@
 // ** MUI Imports
-import { Divider } from '@mui/material'
+import { Backdrop, CircularProgress, Divider } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
@@ -27,6 +27,7 @@ const MUITable = () => {
 
   // ** States
   const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   const getData = async () => {
     const _uri0 = '/api/check-auth'
@@ -38,7 +39,7 @@ const MUITable = () => {
         'x-signature': _secret0?.signature,
         'x-timestamp': _secret0?.timestamp
       },
-      body: JSON.stringify({ filter: '1=1' })
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
       .then(res => res.json())
       .then(async res => {
@@ -70,10 +71,11 @@ const MUITable = () => {
           .then(res => {
             // console.log(res?.data)
             setData(res?.data)
+            setLoading(false)
           })
-          .catch(() => false)
+          .catch(() => setLoading(false))
       })
-      .catch(() => false)
+      .catch(() => setLoading(false))
   }
 
   useEffect(() => {
@@ -81,6 +83,7 @@ const MUITable = () => {
   }, [])
 
   const updateData = async bodyData => {
+    setLoading(true)
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
@@ -90,7 +93,7 @@ const MUITable = () => {
         'x-signature': _secret0?.signature,
         'x-timestamp': _secret0?.timestamp
       },
-      body: JSON.stringify({ filter: '1=1' })
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
       .then(res => res.json())
       .then(async res => {
@@ -122,10 +125,11 @@ const MUITable = () => {
           .then(res => {
             // console.log(res?.data)
             setData([...res?.data])
+            setLoading(false)
           })
-          .catch(() => false)
+          .catch(() => setLoading(false))
       })
-      .catch(() => false)
+      .catch(() => setLoading(false))
   }
 
   return (
@@ -133,13 +137,13 @@ const MUITable = () => {
       <Grid container spacing={6}>
         <Grid item xs={12}>
           <Typography variant='h5'>
-            <Link>Virtual Akun</Link>
+            <Link>TUNAI</Link>
           </Typography>
-          <Typography variant='body2'>Metode Pembayaran Virtual Akun</Typography>
+          <Typography variant='body2'>Metode Pembayaran Tunai (CASH)</Typography>
         </Grid>
         <Grid item xs={12}>
           <Grid container spacing={2}>
-            {filter(data, ['payment_method_type', '1'])?.map((item, index) => (
+            {filter(data, ['payment_method_type', '0'])?.map((item, index) => (
               <Grid item xs={12} md={4} key={item?.payment_method_code}>
                 <MetodePembayaran data={item} updateData={updateData} />
               </Grid>
@@ -157,7 +161,7 @@ const MUITable = () => {
         </Grid>
         <Grid item xs={12}>
           <Grid container spacing={2}>
-            {filter(data, ['payment_method_type', '3'])?.map((item, index) => (
+            {filter(data, ['payment_method_type', '1'])?.map((item, index) => (
               <Grid item xs={12} md={4} key={item?.payment_method_code}>
                 <MetodePembayaran data={item} updateData={updateData} />
               </Grid>
@@ -165,42 +169,76 @@ const MUITable = () => {
           </Grid>
         </Grid>
 
-        <Divider />
+        {/* {filter(data, ['payment_method_type', '2']) > 0 && ( */}
+        <>
+          <Divider />
 
-        <Grid item xs={12}>
-          <Typography variant='h5'>
-            <Link>E-Wallet</Link>
-          </Typography>
-          <Typography variant='body2'>Metode Pembayaran E-Wallet</Typography>
-        </Grid>
-        <Grid item xs={12}>
-          <Grid container spacing={2}>
-            {filter(data, ['payment_method_type', '2'])?.map((item, index) => (
-              <Grid item xs={12} md={4} key={item?.payment_method_code}>
-                <MetodePembayaran data={item} updateData={updateData} />
-              </Grid>
-            ))}
+          <Grid item xs={12}>
+            <Typography variant='h5'>
+              <Link>E-Wallet</Link>
+            </Typography>
+            <Typography variant='body2'>Metode Pembayaran E-Wallet</Typography>
           </Grid>
-        </Grid>
-
-        <Divider />
-
-        <Grid item xs={12}>
-          <Typography variant='h5'>
-            <Link>Pulsa</Link>
-          </Typography>
-          <Typography variant='body2'>Metode Pembayaran Pulsa</Typography>
-        </Grid>
-        <Grid item xs={12}>
-          <Grid container spacing={2}>
-            {filter(data, ['payment_method_type', '4'])?.map((item, index) => (
-              <Grid item xs={12} md={4} key={item?.payment_method_code}>
-                <MetodePembayaran data={item} updateData={updateData} />
-              </Grid>
-            ))}
+          <Grid item xs={12}>
+            <Grid container spacing={2}>
+              {filter(data, ['payment_method_type', '2'])?.map((item, index) => (
+                <Grid item xs={12} md={4} key={item?.payment_method_code}>
+                  <MetodePembayaran data={item} updateData={updateData} />
+                </Grid>
+              ))}
+            </Grid>
           </Grid>
-        </Grid>
+        </>
+        {/* )} */}
+
+        {filter(data, ['payment_method_type', '3'])?.length > 0 && (
+          <>
+            <Divider />
+
+            <Grid item xs={12}>
+              <Typography variant='h5'>
+                <Link>Virtual Akun</Link>
+              </Typography>
+              <Typography variant='body2'>Metode Pembayaran Virtual Akun</Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <Grid container spacing={2}>
+                {filter(data, ['payment_method_type', '3'])?.map((item, index) => (
+                  <Grid item xs={12} md={4} key={item?.payment_method_code}>
+                    <MetodePembayaran data={item} updateData={updateData} />
+                  </Grid>
+                ))}
+              </Grid>
+            </Grid>
+          </>
+        )}
+
+        {filter(data, ['payment_method_type', '4'])?.length > 0 && (
+          <>
+            <Divider />
+
+            <Grid item xs={12}>
+              <Typography variant='h5'>
+                <Link>Pulsa</Link>
+              </Typography>
+              <Typography variant='body2'>Metode Pembayaran Pulsa</Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <Grid container spacing={2}>
+                {filter(data, ['payment_method_type', '4'])?.map((item, index) => (
+                  <Grid item xs={12} md={4} key={item?.payment_method_code}>
+                    <MetodePembayaran data={item} updateData={updateData} />
+                  </Grid>
+                ))}
+              </Grid>
+            </Grid>
+          </>
+        )}
       </Grid>
+
+      <Backdrop sx={{ color: '#fff', zIndex: theme => theme.zIndex.drawer + 999999 }} open={loading}>
+        <CircularProgress size={100} variant='indeterminate' />
+      </Backdrop>
     </>
   )
 }

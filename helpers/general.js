@@ -20,10 +20,14 @@ export const currency_format = x => {
 
 export const format_rupiah = (angka, prefix) => {
   if (angka) {
+    const isMinus = parseFloat(angka) < 0 ? '-' : ''
+
     const number_string = angka
-      .replace(/\,/g, '')
-      ?.replace(/[^,\d]/g, '')
       .toString()
+      .replace(/\,/g, '')
+      .replace(/\./g, '')
+      ?.replace(/[^,\d]/g, '')
+
     const splitx = number_string?.split('.')
     const sisa = splitx[0]?.length % 3
     let rupiah = splitx[0]?.substr(0, sisa)
@@ -36,6 +40,7 @@ export const format_rupiah = (angka, prefix) => {
     }
 
     rupiah = splitx[1] != undefined ? rupiah + '.' + splitx[1] : rupiah
+    rupiah = isMinus + rupiah
 
     return prefix == undefined ? rupiah : rupiah ? 'Rp. ' + rupiah : ''
   } else {

@@ -1,11 +1,14 @@
+// ** React Imports
+import { useEffect, useState } from 'react'
+
 // ** MUI Imports
+import { Backdrop, CircularProgress } from '@mui/material'
 import Grid from '@mui/material/Grid'
 
 // ** Icons Imports
-import Poll from 'mdi-material-ui/Poll'
-import CurrencyUsd from 'mdi-material-ui/CurrencyUsd'
-import HelpCircleOutline from 'mdi-material-ui/HelpCircleOutline'
 import BriefcaseVariantOutline from 'mdi-material-ui/BriefcaseVariantOutline'
+import CurrencyUsd from 'mdi-material-ui/CurrencyUsd'
+import Poll from 'mdi-material-ui/Poll'
 
 // ** Custom Components Imports
 import CardStatisticsVerticalComponent from 'src/@core/components/card-statistics/card-stats-vertical'
@@ -14,86 +17,177 @@ import CardStatisticsVerticalComponent from 'src/@core/components/card-statistic
 import ApexChartWrapper from 'src/@core/styles/libs/react-apexcharts'
 
 // ** Demo Components Imports
-import Table from 'src/views/dashboard/Table'
-import Trophy from 'src/views/dashboard/Trophy'
-import TotalEarning from 'src/views/dashboard/TotalEarning'
-import StatisticsCard from 'src/views/dashboard/StatisticsCard'
-import WeeklyOverview from 'src/views/dashboard/WeeklyOverview'
-import DepositWithdraw from 'src/views/dashboard/DepositWithdraw'
-import SalesByCountries from 'src/views/dashboard/SalesByCountries'
+// import StatisticsCard from 'src/pages/admin/views/dashboard/StatisticsCard'
+import Table from 'src/pages/admin/views/dashboard/Table'
+import TableMerchants from 'src/pages/admin/views/dashboard/TableMerchants'
+import TotalEarning from 'src/pages/admin/views/dashboard/TotalEarning'
+import Trophy from 'src/pages/admin/views/dashboard/Trophy'
+import TrophyReal from 'src/pages/admin/views/dashboard/TrophyReal'
+import WeeklyOverview from 'src/pages/admin/views/dashboard/WeeklyOverview'
+import WeeklyOverviewWithdraw from 'src/pages/admin/views/dashboard/WeeklyOverviewWithdraw'
+
+// import CryptoJS from 'crypto-js/aes'
+import { filter } from 'lodash'
+import { format_rupiah, generateSignature } from '/helpers/general'
 
 const Dashboard = () => {
+  var CryptoJS = require('crypto-js')
+
+  // ** States
+  const [loading, setLoading] = useState(false)
+  const [data, setData] = useState([])
+  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+  const getData = async () => {
+    setLoading(true)
+    const _uri0 = '/api/check-auth'
+    const _secret0 = await generateSignature(_uri0)
+
+    fetch(`${_uri0}`, {
+      method: 'POST',
+      headers: {
+        'x-signature': _secret0?.signature,
+        'x-timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          // console.log(res?.auth?.user)
+          router.push('/auth')
+
+          return false
+        } else {
+          return res
+        }
+      })
+      .then(async res => {
+        const _uri = '/admin/dashboard/data'
+        const _secret = await generateSignature(_uri)
+
+        fetch(`${process.env.NEXT_PUBLIC_API_HOST}${_uri}`, {
+          method: 'POST',
+          headers: {
+            'x-signature': _secret?.signature,
+            'x-timestamp': _secret?.timestamp,
+            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+              .toString(CryptoJS.enc.Utf8)
+              .replace(/\"/g, '')
+          }
+
+          // body: JSON.stringify({ start_date: startDate, end_date: endDate })
+        })
+          .then(res => res.json())
+          .then(res => {
+            // console.log(res?.data)
+
+            setData(res?.data)
+            setLoading(false)
+          })
+          .catch(() => setLoading(false))
+      })
+      .catch(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    getData()
+  }, [])
+
   return (
-    <ApexChartWrapper>
+    <ApexChartWrapper suppressHydrationWarning>
       <Grid container spacing={6}>
-        <Grid item xs={12} md={4}>
-          <Trophy />
+        <Grid item xs={12} md={6}>
+          <Trophy saldo={data?.saldo} />
         </Grid>
-        <Grid item xs={12} md={8}>
-          <StatisticsCard />
+        <Grid item xs={12} md={6}>
+          <TrophyReal saldo={data?.saldo_real} />
         </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <WeeklyOverview />
+        {/* <Grid item xs={12} md={12}>
+          <StatisticsCard
+            products={data?.statistics?.products ?? 0}
+            items={data?.statistics?.items ?? 0}
+            buyers={data?.statistics?.pembelian ?? 0}
+            profits={data?.statistics?.pendapatan ?? 0}
+          />
+        </Grid> */}
+        <Grid item xs={12} md={6} lg={6}>
+          <WeeklyOverview
+            data={dayNames?.map(item => parseInt(filter(data?.grafik_mingguan, ['weekDay', item])[0]?.totalCount ?? 0))}
+          />
         </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <TotalEarning />
+        <Grid item xs={12} md={6} lg={6}>
+          <WeeklyOverviewWithdraw
+            data={dayNames?.map(item => parseInt(filter(data?.grafik_withdraw, ['weekDay', item])[0]?.totalCount ?? 0))}
+          />
         </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <Grid container spacing={6}>
+        <Grid item xs={12} md={6} lg={6}>
+          <TotalEarning data={data?.top_merchants} />
+        </Grid>
+        <Grid item xs={12} md={6} lg={6}>
+          <Grid container spacing={2}>
             <Grid item xs={6}>
               <CardStatisticsVerticalComponent
-                stats='$25.6k'
+                stats={format_rupiah(data?.trends?.keuntungan) ?? 0}
                 icon={<Poll />}
                 color='success'
-                trendNumber='+42%'
-                title='Total Profit'
-                subtitle='Weekly Profit'
+                trendNumber='100%'
+                title='Total Keuntungan Admin'
+                subtitle='Bulan Ini'
               />
             </Grid>
             <Grid item xs={6}>
               <CardStatisticsVerticalComponent
-                stats='$78'
-                title='Refunds'
-                trend='negative'
-                color='secondary'
-                trendNumber='-15%'
-                subtitle='Past Month'
-                icon={<CurrencyUsd />}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <CardStatisticsVerticalComponent
-                stats='862'
-                trend='negative'
-                trendNumber='-18%'
-                title='New Project'
-                subtitle='Yearly Project'
+                stats={format_rupiah(data?.trends?.withdraw) ?? 0}
                 icon={<BriefcaseVariantOutline />}
+                // trend='negative'
+                trendNumber='100%'
+                color='warning'
+                title='Total Penarikan Admin'
+                subtitle='Bulan Ini'
               />
             </Grid>
             <Grid item xs={6}>
               <CardStatisticsVerticalComponent
-                stats='15'
-                color='warning'
-                trend='negative'
-                trendNumber='-18%'
-                subtitle='Last Week'
-                title='Sales Queries'
-                icon={<HelpCircleOutline />}
+                stats={format_rupiah(data?.trends?.deposit_merchant) ?? 0}
+                icon={<CurrencyUsd />}
+                color='primary'
+                // trend='negative'
+                trendNumber='100%'
+                title='Total Deposit Merchant'
+                subtitle='Bulan Ini'
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <CardStatisticsVerticalComponent
+                stats={format_rupiah(data?.trends?.withdraw_merchant) ?? 0}
+                icon={<CurrencyUsd />}
+                // trend='negative'
+                color='error'
+                trendNumber='100%'
+                title='Total Penarikan Merchant'
+                subtitle='Bulan Ini'
               />
             </Grid>
           </Grid>
         </Grid>
-        <Grid item xs={12} md={6} lg={4}>
+        {/* <Grid item xs={12} md={6} lg={4}>
           <SalesByCountries />
         </Grid>
         <Grid item xs={12} md={12} lg={8}>
           <DepositWithdraw />
+        </Grid> */}
+        <Grid item xs={12}>
+          <TableMerchants merchants={data?.merchants} />
         </Grid>
         <Grid item xs={12}>
-          <Table />
+          <Table users={data?.users} />
         </Grid>
       </Grid>
+
+      <Backdrop sx={{ color: '#fff', zIndex: theme => theme.zIndex.drawer + 999999 }} open={loading}>
+        <CircularProgress size={100} variant='indeterminate' />
+      </Backdrop>
     </ApexChartWrapper>
   )
 }

@@ -1,5 +1,5 @@
 // ** MUI Imports
-import { MenuItem, Select } from '@mui/material'
+import { Box, MenuItem, Select } from '@mui/material'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Switch from '@mui/material/Switch'
@@ -11,7 +11,7 @@ import { format_rupiah } from '/helpers/general'
 // Styled component for the trophy image
 const TrophyImg = styled('img')({
   right: 36,
-  top: 65,
+  top: 70,
   position: 'absolute'
 })
 
@@ -38,9 +38,9 @@ const Trophy = ({ data, updateData }) => {
           {parseFloat(data?.fee_original_percent) + parseFloat(data?.fee_app_percent)}%
         </Typography> */}
         <Typography variant='body2' sx={{ letterSpacing: '0.25px' }}>
-          <Typography variant='h6' sx={{ my: 4, color: 'primary.main' }}>
-            H+{data?.settlement_day} (
-            {format_rupiah((parseInt(data?.fee_original) + parseInt(data?.fee_app)).toString())} +{' '}
+          <Typography variant='p' sx={{ my: 4, color: 'primary.main' }}>
+            H+{data?.settlement_day}
+            <br />({format_rupiah((parseInt(data?.fee_original) + parseInt(data?.fee_app)).toString())} +{' '}
             {parseFloat(data?.fee_original_percent) + parseFloat(data?.fee_app_percent)}%)
           </Typography>
           {data?.settlement_on_weekend === '0' ? (
@@ -50,20 +50,20 @@ const Trophy = ({ data, updateData }) => {
           )}
         </Typography>
         {/* <TriangleImg alt={data?.payment_method_code} src={data?.payment_method_image_url} width={100} height={30} /> */}
-        <TrophyImg alt={data?.payment_method_code} src={data?.payment_method_image_url} width={100} height={40} />
+        <TrophyImg alt={data?.payment_method_code} src={data?.payment_method_image_url} width={70} height={'auto'} />
         <Typography variant='p'>
           {format_rupiah(data?.min_transaction)} - {format_rupiah(data?.max_transaction)}
         </Typography>
-        <span style={{ float: 'right', marginTop: -20 }}>
+        <Box style={{}}>
           <Select
             size='small'
             value={data?.fee_on_merchant}
             onChange={e => onItemChange('fee_on_merchant', e?.target?.value)}
           >
-            <MenuItem value={'0'}>Fee Pelanggan</MenuItem>
-            <MenuItem value={'1'}>Fee Merchant</MenuItem>
+            <MenuItem value={'0'}>Fee Ditanggung Pelanggan</MenuItem>
+            <MenuItem value={'1'}>Fee Ditanggung Merchant</MenuItem>
           </Select>
-        </span>
+        </Box>
       </CardContent>
     </Card>
   )

@@ -1,9 +1,10 @@
 import store from 'store'
 
-import user from './user'
 import admin from './admin'
+import user from './user'
 
 const navigation = () => {
+  // console.log('store.get("module"): ', store.get('module'))
   if (store.get('module') === 'user') {
     return user()
   } else if (store.get('module') === 'admin') {

@@ -7,12 +7,22 @@ import { useRouter } from 'next/router'
 
 import CryptoJS from 'crypto-js'
 import { values as vals } from 'lodash'
+import { MuiOtpInput } from 'mui-one-time-password-input'
 import ReCAPTCHA from 'react-google-recaptcha'
 
+import store from 'store'
 import * as yup from 'yup'
 
+import ModalDialog from 'src/components/dialog'
 import { generateSignature } from '/helpers/general'
-import { handleSubmitLogin } from '/hooks/auth'
+import {
+  handleChange_password,
+  handleCheckValidForgotPasswordOTP,
+  handleCheckValidOTP,
+  handleGetForgotPasswordOTP,
+  handleResendOTP,
+  handleSubmitLogin
+} from '/hooks/auth'
 import { handleChangeEl } from '/hooks/general'
 
 // ** MUI Components
@@ -71,13 +81,32 @@ const LoginPage = () => {
       .required()
   })
 
-  // ** State
+  let schemaDataForgotPassword = yup.object().shape({
+    merchant_wa: yup.number().required(),
+    email: yup.string().email().required(),
+    password: yup
+      .string()
+      .matches(passwordRegExp, 'Min 8 Chars, Uppercase, Lowercase, Number and Special Character')
+      .required()
+  })
 
+  // ** State
+  const [countDown, setCountDown] = useState(0)
   const [captcha, setCaptcha] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [errorsField, setErrorsField] = useState()
+  const [errorsField, setErrorsField] = useState({})
+  const [errorsFieldForgotPassword, setErrorsFieldForgotPassword] = useState({})
   const [captchaRisk, setCaptchaRisk] = useState(0)
+  const [openModalOTPEmail, setOpenModalOTPEmail] = useState(false)
+  const [openModalOTPWA, setOpenModalOTPWA] = useState(false)
+  const [openModalChangePassword, setOpenModalChangePassword] = useState(false)
+  const [oTPEmail, setOTPEmail] = useState('')
+  const [oTPWA, setOTPWA] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const [stepForgotPassword, setStepForgotPassword] = useState(1)
+  const [newPassword, setNewPassword] = useState('')
+  const [showNewPassword, setShowNewPassword] = useState(false)
 
   const [alertMessage, setAlertMessage] = useState({
     open: false,
@@ -88,6 +117,14 @@ const LoginPage = () => {
   const [values, setValues] = useState({
     email: '',
     password: '',
+    showPassword: false
+  })
+
+  const [valuesForgotPassword, setValuesForgotPassword] = useState({
+    merchant_wa: '',
+    email: '',
+    password: '',
+    token: '',
     showPassword: false
   })
 
@@ -105,7 +142,7 @@ const LoginPage = () => {
         'x-signature': _secret?.signature,
         'x-timestamp': _secret?.timestamp
       },
-      body: JSON.stringify({ filter: '1=1' })
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
       .then(res => res.json())
       .then(res => {
@@ -118,6 +155,7 @@ const LoginPage = () => {
 
   useEffect(() => {
     checkSession()
+    handleChangeEl('email', '', values, setValues, schemaData, setErrorsField)
   }, [])
 
   const handleChange = prop => event => {
@@ -134,16 +172,21 @@ const LoginPage = () => {
 
   const handleSubmit = async e => {
     setLoading(true)
-    if (vals(errorsField)?.length > 0) {
-      setAlertMessage({
-        open: true,
-        type: 'error',
-        message: vals(errorsField)[0] == 'Error' ? 'Fill all required fields!' : vals(errorsField)[0]
-      })
-      setLoading(false)
 
-      return false
-    }
+    vals(errorsField).map(item => {
+      if (item) {
+        setAlertMessage({
+          open: true,
+          type: 'error',
+          message: vals(errorsField)[0] == 'Error' ? 'Fill all required fields!' : vals(errorsField)[0]
+        })
+        setLoading(false)
+
+        return
+
+        return false
+      }
+    })
     if (!captcha) {
       setAlertMessage({
         open: true,
@@ -164,12 +207,18 @@ const LoginPage = () => {
 
         return false
       } else {
-        const res = await handleSubmitLogin(e, schemaData, values)
+        const res = await handleSubmitLogin(e, schemaData, values).catch(() => setLoading(false))
 
         // console.log('res?.data: ', res?.data)
         // console.log('res?.data?.token: ', res?.data?.token)
 
-        // console.log('res: ', res)
+        if (parseInt(res?.data?.is_verified) < 1) {
+          setLoading(false)
+          setOpenModalOTPEmail(true)
+
+          return false
+        }
+
         // router.push('')
 
         setAlertMessage({
@@ -180,6 +229,17 @@ const LoginPage = () => {
         setLoading(false)
 
         if (res?.code < 1) {
+          store.set('data-module', {
+            username: res?.data?.username,
+            email: res?.data?.email,
+            merchant_name: res?.data?.merchant_name,
+            merchant_wa: res?.data?.merchant_wa,
+            merchant_address: res?.data?.merchant_address,
+            username: res?.data?.username,
+            user_privilege_name: res?.data?.user_privilege_name
+          })
+          const _user_role = res?.data?.user_role
+
           const _uri = '/api/set-storage'
           const _secret = await generateSignature(_uri)
           fetch(`${_uri}`, {
@@ -189,7 +249,7 @@ const LoginPage = () => {
               'x-timestamp': _secret?.timestamp
             },
             body: JSON.stringify({
-              key: 'auth',
+              key: res?.data?.email,
               val: {
                 user: CryptoJS.AES.encrypt(
                   `${JSON.stringify(res?.data)}`,
@@ -203,7 +263,15 @@ const LoginPage = () => {
             })
           })
             .then(res => res.json())
-            .then(res => setTimeout(() => (window.location = '/'), 2500))
+            .then(res => {
+              if (parseInt(_user_role) > 1) {
+                store.set('module', 'user')
+                setTimeout(() => router.push('/'), 100)
+              } else {
+                store.set('module', 'admin')
+                setTimeout(() => router.push('/admin'), 100)
+              }
+            })
             .catch(() => setLoading(false))
 
           // Store.set(
@@ -223,6 +291,152 @@ const LoginPage = () => {
         return false
       }
     }
+  }
+
+  const _handleCheckValidOTP = async _type => {
+    setLoading(true)
+    let _values = {}
+    if (_type == 'email') {
+      _values = {
+        type: 'register_otp_email',
+        email: values.email,
+        otp_email: oTPEmail
+      }
+    } else if (_type == 'wa') {
+      _values = {
+        type: 'register_otp_wa',
+        merchant_wa: values.merchant_wa,
+        otp_wa: oTPWA
+      }
+    }
+    const res = await handleCheckValidOTP(_values).catch(() => setLoading(false))
+
+    setAlertMessage({
+      open: true,
+      type: res?.code > 0 ? 'error' : 'primary',
+      message: res?.code > 0 ? res?.error : res?.message
+    })
+    setLoading(false)
+
+    if (res?.code < 1) {
+      setOTPEmail('')
+      setOTPWA('')
+      if (_type == 'email') {
+        setOpenModalOTPEmail(false)
+        setOpenModalOTPWA(true)
+      } else {
+        setOpenModalOTPEmail(false)
+        setOpenModalOTPWA(false)
+        router.push('/')
+      }
+    }
+  }
+
+  const _handleResendOTP = async _type => {
+    setCountDown(60)
+    setLoading(true)
+    let _values = {}
+    if (_type == 'email') {
+      _values = {
+        type: 'register_otp_email',
+        email: values.email
+      }
+    } else if (_type == 'wa') {
+      _values = {
+        type: 'register_otp_wa',
+        merchant_wa: values.merchant_wa
+      }
+    }
+    const res = await handleResendOTP(_values).catch(() => setLoading(false))
+
+    setAlertMessage({
+      open: true,
+      type: res?.code > 0 ? 'error' : 'primary',
+      message: res?.code > 0 ? res?.error : res?.message
+    })
+    setLoading(false)
+  }
+
+  const _handleGetForgotPasswordOTP = async _type => {
+    setLoading(true)
+
+    let _values = {
+      email: valuesForgotPassword?.email,
+      merchant_wa: valuesForgotPassword?.merchant_wa
+    }
+    const res = await handleGetForgotPasswordOTP(_values).catch(() => setLoading(false))
+
+    if (parseInt(res?.code) < 1) {
+      setStepForgotPassword(2)
+    }
+
+    setAlertMessage({
+      open: true,
+      type: res?.code > 0 ? 'error' : 'primary',
+      message: res?.code > 0 ? res?.error : res?.message
+    })
+    setCountDown(60)
+    setLoading(false)
+  }
+
+  const _handleCheckValidForgotPasswordOTP = async _type => {
+    setLoading(true)
+
+    let _values = {
+      otp_email: oTPEmail,
+      otp_wa: oTPWA
+    }
+    const res = await handleCheckValidForgotPasswordOTP(_values).catch(() => setLoading(false))
+
+    if (parseInt(res?.code) < 1) {
+      handleChangeEl(
+        'token',
+        res?.token,
+        valuesForgotPassword,
+        setValuesForgotPassword,
+        schemaDataForgotPassword,
+        setErrorsFieldForgotPassword
+      )
+      setStepForgotPassword(3)
+    }
+
+    setAlertMessage({
+      open: true,
+      type: res?.code > 0 ? 'error' : 'primary',
+      message: res?.code > 0 ? res?.error : res?.message
+    })
+    setLoading(false)
+  }
+
+  const _handleChange_password = async _type => {
+    setLoading(true)
+
+    let _values = {
+      token_login: valuesForgotPassword?.token,
+      password: valuesForgotPassword?.password
+    }
+    const res = await handleChange_password(_values).catch(() => setLoading(false))
+
+    if (parseInt(res?.code) < 1) {
+      if (parseInt(res?.code) < 1) {
+        setStepForgotPassword(4)
+      }
+    }
+
+    setValuesForgotPassword({
+      merchant_wa: '',
+      email: '',
+      password: '',
+      token: '',
+      showPassword: false
+    })
+
+    setAlertMessage({
+      open: true,
+      type: res?.code > 0 ? 'error' : 'primary',
+      message: res?.code > 0 ? res?.error : res?.message
+    })
+    setLoading(false)
   }
 
   useEffect(() => {
@@ -249,6 +463,20 @@ const LoginPage = () => {
       })
   }, [captcha])
 
+  useEffect(() => {
+    if (countDown > 0) {
+      setTimeout(() => setCountDown(countDown - 1), 1000)
+    }
+  }, [countDown])
+
+  useEffect(() => {
+    if (!openModalChangePassword && stepForgotPassword === 4) {
+      setStepForgotPassword(1)
+    }
+    setOTPEmail('')
+    setOTPWA('')
+  }, [openModalChangePassword, openModalOTPWA, openModalOTPEmail, stepForgotPassword])
+
   return (
     <Box className='content-center'>
       <Card sx={{ zIndex: 1 }}>
@@ -258,9 +486,9 @@ const LoginPage = () => {
           </Box>
           <Box sx={{ mb: 6 }}>
             <Typography variant='h5' sx={{ fontWeight: 600, marginBottom: 1.5 }}>
-              Welcome to {themeConfig.templateName} 👋🏻
+              Selamat Datang di {themeConfig.templateName} 👋🏻
             </Typography>
-            <Typography variant='body2'>Please sign-in to your account and start the adventure</Typography>
+            <Typography variant='body2'>Silakan Login dan rasakan pengalaman kemudahannya.</Typography>
           </Box>
           <form noValidate autoComplete='off' onSubmit={e => e.preventDefault()}>
             <TextField
@@ -321,14 +549,16 @@ const LoginPage = () => {
             <Box
               sx={{ mb: 4, display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}
             >
-              <FormControlLabel control={<Checkbox checked />} label='Remember Me' />
-              <Link passHref href='/auth/reset-password'>
-                <LinkStyled onClick={e => e.preventDefault()}>Forgot Password?</LinkStyled>
-              </Link>
+              <FormControlLabel control={<Checkbox checked />} label='Ingat sesi login' />
+              {/* <Link passHref href='/auth/reset-password'> */}
+              <LinkStyled onClick={e => setOpenModalChangePassword(true)} sx={{ cursor: 'pointer' }}>
+                Lupa Password?
+              </LinkStyled>
+              {/* </Link> */}
             </Box>
             <Button
               fullWidth
-              disabled={!captcha}
+              disabled={!captcha || Object.keys(errorsField).length > 0}
               size='large'
               variant='contained'
               sx={{ marginBottom: 7 }}
@@ -338,11 +568,11 @@ const LoginPage = () => {
             </Button>
             <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
               <Typography variant='body2' sx={{ marginRight: 2 }}>
-                New on our platform?
+                Belum punya akun?
               </Typography>
               <Typography variant='body2'>
                 <Link passHref href='/auth/register'>
-                  <LinkStyled>Create an account</LinkStyled>
+                  <LinkStyled>Register Akun</LinkStyled>
                 </Link>
               </Typography>
             </Box>
@@ -351,7 +581,7 @@ const LoginPage = () => {
       </Card>
       <FooterIllustrationsV1 />
 
-      <Backdrop sx={{ color: '#fff', zIndex: theme => theme.zIndex.drawer + 1 }} open={loading}>
+      <Backdrop sx={{ color: '#fff', zIndex: theme => theme.zIndex.drawer + 999999 }} open={loading}>
         <CircularProgress color='primary' size={100} variant='indeterminate' />
       </Backdrop>
 
@@ -371,6 +601,235 @@ const LoginPage = () => {
           {alertMessage?.message}
         </Alert>
       </Snackbar>
+
+      <ModalDialog
+        titleModal='Konfirmasi OTP Email'
+        openModal={openModalOTPEmail}
+        setOpenModal={setOpenModalOTPEmail}
+        handleSubmitFunction={() => _handleCheckValidOTP('email')}
+      >
+        <Typography>Kode OTP Email anda sudah dikirim ke Email anda {values?.email}.</Typography>
+        <Typography>Silahkan konfirmasikan dengan memasukkan kode OTP Melalui Email.</Typography>
+        <Box sx={{ p: 10 }}>
+          <MuiOtpInput length={6} value={oTPEmail} onChange={e => setOTPEmail(e)} />
+        </Box>
+
+        <Box>
+          <Typography variant='body2'>
+            {countDown == 0 ? (
+              <LinkStyled onClick={e => _handleResendOTP('email')}>Kirim Ulang Kode OTP</LinkStyled>
+            ) : (
+              <LinkStyled disabled={true} sx={{ color: 'gray' }}>
+                Kirim Ulang Kode OTP dalam ({countDown})
+              </LinkStyled>
+            )}
+          </Typography>
+        </Box>
+      </ModalDialog>
+
+      <ModalDialog
+        titleModal='Konfirmasi OTP WhatsApp'
+        openModal={openModalOTPWA}
+        setOpenModal={setOpenModalOTPWA}
+        handleSubmitFunction={() => _handleCheckValidOTP('wa')}
+      >
+        <Typography>Kode OTP Email anda sudah dikirim ke WhatsApp anda {values?.merchant_wa}.</Typography>
+        <Typography>Silahkan konfirmasikan dengan memasukkan kode OTP Melalui WhatsApp.</Typography>
+        <Box sx={{ p: 10 }}>
+          <MuiOtpInput length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
+        </Box>
+
+        <Box>
+          <Typography variant='body2'>
+            {countDown == 0 ? (
+              <LinkStyled onClick={e => _handleResendOTP('wa')}>Kirim Ulang Kode OTP</LinkStyled>
+            ) : (
+              <LinkStyled disabled={true} sx={{ color: 'gray' }}>
+                Kirim Ulang Kode OTP dalam ({countDown})
+              </LinkStyled>
+            )}
+          </Typography>
+        </Box>
+      </ModalDialog>
+
+      <ModalDialog
+        titleModal='Lupa Password'
+        openModal={openModalChangePassword}
+        setOpenModal={setOpenModalChangePassword}
+        ButtonDialogs={
+          stepForgotPassword === 1 ? (
+            <Button
+              disabled={
+                errorsFieldForgotPassword?.merchant_wa ||
+                errorsFieldForgotPassword?.email ||
+                !valuesForgotPassword?.merchant_wa ||
+                !valuesForgotPassword?.email
+              }
+              variant='contained'
+              sx={{ m: 3 }}
+              onClick={_handleGetForgotPasswordOTP}
+            >
+              Lanjut
+            </Button>
+          ) : stepForgotPassword === 2 ? (
+            <Button
+              disabled={!oTPEmail || !oTPWA}
+              variant='contained'
+              sx={{ m: 3 }}
+              onClick={_handleCheckValidForgotPasswordOTP}
+            >
+              Lanjut
+            </Button>
+          ) : stepForgotPassword === 3 ? (
+            <Button
+              disabled={
+                errorsFieldForgotPassword?.token ||
+                errorsFieldForgotPassword?.password ||
+                !valuesForgotPassword?.password
+              }
+              variant='contained'
+              sx={{ m: 3 }}
+              onClick={_handleChange_password}
+            >
+              Submit
+            </Button>
+          ) : undefined
+        }
+      >
+        {stepForgotPassword === 1 && (
+          <Box>
+            <Typography>Masukkan Email Untuk Pembaharuan Password.</Typography>
+            <TextField
+              fullWidth
+              type='email'
+              label='Email'
+              sx={{ marginBottom: 4, mt: 4 }}
+              onChange={e =>
+                handleChangeEl(
+                  'email',
+                  e,
+                  valuesForgotPassword,
+                  setValuesForgotPassword,
+                  schemaDataForgotPassword,
+                  setErrorsFieldForgotPassword
+                )
+              }
+              value={valuesForgotPassword?.email}
+              error={errorsFieldForgotPassword?.email}
+              helperText={errorsFieldForgotPassword?.email}
+            />
+            <Typography>Masukkan No. WhatsApp Untuk Pembaharuan Password.</Typography>
+            <TextField
+              autoFocus
+              fullWidth
+              id='merchant_wa'
+              label='No. Whatsapp'
+              sx={{ marginBottom: 4, mt: 4 }}
+              onChange={e =>
+                handleChangeEl(
+                  'merchant_wa',
+                  e,
+                  valuesForgotPassword,
+                  setValuesForgotPassword,
+                  schemaDataForgotPassword,
+                  setErrorsFieldForgotPassword
+                )
+              }
+              value={valuesForgotPassword?.merchant_wa}
+              error={errorsFieldForgotPassword?.merchant_wa}
+              helperText={errorsFieldForgotPassword?.merchant_wa}
+            />
+          </Box>
+        )}
+
+        {stepForgotPassword === 2 && (
+          <Box>
+            <Typography>Kode OTP Email anda sudah dikirim ke Email & WhatsApp anda {values?.merchant_wa}.</Typography>
+            <Typography>Silahkan konfirmasikan dengan memasukkan kode OTP Melalui Email & WhatsApp.</Typography>
+            <Box sx={{ p: 10 }}>
+              <Typography>Masukkan OTP Email</Typography>
+              <MuiOtpInput length={6} value={oTPEmail} onChange={e => setOTPEmail(e)} />
+            </Box>
+            <Box sx={{ p: 10 }}>
+              <Typography>Masukkan OTP WhatsApp</Typography>
+              <MuiOtpInput length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
+            </Box>
+
+            <Box>
+              <Typography variant='body2'>
+                {countDown == 0 ? (
+                  <LinkStyled onClick={_handleGetForgotPasswordOTP} sx={{ cursor: 'pointer' }}>
+                    Kirim Ulang Kode OTP
+                  </LinkStyled>
+                ) : (
+                  <LinkStyled disabled={true} sx={{ color: 'gray' }}>
+                    Kirim Ulang Kode OTP dalam ({countDown})
+                  </LinkStyled>
+                )}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+
+        {stepForgotPassword === 3 && (
+          <Box>
+            <Typography>Silahkan masukkan password baru anda.</Typography>
+            <Box sx={{ p: 10 }}>
+              <FormControl fullWidth>
+                <TextField
+                  fullWidth
+                  id='standard-basic'
+                  label={'Password'}
+                  variant='outlined'
+                  size='medium'
+                  onChange={e =>
+                    handleChangeEl(
+                      'password',
+                      e,
+                      valuesForgotPassword,
+                      setValuesForgotPassword,
+                      schemaDataForgotPassword,
+                      setErrorsFieldForgotPassword
+                    )
+                  }
+                  value={valuesForgotPassword?.password}
+                  error={errorsFieldForgotPassword?.password}
+                  helperText={errorsFieldForgotPassword?.password}
+                  type={valuesForgotPassword?.showPassword ? 'text' : 'password'}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position='end'>
+                        <IconButton
+                          edge='end'
+                          onClick={() =>
+                            handleChangeEl(
+                              'showPassword',
+                              !valuesForgotPassword?.showPassword,
+                              valuesForgotPassword,
+                              setValuesForgotPassword,
+                              schemaDataForgotPassword,
+                              setErrorsFieldForgotPassword
+                            )
+                          }
+                          aria-label='toggle password visibility'
+                        >
+                          {!valuesForgotPassword?.showPassword ? <Visibility /> : <VisibilityOff />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
+                />
+              </FormControl>
+            </Box>
+          </Box>
+        )}
+
+        {stepForgotPassword === 4 && (
+          <Box>
+            <Typography>Password anda telah berhasil diperbaharui.</Typography>
+          </Box>
+        )}
+      </ModalDialog>
     </Box>
   )
 }

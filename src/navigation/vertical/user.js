@@ -45,9 +45,9 @@ const navigation = () => {
       path: '/proses-kliring'
     },
     {
-      title: 'Penarikan Dana',
+      title: 'Dompet Digital',
       icon: CashRefund,
-      path: '/penarikan-dana'
+      path: '/dompet-digital'
     },
     {
       title: 'Jurnal Keuangan',

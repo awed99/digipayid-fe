@@ -15,13 +15,16 @@ import Typography from '@mui/material/Typography'
 import { styled } from '@mui/material/styles'
 
 // ** Icons Imports
-import AccountOutline from 'mdi-material-ui/AccountOutline'
-import CogOutline from 'mdi-material-ui/CogOutline'
-import CurrencyUsd from 'mdi-material-ui/CurrencyUsd'
-import EmailOutline from 'mdi-material-ui/EmailOutline'
-import HelpCircleOutline from 'mdi-material-ui/HelpCircleOutline'
 import LogoutVariant from 'mdi-material-ui/LogoutVariant'
-import MessageOutline from 'mdi-material-ui/MessageOutline'
+
+// import AccountOutline from 'mdi-material-ui/AccountOutline'
+// import CogOutline from 'mdi-material-ui/CogOutline'
+// import CurrencyUsd from 'mdi-material-ui/CurrencyUsd'
+// import EmailOutline from 'mdi-material-ui/EmailOutline'
+// import HelpCircleOutline from 'mdi-material-ui/HelpCircleOutline'
+// import MessageOutline from 'mdi-material-ui/MessageOutline'
+
+import store from 'store'
 
 // ** Styled Components
 const BadgeContentSpan = styled('span')(({ theme }) => ({
@@ -43,13 +46,15 @@ const UserDropdown = () => {
     setAnchorEl(event.currentTarget)
   }
 
-  const handleDropdownClose = url => {
+  const handleLogout = url => {
+    store.remove('data-user')
+    store.remove('module')
     if (url) {
       const _uri = '/api/remove-storage'
 
       fetch(`${_uri}`, {
         method: 'POST',
-        body: JSON.stringify({ key: 'auth' })
+        body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
       })
         .then(res => res.json())
         .then(res => {
@@ -57,6 +62,10 @@ const UserDropdown = () => {
         })
         .catch(() => false)
     }
+    setAnchorEl(null)
+  }
+
+  const handleDropdownClose = url => {
     setAnchorEl(null)
   }
 
@@ -100,18 +109,22 @@ const UserDropdown = () => {
               badgeContent={<BadgeContentSpan />}
               anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             >
-              <Avatar alt='John Doe' src='/images/logo.png' sx={{ width: '2.5rem', height: '2.5rem' }} />
+              <Avatar
+                alt={store.get('data-module')?.username}
+                src='/images/logo.png'
+                sx={{ width: '2.5rem', height: '2.5rem' }}
+              />
             </Badge>
             <Box sx={{ display: 'flex', marginLeft: 3, alignItems: 'flex-start', flexDirection: 'column' }}>
-              <Typography sx={{ fontWeight: 600 }}>John Doe</Typography>
+              <Typography sx={{ fontWeight: 600 }}>{store.get('data-module')?.username}</Typography>
               <Typography variant='body2' sx={{ fontSize: '0.8rem', color: 'text.disabled' }}>
-                Admin
+                {store.get('data-module')?.merchant_name ?? 'Administrator'}
               </Typography>
             </Box>
           </Box>
         </Box>
         <Divider sx={{ mt: 0, mb: 1 }} />
-        <MenuItem sx={{ p: 0 }} onClick={() => handleDropdownClose()}>
+        {/* <MenuItem sx={{ p: 0 }} onClick={() => handleDropdownClose()}>
           <Box sx={styles}>
             <AccountOutline sx={{ marginRight: 2 }} />
             Profile
@@ -148,8 +161,8 @@ const UserDropdown = () => {
             FAQ
           </Box>
         </MenuItem>
-        <Divider />
-        <MenuItem sx={{ py: 2 }} onClick={() => handleDropdownClose('/auth')}>
+        <Divider /> */}
+        <MenuItem sx={{ py: 2 }} onClick={() => handleLogout('/auth')}>
           <LogoutVariant sx={{ marginRight: 2, fontSize: '1.375rem', color: 'text.secondary' }} />
           Logout
         </MenuItem>

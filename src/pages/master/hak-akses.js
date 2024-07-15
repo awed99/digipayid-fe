@@ -6,28 +6,35 @@ import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
 
 // ** React Imports
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
+// ** Next Import
+import { useRouter } from 'next/router'
 
 // ** MUI Imports
 import Box from '@mui/material/Box'
 
 // ** Demo Components Imports
 import { DataGrid, GridToolbar } from '@mui/x-data-grid'
+import CryptoJS from 'crypto-js'
+import { generateSignature } from '/helpers/general'
 import CustomNoRowsOverlay from '/src/components/no-rows-table'
 
 const MUITable = () => {
   // ** States
-  const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [data, setData] = useState([])
+  let _loopNumber = 1
+
+  // ** Hooks
+  const router = useRouter()
 
   const columns = [
-    { field: 'no', headerName: '#', width: 50 },
-    { field: 'product_category', headerName: 'Hak Akses', width: 350 },
+    { field: 'user_privilege_name', headerName: 'Hak Akses', width: 350 },
     {
       field: 'status',
       headerName: 'Status',
       width: 'auto',
-      renderCell: params => <Chip label={'Aktif'} color='primary' />
+      renderCell: params => <Chip label={'Aktif'} color='success' size='small' />
     }
 
     // {
@@ -42,21 +49,57 @@ const MUITable = () => {
     // },
   ]
 
-  const createData = (id, no, product_category) => {
-    return { id, no, product_category }
+  const getData = async () => {
+    const _uri0 = '/api/check-auth'
+    const _secret0 = await generateSignature(_uri0)
+
+    fetch(`${_uri0}`, {
+      method: 'POST',
+      headers: {
+        'x-signature': _secret0?.signature,
+        'x-timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          // console.log(res?.auth?.user)
+          router.push('/auth')
+
+          return false
+        } else {
+          return res
+        }
+      })
+      .then(async res => {
+        const _uri = '/master/user/privilege_list'
+        const _secret = await generateSignature(_uri)
+
+        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
+          method: 'POST',
+          headers: {
+            'x-signature': _secret?.signature,
+            'x-timestamp': _secret?.timestamp,
+            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+              .toString(CryptoJS.enc.Utf8)
+              .replace(/\"/g, '')
+          },
+          body: JSON.stringify({ id: 0 })
+        })
+          .then(res => res.json())
+          .then(res => {
+            // console.log(res?.data)
+            setData(res?.data)
+          })
+          .catch(() => false)
+      })
+      .catch(() => false)
   }
 
-  const rows0 = [createData(1, 1, 'Utama'), createData(2, 2, 'Tambahan')]
-  const rows = []
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage)
-  }
-
-  const handleChangeRowsPerPage = event => {
-    setRowsPerPage(+event.target.value)
-    setPage(0)
-  }
+  useEffect(() => {
+    getData()
+  }, [])
 
   return (
     <Grid container spacing={6}>
@@ -70,9 +113,11 @@ const MUITable = () => {
         <Card>
           <Box sx={{ width: '100%', overflow: 'auto' }}>
             <DataGrid
+              density={'compact'}
               autoHeight
-              rows={rows}
+              rows={data}
               columns={columns}
+              getRowId={row => row.id_user_privilege}
               slots={{ toolbar: GridToolbar, noRowsOverlay: CustomNoRowsOverlay }}
               slotProps={{
                 toolbar: {
