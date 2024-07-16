@@ -1,5 +1,5 @@
 // ** MUI Imports
-import { Backdrop, Button, Card, Chip, CircularProgress } from '@mui/material'
+import { Backdrop, Button, Card, Chip, CircularProgress, Divider } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
@@ -257,6 +257,65 @@ const MUITable = () => {
           .catch(() => false)
       })
       .catch(() => false)
+  }
+
+  const reSendBilling = async _reffID => {
+    setLoading(true)
+    const _uri0 = '/api/check-auth'
+    const _secret0 = await generateSignature(_uri0)
+
+    fetch(`${_uri0}`, {
+      method: 'POST',
+      headers: {
+        'x-signature': _secret0?.signature,
+        'x-timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          // console.log(res?.auth?.user)
+          router.push('/auth')
+
+          return false
+        } else {
+          return res
+        }
+      })
+      .then(async res => {
+        const _uri = '/transactions/orders/resend_billing'
+        const _secret = await generateSignature(_uri)
+
+        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
+          method: 'POST',
+          headers: {
+            'x-signature': _secret?.signature,
+            'x-timestamp': _secret?.timestamp,
+            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+              .toString(CryptoJS.enc.Utf8)
+              .replace(/\"/g, '')
+          },
+
+          body: JSON.stringify({ invoice_number: _reffID })
+
+          // body: dataX
+        })
+          .then(res => res.json())
+          .then(res => {
+            // console.log(res?.data)
+            // setData(res?.data)
+            // setOpenModal2(false)
+            setAlertMessage({
+              open: true,
+              type: 'success',
+              message: 'Sukses mengirim ulang tagihan'
+            })
+            setLoading(false)
+          })
+          .catch(() => setLoading(false))
+      })
+      .catch(() => setLoading(false))
   }
 
   const handleGetProducts = async _invoice_number => {
@@ -677,6 +736,22 @@ const MUITable = () => {
                   </Typography>
                 </>
               )}
+            </Box>
+            <Box>
+              <Typography>
+                <Divider>atau</Divider>
+              </Typography>
+            </Box>
+            <Box>
+              <Button
+                variant='contained'
+                size='small'
+                color='warning'
+                sx={{ m: 3 }}
+                onClick={() => reSendBilling(paymentDetail?.req?.reff_id)}
+              >
+                Kirim Ulang Tagihan (WA/Email)
+              </Button>
             </Box>
           </Box>
         </Box>
