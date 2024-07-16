@@ -1653,7 +1653,7 @@ const MUITable = () => {
                 parseInt(valueModalTransaction?.id_payment_method) <= 10 ? (
                 <>
                   <Typography>
-                    Nomor Rekening Tujuan :{' '}
+                    Nomor Rekening Tujuan :<br />
                     <b>
                       {spacing4Char(
                         parseInt(valueModalTransaction?.id_payment_method) === 4
@@ -1666,7 +1666,7 @@ const MUITable = () => {
               ) : (
                 <>
                   <Typography>
-                    Nomor Rekening Tujuan :{' '}
+                    Nomor Rekening Tujuan :<br />
                     <b>
                       {spacing4Char(
                         parseInt(valueModalTransaction?.id_payment_method) === 4
