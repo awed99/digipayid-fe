@@ -36,6 +36,7 @@ import DateRangePicker from 'src/components/date-range-picker'
 import ModalDialog from 'src/components/dialog'
 import { format_rupiah, generateSignature } from '/helpers/general'
 import CustomNoRowsOverlay from '/src/components/no-rows-table'
+import TablePagination from '/src/components/table-pagination'
 
 import dayjs from 'dayjs'
 
@@ -346,7 +347,7 @@ const MUITable = () => {
                     style={{ marginTop: '-30px', float: 'right' }}
                     disabled={
                       isNaN(amount) ||
-                      // parseInt(amount) < 100000 ||
+                      parseInt(amount) < 100000 ||
                       parseInt(amount) > 100000000 ||
                       parseInt(amount) > saldo
                     }
@@ -383,12 +384,21 @@ const MUITable = () => {
               rows={data}
               columns={columns}
               getRowId={row => row.id}
-              pageSizeOptions={[100]}
+              initialState={{
+                ...data.initialState,
+                pagination: { paginationModel: { pageSize: 25 } }
+              }}
               slots={{
                 toolbar: GridToolbar,
                 noRowsOverlay: CustomNoRowsOverlay,
+                pagination: TablePagination,
                 footer: () => (
                   <Box sx={{ p: 3 }}>
+                    <Divider />
+                    <Box>
+                      <TablePagination />
+                    </Box>
+                    <Divider />
                     <Typography>
                       <b>
                         Kredit : IDR{' '}
