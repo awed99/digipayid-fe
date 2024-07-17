@@ -1822,7 +1822,7 @@ const MUITable = () => {
       </ModalDialog>
 
       <ModalDialog
-        titleModal='Peringatan'
+        titleModal='Notifikasi'
         openModal={openModalSuccessPayment}
         setOpenModal={setOpenModalSuccessPayment}
       >
@@ -1833,8 +1833,9 @@ const MUITable = () => {
         >
           <Box style={{ width: 550, paddingBottom: 15, textAlign: 'center' }}>
             <Typography>
-              Transaksi <b>{paymentDetail?.req?.reff_id}</b> telah dibayar
+              Transaksi <b>{paymentDetail?.req?.reff_id}</b>
             </Typography>
+            <Typography>telah dibayar</Typography>
             <Typography variant='h5'>IDR {format_rupiah(paymentDetail?.res?.data?.total_bayar)}</Typography>
           </Box>
         </Box>
