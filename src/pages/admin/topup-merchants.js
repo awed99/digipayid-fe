@@ -1,5 +1,16 @@
 // ** MUI Imports
-import { Alert, Autocomplete, Backdrop, Button, Card, Chip, CircularProgress, Snackbar, TextField } from '@mui/material'
+import {
+  Alert,
+  Autocomplete,
+  Backdrop,
+  Button,
+  Card,
+  Chip,
+  CircularProgress,
+  Divider,
+  Snackbar,
+  TextField
+} from '@mui/material'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
@@ -24,6 +35,7 @@ import DateRangePicker from 'src/components/date-range-picker'
 import ModalDialog from 'src/components/dialog'
 import { format_rupiah, generateSignature, spacing4Char } from '/helpers/general'
 import CustomNoRowsOverlay from '/src/components/no-rows-table'
+import TablePagination from '/src/components/table-pagination'
 
 const MUITable = () => {
   // ** States
@@ -466,12 +478,20 @@ const MUITable = () => {
               rows={data}
               columns={columns}
               getRowId={row => row.id}
-              pageSizeOptions={[100]}
+              initialState={{
+                ...data.initialState,
+                pagination: { paginationModel: { pageSize: 25 } }
+              }}
               slots={{
                 toolbar: GridToolbar,
                 noRowsOverlay: CustomNoRowsOverlay,
                 footer: () => (
                   <Box sx={{ p: 3 }}>
+                    <Divider />
+                    <Box>
+                      <TablePagination />
+                    </Box>
+                    <Divider />
                     <Typography color='primary'>
                       <b>
                         Sudah Dibayar : IDR{' '}

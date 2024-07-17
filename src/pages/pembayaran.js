@@ -44,13 +44,15 @@ import ModalImage from 'react-modal-image'
 import ModalDialog from 'src/components/dialog'
 import { format_rupiah, generateSignature, spacing4Char } from '/helpers/general'
 import { handleChangeEl } from '/hooks/general'
+import TablePagination from '/src/components/table-pagination'
 
 const MUITable = () => {
   // ** States
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [amountToPay, setAmountToPay] = useState(0)
 
   // ** States
+  const [isWaitingForPayment, setIsWaitingForPayment] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errorsField, setErrorsField] = useState()
   const [isAdd, setIsAdd] = useState(true)
@@ -59,6 +61,7 @@ const MUITable = () => {
   const [openModal3, setOpenModal3] = useState(false)
   const [openModal4, setOpenModal4] = useState(false)
   const [openModalWarning, setOpenModalWarning] = useState(false)
+  const [openModalSuccessPayment, setOpenModalSuccessPayment] = useState(false)
   const [searchProduct, setSearchProduct] = useState('')
   const [countDownSearchProduct, setCountDownSearchProduct] = useState(4)
   const [titleModal, setTitleModal] = useState('Ambil produk dari katalog')
@@ -501,10 +504,17 @@ const MUITable = () => {
             // return
 
             if (res?.code === 1) {
-              setReffID(res?.payment?.req?.reff_id)
               setPaymentDetail(res?.payment)
               setOpenModal4(true)
+              setIsWaitingForPayment(true)
+              if (res?.payment?.req?.reff_id) {
+                setReffID(res?.reff_id)
+              }
             } else {
+              setReffID(res?.reff_id)
+              setOpenModal4(true)
+              setIsWaitingForPayment(true)
+              setAmountToPay(_fee_on_merchant === 0 ? _total_amount + _pg_fee + _app_fee : _total_amount)
               setValueModalTransaction({
                 email_customer: '',
                 wa_customer: '',
@@ -515,12 +525,81 @@ const MUITable = () => {
               })
             }
 
-            setReffID(null)
+            // setReffID(null)
             setData(res?.data)
             getPaymentMethods()
             setOpenModal3(false)
 
             // Finish And Go To New Payment
+            setLoading(false)
+          })
+          .catch(() => setLoading(false))
+      })
+      .catch(() => setLoading(false))
+  }
+
+  const handleCheckStatus = async _reffID => {
+    if (!isWaitingForPayment) {
+      return false
+    }
+
+    // setLoading(true)
+    const _uri0 = '/api/check-auth'
+    const _secret0 = await generateSignature(_uri0)
+
+    fetch(`${_uri0}`, {
+      method: 'POST',
+      headers: {
+        'x-signature': _secret0?.signature,
+        'x-timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          // console.log(res?.auth?.user)
+          router.push('/auth')
+
+          return false
+        } else {
+          return res
+        }
+      })
+      .then(async res => {
+        const _uri = '/transactions/orders/check_status'
+        const _secret = await generateSignature(_uri)
+
+        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
+          method: 'POST',
+          headers: {
+            'x-signature': _secret?.signature,
+            'x-timestamp': _secret?.timestamp,
+            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+              .toString(CryptoJS.enc.Utf8)
+              .replace(/\"/g, '')
+          },
+
+          body: JSON.stringify({ invoice_number: _reffID })
+
+          // body: dataX
+        })
+          .then(res => res.json())
+          .then(res => {
+            if (parseInt(res?.status) > 0) {
+              setAlertMessage({
+                open: true,
+                type: 'success',
+                message: 'Pembayaran Berhasi.'
+              })
+              setOpenModal4(false)
+              setOpenModalSuccessPayment(true)
+              setIsWaitingForPayment(false)
+            } else {
+              if (isWaitingForPayment === true && paymentDetail?.req?.reff_id) {
+                setTimeout(() => handleCheckStatus(_reffID), 5000)
+              }
+            }
             setLoading(false)
           })
           .catch(() => setLoading(false))
@@ -761,6 +840,12 @@ const MUITable = () => {
   }
 
   useEffect(() => {
+    if (isWaitingForPayment === true && reffID) {
+      setTimeout(() => handleCheckStatus(reffID), 5000)
+    }
+  }, [isWaitingForPayment, reffID])
+
+  useEffect(() => {
     // if (searchProduct.length > 0) {
     //   setCountDownSearchProduct(1)
     // }
@@ -769,6 +854,8 @@ const MUITable = () => {
 
   useEffect(() => {
     if (!openModal4) {
+      setReffID(null)
+      setAmountToPay(0)
       setValueModalTransaction({
         email_customer: '',
         wa_customer: '',
@@ -1095,13 +1182,21 @@ const MUITable = () => {
               rows={data}
               columns={columns}
               getRowId={row => row.id}
-              pageSizeOptions={[100]}
+              initialState={{
+                ...data.initialState,
+                pagination: { paginationModel: { pageSize: 25 } }
+              }}
               editMode='row'
               slots={{
                 toolbar: GridToolbar,
                 noRowsOverlay: CustomNoRowsOverlay,
                 footer: () => (
                   <Box sx={{ p: 3 }}>
+                    <Divider />
+                    <Box>
+                      <TablePagination />
+                    </Box>
+                    <Divider />
                     <Typography>
                       <b>{data?.length} Produk</b>
                     </Typography>
@@ -1192,8 +1287,11 @@ const MUITable = () => {
                   rows={dataSearch}
                   columns={columnsSearch}
                   getRowId={row => row.id_product}
-                  pageSizeOptions={[100]}
-                  slots={{ toolbar: GridToolbar, noRowsOverlay: CustomNoRowsOverlay }}
+                  initialState={{
+                    ...data.initialState,
+                    pagination: { paginationModel: { pageSize: 25 } }
+                  }}
+                  slots={{ toolbar: GridToolbar, noRowsOverlay: CustomNoRowsOverlay, pagination: TablePagination }}
                   slotProps={{
                     toolbar: {
                       showQuickFilter: true
@@ -1604,7 +1702,7 @@ const MUITable = () => {
           <Box style={{ width: 550, textAlign: 'center' }}>
             <Box>
               <Typography>
-                <h3>IDR {format_rupiah(paymentDetail?.res?.data?.total_bayar)}</h3>
+                <h3>IDR {format_rupiah(paymentDetail?.res?.data?.total_bayar ?? amountToPay)}</h3>
               </Typography>
             </Box>
             <Box>
@@ -1653,7 +1751,7 @@ const MUITable = () => {
                 parseInt(valueModalTransaction?.id_payment_method) <= 10 ? (
                 <>
                   <Typography>
-                    Nomor Rekening Tujuan :{' '}
+                    Nomor Rekening Tujuan :<br />
                     <b>
                       {spacing4Char(
                         parseInt(valueModalTransaction?.id_payment_method) === 4
@@ -1665,18 +1763,25 @@ const MUITable = () => {
                 </>
               ) : (
                 <>
-                  <Typography>
-                    Nomor Rekening Tujuan :{' '}
-                    <b>
-                      {spacing4Char(
-                        parseInt(valueModalTransaction?.id_payment_method) === 4
-                          ? '70017' + paymentDetail?.res?.data?.nomor_va
-                          : '' + paymentDetail?.res?.data?.nomor_va
-                      )}
-                    </b>
-                  </Typography>
+                  <Typography>Mohon bayar tunai sesuai tagihan.</Typography>
                 </>
               )}
+            </Box>
+            <Box>
+              <Typography>
+                <Divider>Status Pembayaran</Divider>
+              </Typography>
+            </Box>
+            <Box>
+              <Button
+                variant='contained'
+                size='small'
+                sx={{ m: 3 }}
+
+                // onClick={() => handleCheckStatus(paymentDetail?.req?.reff_id)}
+              >
+                Cek Status Pembayaran
+              </Button>
             </Box>
             <Box>
               <Typography>
@@ -1712,6 +1817,25 @@ const MUITable = () => {
                 Deposit Saldo
               </Button>
             </Typography>
+          </Box>
+        </Box>
+      </ModalDialog>
+
+      <ModalDialog
+        titleModal='Peringatan'
+        openModal={openModalSuccessPayment}
+        setOpenModal={setOpenModalSuccessPayment}
+      >
+        <Box
+          alignItems='center'
+          justify='center'
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
+        >
+          <Box style={{ width: 550, paddingBottom: 15, textAlign: 'center' }}>
+            <Typography>
+              Transaksi <b>{paymentDetail?.req?.reff_id}</b> telah dibayar
+            </Typography>
+            <Typography variant='h5'>IDR {format_rupiah(paymentDetail?.res?.data?.total_bayar)}</Typography>
           </Box>
         </Box>
       </ModalDialog>

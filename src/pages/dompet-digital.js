@@ -40,6 +40,7 @@ import * as yup from 'yup'
 import { format_rupiah, generateSignature, spacing4Char } from '/helpers/general'
 import { handleChangeEl } from '/hooks/general'
 import CustomNoRowsOverlay from '/src/components/no-rows-table'
+import TablePagination from '/src/components/table-pagination'
 
 const MUITable = () => {
   // ** States
@@ -956,11 +957,7 @@ const MUITable = () => {
                     onClick={() => setOpenModal(true)}
                     style={{ marginTop: '-30px', float: 'right' }}
                     disabled={
-                      data?.reduce((total1, item) => parseInt(total1) + parseInt(item?.amount_credit), 0) -
-                        data?.reduce((total2, item) => parseInt(total2) + parseInt(item?.amount_debet), 0) <
-                        50000 ||
-                      Object.keys(errorsField)?.length > 0 ||
-                      valueWD?.amount < 50000
+                      parseInt(saldo) < 50000 || Object.keys(errorsField)?.length > 0 || valueWD?.amount < 50000
                     }
 
                     // disabled={
@@ -995,12 +992,20 @@ const MUITable = () => {
               rows={data}
               columns={columns}
               getRowId={row => row.id}
-              pageSizeOptions={[100]}
+              initialState={{
+                ...data.initialState,
+                pagination: { paginationModel: { pageSize: 25 } }
+              }}
               slots={{
                 toolbar: GridToolbar,
                 noRowsOverlay: CustomNoRowsOverlay,
                 footer: () => (
                   <Box sx={{ p: 3 }}>
+                    <Divider />
+                    <Box>
+                      <TablePagination />
+                    </Box>
+                    <Divider />
                     <Typography>
                       <b>
                         Kredit : IDR{' '}
