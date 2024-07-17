@@ -23,6 +23,7 @@ import DateRangePicker from 'src/components/date-range-picker'
 import ModalDialog from 'src/components/dialog'
 import { format_rupiah, generateSignature, spacing4Char } from '/helpers/general'
 import CustomNoRowsOverlay from '/src/components/no-rows-table'
+import TablePagination from '/src/components/table-pagination'
 
 import dayjs from 'dayjs'
 
@@ -347,12 +348,20 @@ const MUITable = () => {
               rows={data}
               columns={columns}
               getRowId={row => row.id}
-              pageSizeOptions={[100]}
+              initialState={{
+                ...data.initialState,
+                pagination: { paginationModel: { pageSize: 25 } }
+              }}
               slots={{
                 toolbar: GridToolbar,
                 noRowsOverlay: CustomNoRowsOverlay,
                 footer: () => (
                   <Box sx={{ p: 3 }}>
+                    <Divider />
+                    <Box>
+                      <TablePagination />
+                    </Box>
+                    <Divider />
                     <Typography color='green'>
                       <b>Saldo Admin : IDR {format_rupiah(saldo)}</b>
                     </Typography>

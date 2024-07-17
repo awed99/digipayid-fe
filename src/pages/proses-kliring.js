@@ -1,5 +1,5 @@
 // ** MUI Imports
-import { Card, Chip } from '@mui/material'
+import { Card, Chip, Divider } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
@@ -22,6 +22,7 @@ import moment from 'moment'
 import DateRangePicker from 'src/components/date-range-picker'
 import { format_rupiah, generateSignature } from '/helpers/general'
 import CustomNoRowsOverlay from '/src/components/no-rows-table'
+import TablePagination from '/src/components/table-pagination'
 
 import dayjs from 'dayjs'
 
@@ -218,12 +219,20 @@ const MUITable = () => {
               rows={data}
               columns={columns}
               getRowId={row => row.id}
-              pageSizeOptions={[100]}
+              initialState={{
+                ...data.initialState,
+                pagination: { paginationModel: { pageSize: 25 } }
+              }}
               slots={{
                 toolbar: GridToolbar,
                 noRowsOverlay: CustomNoRowsOverlay,
                 footer: () => (
                   <Box sx={{ p: 3 }}>
+                    <Divider />
+                    <Box>
+                      <TablePagination />
+                    </Box>
+                    <Divider />
                     <Typography>
                       <b>{format_rupiah(data?.length)} Transaksi</b>
                     </Typography>

@@ -24,6 +24,7 @@ import moment from 'moment'
 import DateRangePicker from 'src/components/date-range-picker'
 import ModalDialog from 'src/components/dialog'
 import { format_rupiah, generateSignature, spacing4Char } from '/helpers/general'
+import TablePagination from '/src/components/table-pagination'
 
 import dayjs from 'dayjs'
 
@@ -500,12 +501,20 @@ const MUITable = () => {
               rows={data}
               columns={columns}
               getRowId={row => row.id_transaction}
-              pageSizeOptions={[100]}
+              initialState={{
+                ...data.initialState,
+                pagination: { paginationModel: { pageSize: 25 } }
+              }}
               slots={{
                 toolbar: GridToolbar,
                 noRowsOverlay: CustomNoRowsOverlay,
                 footer: () => (
                   <Box sx={{ p: 3 }}>
+                    <Divider />
+                    <Box>
+                      <TablePagination />
+                    </Box>
+                    <Divider />
                     <Typography>
                       <b>
                         Jumlah Produk :
@@ -604,12 +613,20 @@ const MUITable = () => {
                   rows={dataProduct}
                   columns={columnsProducts}
                   getRowId={row => row.id_product}
-                  pageSizeOptions={[100]}
+                  initialState={{
+                    ...data.initialState,
+                    pagination: { paginationModel: { pageSize: 25 } }
+                  }}
                   slots={{
                     toolbar: GridToolbar,
                     noRowsOverlay: CustomNoRowsOverlay,
                     footer: () => (
                       <Box sx={{ p: 3 }}>
+                        <Divider />
+                        <Box>
+                          <TablePagination />
+                        </Box>
+                        <Divider />
                         <Typography>
                           <b>{dataProduct?.length} Produk</b>
                         </Typography>
