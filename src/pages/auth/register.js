@@ -147,7 +147,6 @@ const RegisterPage = () => {
   }
 
   useEffect(() => {
-    checkSession()
     handleChangeEl('username', '', values, setValues, schemaData, setErrorsField)
   }, [])
 
@@ -353,6 +352,12 @@ const RegisterPage = () => {
       setTimeout(() => setCountDown(countDown - 1), 1000)
     }
   }, [countDown])
+
+  useLayoutEffect(() => {
+    // componentWillMount events
+
+    checkSession()
+  }, [])
 
   return (
     <Box className='content-center'>
