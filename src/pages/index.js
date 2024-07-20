@@ -1,5 +1,5 @@
 // ** React Imports
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 
 // ** MUI Imports
 import { Backdrop, CircularProgress } from '@mui/material'
@@ -25,9 +25,11 @@ import WeeklyOverview from 'src/views/dashboard/WeeklyOverview'
 
 // import CryptoJS from 'crypto-js/aes'
 import { filter } from 'lodash'
+import { useRouter } from 'next/router'
 import { format_rupiah, generateSignature } from '/helpers/general'
 
 const Dashboard = () => {
+  const router = useRouter()
   var CryptoJS = require('crypto-js')
 
   // ** States
@@ -89,6 +91,13 @@ const Dashboard = () => {
 
   useEffect(() => {
     getData()
+  }, [])
+
+  useLayoutEffect(() => {
+    // componentWillMount events
+    if (!localStorage.getItem('data-module')) {
+      router.push('/auth')
+    }
   }, [])
 
   return (

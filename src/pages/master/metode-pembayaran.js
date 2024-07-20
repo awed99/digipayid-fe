@@ -11,7 +11,7 @@ import CryptoJS from 'crypto-js'
 
 // ** React Imports
 import { filter } from 'lodash'
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 
 import MetodePembayaran from './views/metode-pembayaran'
 
@@ -131,6 +131,13 @@ const MUITable = () => {
       })
       .catch(() => setLoading(false))
   }
+
+  useLayoutEffect(() => {
+    // componentWillMount events
+    if (!localStorage.getItem('data-module')) {
+      router.push('/auth')
+    }
+  }, [])
 
   return (
     <>

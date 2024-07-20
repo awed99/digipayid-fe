@@ -19,7 +19,7 @@ import Typography from '@mui/material/Typography'
 import { Edit, Visibility, VisibilityOff } from '@mui/icons-material'
 
 // ** React Imports
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 
 // ** Next Import
 import { useRouter } from 'next/router'
@@ -356,6 +356,13 @@ const MUITable = () => {
       })
       .catch(() => setLoading(false))
   }
+
+  useLayoutEffect(() => {
+    // componentWillMount events
+    if (!localStorage.getItem('data-module')) {
+      router.push('/auth')
+    }
+  }, [])
 
   return (
     <Grid container spacing={6}>
