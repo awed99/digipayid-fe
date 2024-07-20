@@ -1129,7 +1129,7 @@ const MUITable = () => {
     return (
       <Dialog maxWidth='xs' TransitionProps={{ onEntered: handleEntered }} open={!!promiseArguments}>
         <DialogTitle>Apakah anda yakin?</DialogTitle>
-        <DialogContent dividers>{`Klik 'Ya' untuk merubah ${mutation}.`}</DialogContent>
+        <DialogContent dividers>{`Klik 'Ya' untuk merubah<br/>${mutation}.`}</DialogContent>
         <DialogActions>
           <Button ref={noButtonRef} onClick={handleNo}>
             Tidak
