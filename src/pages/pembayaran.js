@@ -24,7 +24,7 @@ import Typography from '@mui/material/Typography'
 import { Close, Delete, PhotoCamera } from '@mui/icons-material'
 
 // ** React Imports
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 // ** Next Import
 import { useRouter } from 'next/router'
@@ -1049,6 +1049,13 @@ const MUITable = () => {
       })
       .catch(() => false)
   }
+
+  useLayoutEffect(() => {
+    // componentWillMount events
+    if (!localStorage.getItem('data-module')) {
+      router.push('/auth')
+    }
+  }, [])
 
   const handleUploadfile = event => {
     if (event?.target?.files[0]) {
