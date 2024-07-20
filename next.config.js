@@ -14,8 +14,9 @@ module.exports = {
 
   // output: 'export',
   images: {
-    // unoptimized: false
-    unoptimized: true
+    unoptimized: false
+
+    // unoptimized: true
   },
   compiler: {
     // removeConsole: true,

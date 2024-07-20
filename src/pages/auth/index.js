@@ -133,10 +133,10 @@ const LoginPage = () => {
   const router = useRouter()
 
   const checkSession = async () => {
-    const _uri = '/api/check-auth'
+    const _uri = '/auth/check_auth'
     const _secret = await generateSignature(_uri)
 
-    fetch(`${_uri}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}${_uri}`, {
       method: 'POST',
       headers: {
         'x-signature': _secret?.signature,
@@ -240,9 +240,9 @@ const LoginPage = () => {
           })
           const _user_role = res?.data?.user_role
 
-          const _uri = '/api/set-storage'
+          const _uri = '/auth/set_storage'
           const _secret = await generateSignature(_uri)
-          fetch(`${_uri}`, {
+          fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
             method: 'POST',
             headers: {
               'x-signature': _secret?.signature,
