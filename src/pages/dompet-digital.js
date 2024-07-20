@@ -206,6 +206,7 @@ const MUITable = () => {
     endDate = dayjs().endOf('month').format('YYYY-MM-DD'),
     _withdrawMethods = withdrawMethods
   ) => {
+    setLoading(true)
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
@@ -311,10 +312,11 @@ const MUITable = () => {
                 })[0]
               })
             }
+            setLoading(false)
           })
-          .catch(() => false)
+          .catch(() => setLoading(false))
       })
-      .catch(() => false)
+      .catch(() => setLoading(false))
   }
 
   const getPaymentMethods = async () => {
@@ -397,12 +399,13 @@ const MUITable = () => {
           //     )
           //   }
           // })
-          .catch(() => false)
+          .catch(() => setLoading(false))
       })
-      .catch(() => false)
+      .catch(() => setLoading(false))
   }
 
   useEffect(() => {
+    setLoading(true)
     getPaymentMethods()
   }, [])
 

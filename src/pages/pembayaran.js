@@ -200,13 +200,15 @@ const MUITable = () => {
             if (res?.saldo < 10000) {
               setOpenModalWarning(true)
             }
+            setLoading(false)
           })
-          .catch(() => false)
+          .catch(() => setLoading(false))
       })
-      .catch(() => false)
+      .catch(() => setLoading(false))
   }
 
   useEffect(() => {
+    setLoading(true)
     getPaymentMethods()
     function handleResize() {
       setWidthScreen(window.innerWidth)
@@ -995,9 +997,9 @@ const MUITable = () => {
 
             getData()
           })
-          .catch(() => false)
+          .catch(() => setLoading(false))
       })
-      .catch(() => false)
+      .catch(() => setLoading(false))
   }
 
   const searchProducts = async () => {
@@ -1129,7 +1131,10 @@ const MUITable = () => {
     return (
       <Dialog maxWidth='xs' TransitionProps={{ onEntered: handleEntered }} open={!!promiseArguments}>
         <DialogTitle>Apakah anda yakin?</DialogTitle>
-        <DialogContent dividers>{`Klik 'Ya' untuk merubah ${mutation}.`}</DialogContent>
+        <DialogContent dividers>
+          <Typography>Klik 'Ya' untuk merubah</Typography>
+          <Typography>{mutation}</Typography>
+        </DialogContent>
         <DialogActions>
           <Button ref={noButtonRef} onClick={handleNo}>
             Tidak
