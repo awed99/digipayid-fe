@@ -1,5 +1,6 @@
 // ** React Imports
-import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
+import { useEffect, useLayoutEffect, useState } from 'react'
 
 // ** MUI Imports
 import { Backdrop, CircularProgress } from '@mui/material'
@@ -32,6 +33,7 @@ import { format_rupiah, generateSignature } from '/helpers/general'
 
 const Dashboard = () => {
   var CryptoJS = require('crypto-js')
+  const router = useRouter()
 
   // ** States
   const [loading, setLoading] = useState(false)
@@ -92,6 +94,13 @@ const Dashboard = () => {
 
   useEffect(() => {
     getData()
+  }, [])
+
+  useLayoutEffect(() => {
+    // componentWillMount events
+    if (!localStorage.getItem('data-module')) {
+      router.push('/auth')
+    }
   }, [])
 
   return (

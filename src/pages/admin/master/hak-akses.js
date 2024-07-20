@@ -6,7 +6,7 @@ import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
 
 // ** React Imports
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 
 // ** Next Import
 import { useRouter } from 'next/router'
@@ -110,6 +110,13 @@ const MUITable = () => {
 
   useEffect(() => {
     getData()
+  }, [])
+
+  useLayoutEffect(() => {
+    // componentWillMount events
+    if (!localStorage.getItem('data-module')) {
+      router.push('/auth')
+    }
   }, [])
 
   return (
