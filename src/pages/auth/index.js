@@ -1,5 +1,5 @@
 // ** React Imports
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 
 // ** Next Imports
 import Link from 'next/link'
@@ -153,8 +153,13 @@ const LoginPage = () => {
       .catch(() => false)
   }
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    // componentWillMount events
+
     checkSession()
+  }, [])
+
+  useEffect(() => {
     handleChangeEl('email', '', values, setValues, schemaData, setErrorsField)
   }, [])
 
