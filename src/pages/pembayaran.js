@@ -200,13 +200,15 @@ const MUITable = () => {
             if (res?.saldo < 10000) {
               setOpenModalWarning(true)
             }
+            setLoading(false)
           })
-          .catch(() => false)
+          .catch(() => setLoading(false))
       })
-      .catch(() => false)
+      .catch(() => setLoading(false))
   }
 
   useEffect(() => {
+    setLoading(true)
     getPaymentMethods()
     function handleResize() {
       setWidthScreen(window.innerWidth)
@@ -995,9 +997,9 @@ const MUITable = () => {
 
             getData()
           })
-          .catch(() => false)
+          .catch(() => setLoading(false))
       })
-      .catch(() => false)
+      .catch(() => setLoading(false))
   }
 
   const searchProducts = async () => {

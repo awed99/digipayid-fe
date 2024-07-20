@@ -1,5 +1,5 @@
 // ** MUI Imports
-import { Card, Chip, Divider } from '@mui/material'
+import { Backdrop, Card, Chip, CircularProgress, Divider } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
@@ -30,6 +30,7 @@ const MUITable = () => {
   var CryptoJS = require('crypto-js')
 
   // ** States
+  const [loading, setLoading] = useState(false)
   const [data, setData] = useState([])
   const [dateRange, setDateRange] = useState([])
   let _loopNumber = 1
@@ -145,6 +146,7 @@ const MUITable = () => {
     startDate = dayjs().startOf('month').format('YYYY-MM-DD'),
     endDate = dayjs().endOf('month').format('YYYY-MM-DD')
   ) => {
+    setLoading(true)
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
@@ -186,10 +188,11 @@ const MUITable = () => {
           .then(res => {
             // console.log(res?.data)
             setData(res?.data)
+            setLoading(false)
           })
-          .catch(() => false)
+          .catch(() => setLoading(false))
       })
-      .catch(() => false)
+      .catch(() => setLoading(false))
   }
 
   useEffect(() => {
@@ -258,6 +261,10 @@ const MUITable = () => {
           </Box>
         </Card>
       </Grid>
+
+      <Backdrop sx={{ color: '#fff', zIndex: theme => theme.zIndex.drawer + 999999 }} open={loading}>
+        <CircularProgress size={100} variant='indeterminate' />
+      </Backdrop>
     </Grid>
   )
 }
