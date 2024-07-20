@@ -49,7 +49,7 @@ export const handleSubmitLogin = async (e, schemaData, values) => {
 
       // console.log(_secret)
 
-      const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
+      const resX = await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/${_uri}`, {
         method: 'POST',
         headers: {
           'x-signature': _secret?.signature,
