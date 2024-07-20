@@ -158,7 +158,7 @@ const MUITable = () => {
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${_uri0}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
       method: 'POST',
       headers: {
         'x-signature': _secret0?.signature,
@@ -214,7 +214,10 @@ const MUITable = () => {
     window.addEventListener('resize', handleResize)
     handleResize()
 
-    return () => window.removeEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      setIsWaitingForPayment(false)
+    }
   }, [])
 
   let _loopNumber = 1
@@ -315,7 +318,7 @@ const MUITable = () => {
     if (_x) {
       const _uri0 = '/api/check-auth'
       const _secret0 = await generateSignature(_uri0)
-      fetch(`${_uri0}`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
         method: 'POST',
         headers: {
           'x-signature': _secret0?.signature,
@@ -395,7 +398,7 @@ const MUITable = () => {
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${_uri0}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
       method: 'POST',
       headers: {
         'x-signature': _secret0?.signature,
@@ -538,8 +541,11 @@ const MUITable = () => {
       .catch(() => setLoading(false))
   }
 
-  const handleCheckStatus = async _reffID => {
-    if (!isWaitingForPayment) {
+  const handleCheckStatus = async (_reffID, _loop = 10) => {
+    const _isWaitingForPayment = isWaitingForPayment
+    const _paymentDetail = paymentDetail
+
+    if (!_isWaitingForPayment) {
       return false
     }
 
@@ -547,7 +553,7 @@ const MUITable = () => {
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${_uri0}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
       method: 'POST',
       headers: {
         'x-signature': _secret0?.signature,
@@ -596,8 +602,13 @@ const MUITable = () => {
               setOpenModalSuccessPayment(true)
               setIsWaitingForPayment(false)
             } else {
-              if (isWaitingForPayment === true && paymentDetail?.req?.reff_id) {
-                setTimeout(() => handleCheckStatus(_reffID), 5000)
+              // console.log('_isWaitingForPayment: ', _isWaitingForPayment)
+              // console.log('reff_id: ', _paymentDetail?.req?.reff_id)
+              _loop = _loop + 1
+              if (_isWaitingForPayment === true && _paymentDetail?.req?.reff_id && _loop < 5) {
+                setTimeout(() => handleCheckStatus(_reffID, _loop), 5000)
+              } else {
+                setIsWaitingForPayment(false)
               }
             }
             setLoading(false)
@@ -612,7 +623,7 @@ const MUITable = () => {
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${_uri0}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
       method: 'POST',
       headers: {
         'x-signature': _secret0?.signature,
@@ -676,7 +687,7 @@ const MUITable = () => {
       return false
     }
 
-    fetch(`${_uri0}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
       method: 'POST',
       headers: {
         'x-signature': _secret0?.signature,
@@ -734,7 +745,7 @@ const MUITable = () => {
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${_uri0}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
       method: 'POST',
       headers: {
         'x-signature': _secret0?.signature,
@@ -791,7 +802,7 @@ const MUITable = () => {
       const _uri0 = '/api/check-auth'
       const _secret0 = await generateSignature(_uri0)
 
-      fetch(`${_uri0}`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
         method: 'POST',
         headers: {
           'x-signature': _secret0?.signature,
@@ -840,8 +851,9 @@ const MUITable = () => {
   }
 
   useEffect(() => {
+    // console.log('isWaitingForPayment', isWaitingForPayment)
     if (isWaitingForPayment === true && reffID) {
-      setTimeout(() => handleCheckStatus(reffID), 5000)
+      setTimeout(() => handleCheckStatus(reffID, 0), 5000)
     }
   }, [isWaitingForPayment, reffID])
 
@@ -853,7 +865,8 @@ const MUITable = () => {
   }, [searchProduct])
 
   useEffect(() => {
-    if (!openModal4) {
+    // console.log('openModal4', openModal4)
+    if (openModal4 === false) {
       setReffID(null)
       setAmountToPay(0)
       setValueModalTransaction({
@@ -864,6 +877,7 @@ const MUITable = () => {
         payment_method_code: '',
         fee: 0
       })
+      setIsWaitingForPayment(false)
     }
   }, [openModal4])
 
@@ -940,7 +954,7 @@ const MUITable = () => {
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${_uri0}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
       method: 'POST',
       headers: {
         'x-signature': _secret0?.signature,
@@ -990,7 +1004,7 @@ const MUITable = () => {
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${_uri0}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
       method: 'POST',
       headers: {
         'x-signature': _secret0?.signature,
@@ -1772,16 +1786,28 @@ const MUITable = () => {
                 <Divider>Status Pembayaran</Divider>
               </Typography>
             </Box>
-            <Box>
+            <Box sx={{ position: 'relative' }}>
               <Button
                 variant='contained'
                 size='small'
                 sx={{ m: 3 }}
-
-                // onClick={() => handleCheckStatus(paymentDetail?.req?.reff_id)}
+                disabled={isWaitingForPayment}
+                onClick={() => setIsWaitingForPayment(true)}
               >
-                Cek Status Pembayaran
+                {isWaitingForPayment ? 'Dalam Pengecekan' : 'Cek Status Pembayaran'}
               </Button>
+              {isWaitingForPayment && (
+                <CircularProgress
+                  size={24}
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    marginTop: '-12px',
+                    marginLeft: '-12px'
+                  }}
+                />
+              )}
             </Box>
             <Box>
               <Typography>

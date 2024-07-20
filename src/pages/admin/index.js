@@ -40,10 +40,10 @@ const Dashboard = () => {
 
   const getData = async () => {
     setLoading(true)
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${_uri0}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}${_uri0}`, {
       method: 'POST',
       headers: {
         'x-signature': _secret0?.signature,

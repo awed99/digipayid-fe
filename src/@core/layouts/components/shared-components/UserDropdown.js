@@ -47,17 +47,18 @@ const UserDropdown = () => {
   }
 
   const handleLogout = url => {
-    store.remove('data-user')
-    store.remove('module')
     if (url) {
-      const _uri = '/api/remove-storage'
+      const _uri = '/auth/remove_storage'
 
-      fetch(`${_uri}`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_HOST}${_uri}`, {
         method: 'POST',
         body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
       })
         .then(res => res.json())
         .then(res => {
+          store.remove('data-user')
+          store.remove('data-module')
+          store.remove('module')
           router.push(url)
         })
         .catch(() => false)
