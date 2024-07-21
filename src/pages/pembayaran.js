@@ -800,6 +800,15 @@ const MUITable = () => {
   }
 
   const handleSubmit = async () => {
+    if (!selectedFile) {
+      setAlertMessage({
+        open: true,
+        type: 'error',
+        message: 'Foto produk wajib ada!'
+      })
+
+      return false
+    }
     if (rowSelectionModel?.length > 0) {
       const _uri0 = '/api/check-auth'
       const _secret0 = await generateSignature(_uri0)
