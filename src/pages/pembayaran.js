@@ -684,7 +684,21 @@ const MUITable = () => {
     const _secret0 = await generateSignature(_uri0)
 
     if ((await schemaDataProduct.isValid(valueModalProduct)) === false) {
-      alert('Mohon lengkapi semua data.')
+      // alert('Mohon lengkapi semua data.')
+      setAlertMessage({
+        open: true,
+        type: 'error',
+        message: 'Mohon lengkapi semua data.'
+      })
+
+      return false
+    }
+    if (!selectedFile) {
+      setAlertMessage({
+        open: true,
+        type: 'error',
+        message: 'Foto produk wajib ada!'
+      })
 
       return false
     }
