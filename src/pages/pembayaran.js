@@ -1888,7 +1888,11 @@ const MUITable = () => {
               Transaksi <b>{paymentDetail?.req?.reff_id}</b>
             </Typography>
             <Typography>telah dibayar</Typography>
-            <Typography variant='h5'>IDR {format_rupiah(paymentDetail?.res?.data?.total_bayar)}</Typography>
+            {paymentDetail?.res?.data?.total_bayar ? (
+              <Typography variant='h5'>IDR {format_rupiah(paymentDetail?.res?.data?.total_bayar)}</Typography>
+            ) : (
+              <Typography variant='h5'>Dengan uang tunai.</Typography>
+            )}
           </Box>
         </Box>
       </ModalDialog>
