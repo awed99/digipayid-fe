@@ -435,25 +435,44 @@ const MUITable = () => {
             ?.fee_original ?? '0'
         )
 
-        const _pg_fee_percent =
-          parseFloat(
-            filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method?.toString() })[0]
-              ?.fee_original_percent ?? '0'
-          ) / 100
+        const _pg_fee_percent = parseFloat(
+          filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method?.toString() })[0]
+            ?.fee_original_percent ?? '0'
+        )
 
         const _app_fee_amount = parseFloat(
           filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method?.toString() })[0]
             ?.fee_app ?? '500'
         )
 
-        const _app_fee_percent =
-          parseFloat(
-            filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method?.toString() })[0]
-              ?.fee_app_percent ?? '0'
-          ) / 100
+        const _app_fee_percent = parseFloat(
+          filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method?.toString() })[0]
+            ?.fee_app_percent ?? '0'
+        )
 
-        const _pg_fee = _total_amount * _pg_fee_percent + _pg_fee_amount
-        const _app_fee = _total_amount * _app_fee_percent + _app_fee_amount
+        const _tax_amount = (_total_amount * taxPercentage) / 100
+        const _fee_percent = _pg_fee_percent + _app_fee_percent
+        const _fee_percent_0 = 100 - _fee_percent
+        const _amount0 = _total_amount + _pg_fee_amount + _app_fee_amount + _tax_amount
+        const _final_amount = Math.ceil(((_amount0 * 100) / _fee_percent_0).toFixed(1))
+
+        const _pg_fee = Math.ceil(((_final_amount * _pg_fee_percent) / 100).toFixed(1)) + _pg_fee_amount
+        const _app_fee = Math.ceil(((_final_amount * _app_fee_percent) / 100).toFixed(1)) + _app_fee_amount
+
+        // console.log('_app_fee: ', _app_fee)
+        // console.log('_pg_fee: ', _pg_fee)
+        // console.log('_total_amount: ', _total_amount)
+        // console.log('_pg_fee_percent: ', _pg_fee_percent)
+        // console.log('_pg_fee_amount: ', _pg_fee_amount)
+        // console.log('_app_fee_percent: ', _app_fee_percent)
+        // console.log('_app_fee_amount: ', _app_fee_amount)
+        // console.log('_fee_percent: ', _fee_percent)
+        // console.log('_fee_percent_0: ', _fee_percent_0)
+        // console.log('_amount0: ', _amount0)
+        // console.log('_final_amount: ', _final_amount)
+        // setLoading(false)
+
+        // return false
 
         const _fee_on_merchant =
           parseInt(
@@ -476,17 +495,14 @@ const MUITable = () => {
             email_customer: valueModalTransaction?.email_customer,
             wa_customer: valueModalTransaction?.wa_customer,
             total_product: dataFinal?.length,
-            amount:
-              _fee_on_merchant === 0
-                ? _total_amount + _pg_fee + _app_fee + (_total_amount * taxPercentage) / 100
-                : _total_amount + (_total_amount * taxPercentage) / 100,
+            amount: _fee_on_merchant === 0 ? _final_amount : _total_amount + _tax_amount,
             tax_percentage: taxPercentage,
-            amount_tax: (_total_amount * taxPercentage) / 100,
+            amount_tax: _tax_amount,
             amount_to_pay:
               parseInt(valueModalTransaction?.id_payment_method) > 0
                 ? _fee_on_merchant === 0
-                  ? _total_amount + _pg_fee + _app_fee + (_total_amount * taxPercentage) / 100
-                  : _total_amount + (_total_amount * taxPercentage) / 100
+                  ? _final_amount
+                  : _total_amount + _tax_amount
                 : parseInt(valueModalTransaction?.amount_to_pay.toString().replace(/\./g, '')),
 
             pg_fee: _pg_fee,
