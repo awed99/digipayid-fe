@@ -1,9 +1,13 @@
 // ** MUI Imports
+import { Alert, Backdrop, CircularProgress, Snackbar } from '@mui/material'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import Divider from '@mui/material/Divider'
 import Grid from '@mui/material/Grid'
+import InputLabel from '@mui/material/InputLabel'
 import Link from '@mui/material/Link'
+import MenuItem from '@mui/material/MenuItem'
+import Select from '@mui/material/Select'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 
@@ -26,11 +30,24 @@ import { handleChangeEl } from '/hooks/general'
 
 const MUITable = () => {
   // ** States
-  const [page, setPage] = useState(0)
+  const [loading, setLoading] = useState(false)
 
   // ** States
   const [errorsField, setErrorsField] = useState()
-  const [data, setData] = useState({ id_user: null, merchant_name: '' })
+
+  const [data, setData] = useState({
+    id_user: null,
+    merchant_name: '',
+    merchant_address: '',
+    merchant_wa: '',
+    tax_percentage: 0
+  })
+
+  const [alertMessage, setAlertMessage] = useState({
+    open: false,
+    type: 'success',
+    message: ''
+  })
 
   // ** Hooks
   const router = useRouter()
@@ -39,10 +56,12 @@ const MUITable = () => {
     id_user: yup.string(),
     merchant_name: yup.string().required(),
     merchant_address: yup.string().required(),
-    merchant_wa: yup.string().required()
+    merchant_wa: yup.string().required(),
+    tax_percentage: yup.number().required()
   })
 
   const getData = async () => {
+    setLoading(true)
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
@@ -83,11 +102,13 @@ const MUITable = () => {
           .then(res => res.json())
           .then(res => {
             // console.log(res?.data)
+            res.data.tax_percentage = parseFloat(res?.data?.tax_percentage ?? 0)
             setData(res?.data)
+            setLoading(false)
           })
-          .catch(() => false)
+          .catch(() => setLoading(false))
       })
-      .catch(() => false)
+      .catch(() => setLoading(false))
   }
 
   useEffect(() => {
@@ -108,6 +129,7 @@ const MUITable = () => {
       return false
     }
 
+    setLoading(true)
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
@@ -148,11 +170,18 @@ const MUITable = () => {
           .then(res => res.json())
           .then(res => {
             // console.log(res?.data)
+            res.data.tax_percentage = parseFloat(res?.data?.tax_percentage ?? 0)
             setData(res?.data)
+            setLoading(false)
+            setAlertMessage({
+              open: true,
+              type: 'success',
+              message: 'Berhasil merubah data merchant.'
+            })
           })
-          .catch(() => false)
+          .catch(() => setLoading(false))
       })
-      .catch(() => false)
+      .catch(() => setLoading(false))
   }
 
   return (
@@ -215,6 +244,19 @@ const MUITable = () => {
                   autoComplete: 'new-password'
                 }}
               />
+            </Box>
+            <Box sx={{ p: 2 }}>
+              <InputLabel id='demo-simple-select-label'>Pajak Penjualan</InputLabel>
+              <Select
+                label='Pajak Penjualan'
+                onChange={e => handleChangeEl('tax_percentage', e, data, setData, schemaData, setErrorsField)}
+                value={data?.tax_percentage}
+                error={errorsField?.tax_percentage}
+              >
+                <MenuItem value={0}>0%</MenuItem>
+                <MenuItem value={10}>10%</MenuItem>
+                <MenuItem value={11}>11%</MenuItem>
+              </Select>
             </Box>
             {/* <Box sx={{ p: 2 }}>
               <TextField
@@ -323,6 +365,27 @@ const MUITable = () => {
           </Box>
         </Card>
       </Grid>
+
+      <Backdrop sx={{ color: '#fff', zIndex: theme => theme.zIndex.drawer + 999999 }} open={loading}>
+        <CircularProgress size={100} variant='indeterminate' />
+      </Backdrop>
+
+      <Snackbar
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        open={alertMessage?.open}
+        autoHideDuration={3000}
+        onClose={() =>
+          setAlertMessage({
+            open: false,
+            type: alertMessage?.type,
+            message: ''
+          })
+        }
+      >
+        <Alert variant='filled' severity={alertMessage?.type} sx={{ width: '100%' }}>
+          {alertMessage?.message}
+        </Alert>
+      </Snackbar>
     </Grid>
   )
 }

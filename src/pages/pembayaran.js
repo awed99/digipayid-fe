@@ -74,6 +74,7 @@ const MUITable = () => {
 
   // const [valueModal, setValueModal] = useState({ id_product_category: null, product_category: '' })
   const [saldo, setSaldo] = useState(0)
+  const [taxPercentage, setTaxPercentage] = useState(0)
   const [data, setData] = useState([])
   const [dataFinal, setDataFinal] = useState([])
   const [dataSearch, setDataSearch] = useState([])
@@ -197,6 +198,7 @@ const MUITable = () => {
             // console.log(res?.data)
             setData(res?.data)
             setSaldo(res?.saldo)
+            setTaxPercentage(parseInt(res?.tax_percentage))
             if (res?.saldo < 10000) {
               setOpenModalWarning(true)
             }
@@ -474,13 +476,17 @@ const MUITable = () => {
             email_customer: valueModalTransaction?.email_customer,
             wa_customer: valueModalTransaction?.wa_customer,
             total_product: dataFinal?.length,
-            amount: _fee_on_merchant === 0 ? _total_amount + _pg_fee + _app_fee : _total_amount,
-
+            amount:
+              _fee_on_merchant === 0
+                ? _total_amount + _pg_fee + _app_fee + (_total_amount * taxPercentage) / 100
+                : _total_amount + (_total_amount * taxPercentage) / 100,
+            tax_percentage: taxPercentage,
+            amount_tax: (_total_amount * taxPercentage) / 100,
             amount_to_pay:
               parseInt(valueModalTransaction?.id_payment_method) > 0
                 ? _fee_on_merchant === 0
-                  ? _total_amount + _pg_fee + _app_fee
-                  : _total_amount
+                  ? _total_amount + _pg_fee + _app_fee + (_total_amount * taxPercentage) / 100
+                  : _total_amount + (_total_amount * taxPercentage) / 100
                 : parseInt(valueModalTransaction?.amount_to_pay.toString().replace(/\./g, '')),
 
             pg_fee: _pg_fee,
@@ -1559,7 +1565,15 @@ const MUITable = () => {
                       dataFinal?.reduce(
                         (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                         0
-                      ) + parseInt(valueModalTransaction?.fee)
+                      ) +
+                        parseInt(valueModalTransaction?.fee) +
+                        (dataFinal?.reduce(
+                          (total, item) =>
+                            parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                          0
+                        ) *
+                          taxPercentage) /
+                          100
                     )
                   : format_rupiah(valueModalTransaction?.amount_to_pay)
               }
@@ -1626,13 +1640,31 @@ const MUITable = () => {
 
           <Box>
             <h3>
+              Pajak : IDR{' '}
+              {format_rupiah(
+                (dataFinal?.reduce(
+                  (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                  0
+                ) *
+                  taxPercentage) /
+                  100
+              )}
+            </h3>
+            <h3>
               Pembayaran : IDR{' '}
               {parseInt(valueModalTransaction?.id_payment_method) > 0
                 ? format_rupiah(
                     dataFinal?.reduce(
                       (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                       0
-                    ) + parseInt(valueModalTransaction?.fee)
+                    ) +
+                      parseInt(valueModalTransaction?.fee) +
+                      (dataFinal?.reduce(
+                        (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                        0
+                      ) *
+                        taxPercentage) /
+                        100
                   )
                 : format_rupiah(valueModalTransaction?.amount_to_pay)}
             </h3>
@@ -1648,7 +1680,15 @@ const MUITable = () => {
                           (total, item) =>
                             parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                           0
-                        ) + parseInt(valueModalTransaction?.fee)
+                        ) +
+                          parseInt(valueModalTransaction?.fee) +
+                          (dataFinal?.reduce(
+                            (total, item) =>
+                              parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                            0
+                          ) *
+                            taxPercentage) /
+                            100
                       )
                     )?.toString()
                   )}

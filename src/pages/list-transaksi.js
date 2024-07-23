@@ -156,6 +156,13 @@ const MUITable = () => {
       renderCell: params => format_rupiah((params?.value).toString())
     },
     {
+      field: 'amount_tax',
+      headerName: 'Pajak',
+      type: 'number',
+      width: 110,
+      renderCell: params => format_rupiah('-' + (params?.value).toString())
+    },
+    {
       field: 'fee',
       headerName: 'Fee',
       type: 'number',
