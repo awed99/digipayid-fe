@@ -12,7 +12,7 @@ module.exports = {
   // swcMinify: true,
   distDir: 'build',
 
-  // output: 'export',
+  output: 'export',
   images: {
     unoptimized: false
 
