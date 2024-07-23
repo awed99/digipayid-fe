@@ -454,10 +454,11 @@ const MUITable = () => {
         const _fee_percent = _pg_fee_percent + _app_fee_percent
         const _fee_percent_0 = 100 - _fee_percent
         const _amount0 = _total_amount + _pg_fee_amount + _app_fee_amount + _tax_amount
-        const _final_amount = Math.ceil(((_amount0 * 100) / _fee_percent_0).toFixed(1))
+        let _final_amount = Math.ceil(((_amount0 * 100) / _fee_percent_0).toFixed(1))
 
         const _pg_fee = Math.ceil(((_final_amount * _pg_fee_percent) / 100).toFixed(1)) + _pg_fee_amount
         const _app_fee = Math.ceil(((_final_amount * _app_fee_percent) / 100).toFixed(1)) + _app_fee_amount
+        _final_amount = _total_amount + _pg_fee + _app_fee + _tax_amount
 
         // console.log('_app_fee: ', _app_fee)
         // console.log('_pg_fee: ', _pg_fee)
