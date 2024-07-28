@@ -1,5 +1,5 @@
 // ** MUI Imports
-import { Backdrop, Button, Card, Chip, CircularProgress, Divider } from '@mui/material'
+import { Alert, Backdrop, Button, Card, Chip, CircularProgress, Divider, Snackbar } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
@@ -32,6 +32,8 @@ const MUITable = () => {
   var CryptoJS = require('crypto-js')
 
   // ** States
+  const [isWaitingForPayment, setIsWaitingForPayment] = useState(false)
+  const [openModalSuccessPayment, setOpenModalSuccessPayment] = useState(false)
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState([])
   const [dataProduct, setDataProduct] = useState([])
@@ -40,7 +42,14 @@ const MUITable = () => {
   const [openModalConfirmationDelete, setOpenModalConfirmationDelete] = useState(false)
   const [openModalPayment, setOpenModalPayment] = useState(false)
   const [dataSelected, setDataSelected] = useState({})
+  const [reffID, setReffID] = useState(null)
   let _loopNumber = 1
+
+  const [alertMessage, setAlertMessage] = useState({
+    open: false,
+    type: 'success',
+    message: ''
+  })
 
   // ** Hooks
   const router = useRouter()
@@ -431,8 +440,99 @@ const MUITable = () => {
   }
 
   useEffect(() => {
-    // getData()
+    return () => {
+      // window.removeEventListener('resize', handleResize)
+      setIsWaitingForPayment(false)
+    }
   }, [])
+
+  useEffect(() => {
+    // console.log('isWaitingForPayment', isWaitingForPayment)
+    if (isWaitingForPayment === true && reffID) {
+      setTimeout(() => handleCheckStatus(reffID, 0), 5000)
+    }
+  }, [isWaitingForPayment, reffID])
+
+  const handleCheckStatus = async (_reffID, _loop = 10) => {
+    const _isWaitingForPayment = isWaitingForPayment
+    const _paymentDetail = paymentDetail
+
+    if (!_isWaitingForPayment) {
+      return false
+    }
+
+    // setLoading(true)
+    const _uri0 = '/api/check-auth'
+    const _secret0 = await generateSignature(_uri0)
+
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+      method: 'POST',
+      headers: {
+        'x-signature': _secret0?.signature,
+        'x-timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          // console.log(res?.auth?.user)
+          router.push('/auth')
+
+          return false
+        } else {
+          return res
+        }
+      })
+      .then(async res => {
+        const _uri = '/transactions/orders/check_status'
+        const _secret = await generateSignature(_uri)
+
+        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
+          method: 'POST',
+          headers: {
+            'x-signature': _secret?.signature,
+            'x-timestamp': _secret?.timestamp,
+            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+              .toString(CryptoJS.enc.Utf8)
+              .replace(/\"/g, '')
+          },
+
+          body: JSON.stringify({ invoice_number: _reffID })
+
+          // body: dataX
+        })
+          .then(res => res.json())
+          .then(res => {
+            // console.log('res: ', parseInt(res?.status))
+            if (parseInt(res?.status) > 0) {
+              setAlertMessage({
+                open: true,
+                type: 'success',
+                message: 'Pembayaran Berhasil.'
+              })
+              setOpenModalPayment(false)
+              setOpenModal(false)
+              setOpenModalSuccessPayment(true)
+              setIsWaitingForPayment(false)
+              setReffID(null)
+              getData()
+            } else {
+              // console.log('_isWaitingForPayment: ', _isWaitingForPayment)
+              // console.log('reff_id: ', _paymentDetail?.req?.reff_id)
+              _loop = _loop + 1
+              if (_isWaitingForPayment === true && _paymentDetail?.req?.reff_id && _loop < 10) {
+                setTimeout(() => handleCheckStatus(_reffID, _loop), 5000)
+              } else {
+                setIsWaitingForPayment(false)
+              }
+            }
+            setLoading(false)
+          })
+          .catch(() => setLoading(false))
+      })
+      .catch(() => setLoading(false))
+  }
 
   const getDetailPayment = async (_dataSelected = dataSelected) => {
     const _uri0 = '/api/check-auth'
@@ -479,6 +579,7 @@ const MUITable = () => {
         })
           .then(res => res.json())
           .then(res => {
+            setReffID(_dataSelected?.invoice_number)
             setPaymentDetail(res?.payment)
 
             // setLoading(false)
@@ -496,6 +597,13 @@ const MUITable = () => {
     }
   }, [])
 
+  useLayoutEffect(() => {
+    if (openModalPayment === false) {
+      setReffID(null)
+      setIsWaitingForPayment(false)
+    }
+  }, [openModalPayment])
+
   return (
     <Grid container spacing={6}>
       <Grid item xs={12}>
@@ -508,7 +616,10 @@ const MUITable = () => {
         <Card>
           <Box sx={{ width: '100%', overflow: 'auto' }}>
             <Box>
-              <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} />
+              <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} /> &emsp;
+              <Button onClick={() => getData()} variant='contained'>
+                Refresh
+              </Button>
             </Box>
 
             <DataGrid
@@ -772,6 +883,34 @@ const MUITable = () => {
             </Box>
             <Box>
               <Typography>
+                <Divider>Status Pembayaran</Divider>
+              </Typography>
+            </Box>
+            <Box sx={{ position: 'relative' }}>
+              <Button
+                variant='contained'
+                size='small'
+                sx={{ m: 3 }}
+                disabled={isWaitingForPayment}
+                onClick={() => setIsWaitingForPayment(true)}
+              >
+                {isWaitingForPayment ? 'Dalam Pengecekan' : 'Cek Status Pembayaran'}
+              </Button>
+              {isWaitingForPayment && (
+                <CircularProgress
+                  size={24}
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    marginTop: '-12px',
+                    marginLeft: '-12px'
+                  }}
+                />
+              )}
+            </Box>
+            <Box>
+              <Typography>
                 <Divider>atau</Divider>
               </Typography>
             </Box>
@@ -790,9 +929,50 @@ const MUITable = () => {
         </Box>
       </ModalDialog>
 
+      <ModalDialog
+        titleModal='Notifikasi'
+        openModal={openModalSuccessPayment}
+        setOpenModal={setOpenModalSuccessPayment}
+      >
+        <Box
+          alignItems='center'
+          justify='center'
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
+        >
+          <Box style={{ width: 550, paddingBottom: 15, textAlign: 'center' }}>
+            <Typography>
+              Transaksi <b>{paymentDetail?.req?.reff_id}</b>
+            </Typography>
+            <Typography>telah dibayar</Typography>
+            {paymentDetail?.res?.data?.total_bayar ? (
+              <Typography variant='h5'>IDR {format_rupiah(paymentDetail?.res?.data?.total_bayar)}</Typography>
+            ) : (
+              <Typography variant='h5'>Dengan uang tunai.</Typography>
+            )}
+          </Box>
+        </Box>
+      </ModalDialog>
+
       <Backdrop sx={{ color: '#fff', zIndex: theme => theme.zIndex.drawer + 999999 }} open={loading}>
         <CircularProgress size={100} variant='indeterminate' />
       </Backdrop>
+
+      <Snackbar
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        open={alertMessage?.open}
+        autoHideDuration={6000}
+        onClose={() =>
+          setAlertMessage({
+            open: false,
+            type: alertMessage?.type,
+            message: ''
+          })
+        }
+      >
+        <Alert variant='filled' severity={alertMessage?.type} sx={{ width: '100%' }}>
+          {alertMessage?.message}
+        </Alert>
+      </Snackbar>
     </Grid>
   )
 }

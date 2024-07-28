@@ -1,5 +1,5 @@
 // ** MUI Imports
-import { Backdrop, Card, Chip, CircularProgress, Divider } from '@mui/material'
+import { Backdrop, Button, Card, Chip, CircularProgress, Divider } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
@@ -224,7 +224,10 @@ const MUITable = () => {
         <Card>
           <Box sx={{ width: '100%', overflow: 'auto' }}>
             <Box>
-              <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} />
+              <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} /> &emsp;
+              <Button onClick={() => getData()} variant='contained'>
+                Refresh
+              </Button>
             </Box>
 
             <DataGrid
