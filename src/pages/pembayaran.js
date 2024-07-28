@@ -621,16 +621,17 @@ const MUITable = () => {
               setAlertMessage({
                 open: true,
                 type: 'success',
-                message: 'Pembayaran Berhasi.'
+                message: 'Pembayaran Berhasil.'
               })
               setOpenModal4(false)
               setOpenModalSuccessPayment(true)
               setIsWaitingForPayment(false)
+              setReffID(null)
             } else {
               // console.log('_isWaitingForPayment: ', _isWaitingForPayment)
               // console.log('reff_id: ', _paymentDetail?.req?.reff_id)
               _loop = _loop + 1
-              if (_isWaitingForPayment === true && _paymentDetail?.req?.reff_id && _loop < 5) {
+              if (_isWaitingForPayment === true && _paymentDetail?.req?.reff_id && _loop < 10) {
                 setTimeout(() => handleCheckStatus(_reffID, _loop), 5000)
               } else {
                 setIsWaitingForPayment(false)
