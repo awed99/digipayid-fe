@@ -537,6 +537,7 @@ const MUITable = () => {
                 open: true,
                 message: res?.error
               })
+              setLoading(false)
 
               return false
             }
