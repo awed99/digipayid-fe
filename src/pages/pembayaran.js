@@ -531,6 +531,16 @@ const MUITable = () => {
 
             // return
 
+            if (res?.error !== '') {
+              setAlertMessage({
+                type: 'error',
+                open: true,
+                message: res?.error
+              })
+
+              return false
+            }
+
             if (res?.code === 1) {
               setPaymentDetail(res?.payment)
               setOpenModal4(true)
