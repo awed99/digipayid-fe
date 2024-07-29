@@ -53,7 +53,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/master/payment_method/list'
+        const _uri = '/master/payment_method/lists'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {

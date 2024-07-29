@@ -370,7 +370,7 @@ const MUITable = () => {
     if (
       parseInt(valueModalTransaction?.id_payment_method) > 0 &&
       valueModalTransaction?.wa_customer?.length < 10 &&
-      !valueModalTransaction?.email_customer?.length < 10
+      valueModalTransaction?.email_customer?.length < 10
     ) {
       setAlertMessage({
         open: true,
