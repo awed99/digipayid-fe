@@ -47,7 +47,7 @@ const VerticalNavHeader = props => {
       {userVerticalNavMenuBranding ? (
         userVerticalNavMenuBranding(props)
       ) : (
-        <Link href={localStorage.getItem('data-module') === 'admin' ? '/admin' : '/'} passHref>
+        <Link href={localStorage.getItem('module') === 'admin' ? '/admin' : '/'} passHref>
           <StyledLink>
             {/* <svg
               width={30}
