@@ -213,7 +213,10 @@ const RegisterPage = () => {
           message: res?.code > 0 ? res?.error : res?.message
         })
         setLoading(false)
-        setOpenModalOTPEmail(true)
+
+        if (res?.code < 1) {
+          setOpenModalOTPEmail(true)
+        }
 
         // if (res?.code < 1) {
         //   const _uri = '/api/set-storage'
