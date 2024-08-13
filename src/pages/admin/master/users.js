@@ -379,7 +379,8 @@ const MUITable = () => {
 
             if (res?.code === 0) {
               // console.log(res?.data)
-              setData(res?.data)
+              // setData(res?.data)
+              getData()
               setOpenModal(false)
               setIsAdd(true)
               setTitleModal('Tambah User')

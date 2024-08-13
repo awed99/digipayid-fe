@@ -344,10 +344,11 @@ const MUITable = () => {
           .then(res => res.json())
           .then(res => {
             // console.log(res?.data)
-            setData(res?.data)
+            // setData(res?.data)
+            getData()
             setOpenModal(false)
             setIsAdd(true)
-            setTitleModal('Tambah User')
+            setTitleModal('Tambah Merchant')
             handleChangeEl('username', '', valueModal, setValueModal, schemaData, setErrorsField)
             handleChangeEl('id_user', null, valueModal, setValueModal, schemaData, setErrorsField)
             setLoading(false)
