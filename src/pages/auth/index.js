@@ -99,10 +99,13 @@ const LoginPage = () => {
   const [captchaRisk, setCaptchaRisk] = useState(0)
   const [openModalOTPEmail, setOpenModalOTPEmail] = useState(false)
   const [openModalOTPWA, setOpenModalOTPWA] = useState(false)
+  const [openModalOTPLogin, setOpenModalOTPLogin] = useState(false)
   const [openModalChangePassword, setOpenModalChangePassword] = useState(false)
   const [oTPEmail, setOTPEmail] = useState('')
   const [oTPWA, setOTPWA] = useState('')
   const [loading, setLoading] = useState(false)
+  const [userRole, setUserRole] = useState(false)
+  const [dataModule, setDataModule] = useState(false)
 
   const [stepForgotPassword, setStepForgotPassword] = useState(1)
   const [newPassword, setNewPassword] = useState('')
@@ -234,7 +237,7 @@ const LoginPage = () => {
         setLoading(false)
 
         if (res?.code < 1) {
-          store.set('data-module', {
+          setDataModule({
             username: res?.data?.username,
             email: res?.data?.email,
             merchant_name: res?.data?.merchant_name,
@@ -269,12 +272,18 @@ const LoginPage = () => {
           })
             .then(res => res.json())
             .then(res => {
+              setCountDown(60)
+              setOpenModalOTPLogin(true)
               if (parseInt(_user_role) > 1) {
-                store.set('module', 'user')
-                setTimeout(() => router.push('/'), 100)
+                setUserRole('user')
+
+                // store.set('module', 'user')
+                // setTimeout(() => router.push('/'), 100)
               } else {
-                store.set('module', 'admin')
-                setTimeout(() => router.push('/admin'), 100)
+                setUserRole('admin')
+
+                // store.set('module', 'admin')
+                // setTimeout(() => router.push('/admin'), 100)
               }
             })
             .catch(() => setLoading(false))
@@ -298,19 +307,58 @@ const LoginPage = () => {
     }
   }
 
+  const _handleCheckValidOTPLogin = async _type => {
+    setLoading(true)
+
+    const _values = {
+      type: 'otp_login',
+      merchant_wa: dataModule.merchant_wa,
+      email: dataModule.email,
+      otp_wa: oTPWA
+    }
+    const res = await handleCheckValidOTP(_values).catch(() => setLoading(false))
+
+    setAlertMessage({
+      open: true,
+      type: res?.code < 1 ? 'primary' : 'error',
+      message: res?.code < 1 ? res?.message : 'Kode OTP tidak valid !'
+    })
+    setLoading(false)
+
+    if (res?.code < 1) {
+      setOTPEmail('')
+      setOTPWA('')
+      setOpenModalOTPLogin(false)
+      setDataModule({})
+
+      // router.push('/')
+      store.set('data-module', dataModule)
+      if (userRole && userRole == 'user') {
+        store.set('module', 'user')
+        setTimeout(() => router.push('/'), 100)
+      } else if (userRole && userRole == 'admin') {
+        store.set('module', 'admin')
+        setTimeout(() => router.push('/admin'), 100)
+      }
+
+      setUserRole(false)
+    }
+  }
+
   const _handleCheckValidOTP = async _type => {
     setLoading(true)
     let _values = {}
     if (_type == 'email') {
       _values = {
         type: 'register_otp_email',
-        email: values.email,
+        email: dataModule.email,
         otp_email: oTPEmail
       }
     } else if (_type == 'wa') {
       _values = {
         type: 'register_otp_wa',
-        merchant_wa: values.merchant_wa,
+        merchant_wa: dataModule.merchant_wa,
+        email: dataModule.email,
         otp_wa: oTPWA
       }
     }
@@ -344,12 +392,24 @@ const LoginPage = () => {
     if (_type == 'email') {
       _values = {
         type: 'register_otp_email',
-        email: values.email
+        email: dataModule.email
       }
     } else if (_type == 'wa') {
       _values = {
         type: 'register_otp_wa',
-        merchant_wa: values.merchant_wa
+        merchant_wa: dataModule.merchant_wa,
+        email: dataModule.email
+      }
+    } else if (_type == 'login_email') {
+      _values = {
+        type: 'otp_login_email',
+        email: dataModule.email
+      }
+    } else if (_type == 'login_wa') {
+      _values = {
+        type: 'otp_login_wa',
+        merchant_wa: dataModule.merchant_wa,
+        email: dataModule.email
       }
     }
     const res = await handleResendOTP(_values).catch(() => setLoading(false))
@@ -834,6 +894,44 @@ const LoginPage = () => {
             <Typography>Password anda telah berhasil diperbaharui.</Typography>
           </Box>
         )}
+      </ModalDialog>
+
+      <ModalDialog
+        titleModal='Konfirmasi OTP Login'
+        openModal={openModalOTPLogin}
+        setOpenModal={setOpenModalOTPLogin}
+        handleSubmitFunction={() => _handleCheckValidOTPLogin('otp_login')}
+      >
+        <Typography>
+          Kode OTP Login anda sudah dikirim
+          <br />
+          ke Email & WhatsApp anda {values?.merchant_wa}.
+        </Typography>
+        <Typography>Silakan masukkan kode OTP.</Typography>
+        <Box sx={{ p: 10 }}>
+          <MuiOtpInput length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
+        </Box>
+
+        <Box>
+          <Typography variant='body2'>
+            {countDown == 0 ? (
+              <>
+                <LinkStyled onClick={e => _handleResendOTP('login_wa')}>
+                  Kirim Ulang Kode OTP Melalui WhatsApp
+                </LinkStyled>
+                <br />
+                <br />
+                <LinkStyled onClick={e => _handleResendOTP('login_email')}>
+                  Kirim Ulang Kode OTP Melalui Email
+                </LinkStyled>
+              </>
+            ) : (
+              <LinkStyled disabled={true} sx={{ color: 'gray' }}>
+                Kirim Ulang Kode OTP dalam ({countDown})
+              </LinkStyled>
+            )}
+          </Typography>
+        </Box>
       </ModalDialog>
     </Box>
   )
