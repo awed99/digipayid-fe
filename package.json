@@ -38,7 +38,7 @@
     "dev": "next dev -p 30031",
     "build": "next build --no-lint --no-mangling",
     "start": "next start -p 30032",
-    "start2": "node app.js",
+    "start2": "node app.js --max-old-space-size=6192",
     "export": "next export",
     "lint": "eslint --fix \"src/**/*.{js,jsx}\"",
     "format": "prettier --write \"src/**/*.{js,jsx}\""
