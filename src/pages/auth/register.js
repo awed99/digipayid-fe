@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 
 import { values as vals } from 'lodash'
-import { MuiOtpInput } from 'mui-one-time-password-input'
+import { MuiOtp } from 'mui-otp-input-field'
 import ReCAPTCHA from 'react-google-recaptcha'
 import * as yup from 'yup'
 
@@ -547,7 +547,7 @@ const RegisterPage = () => {
         <Typography>Kode OTP Email anda sudah dikirim ke Email anda {values?.email}.</Typography>
         <Typography>Silahkan konfirmasikan dengan memasukkan kode OTP Melalui Email.</Typography>
         <Box sx={{ p: 10 }}>
-          <MuiOtpInput length={6} value={oTPEmail} onChange={e => setOTPEmail(e)} />
+          <MuiOtp length={6} value={oTPEmail} onChange={e => setOTPEmail(e)} />
         </Box>
 
         <Box>
@@ -572,7 +572,7 @@ const RegisterPage = () => {
         <Typography>Kode OTP Email anda sudah dikirim ke WhatsApp anda {values?.merchant_wa}.</Typography>
         <Typography>Silahkan konfirmasikan dengan memasukkan kode OTP Melalui WhatsApp.</Typography>
         <Box sx={{ p: 10 }}>
-          <MuiOtpInput length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
+          <MuiOtp length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
         </Box>
 
         <Box>
