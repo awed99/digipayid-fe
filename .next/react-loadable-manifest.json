@@ -1,8 +1,9 @@
 {
-  "..\\..\\node_modules\\next\\dist\\client\\next-dev.js -> ./dev/noop": {
-    "id": "./node_modules/next/dist/client/dev/noop.js",
+  "..\\@core\\components\\react-apexcharts\\index.js -> react-apexcharts": {
+    "id": 47229,
     "files": [
-      "static/chunks/node_modules_next_dist_client_dev_noop_js.js"
+      "static/chunks/70cfe1b1.9c304a7aa4aacd083770.js",
+      "static/chunks/7229.581563022bbafcfc9ccd.js"
     ]
   }
 }
