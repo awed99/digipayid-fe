@@ -7,10 +7,10 @@ module.exports = {
   // ignoreBuildErrors: true,
   reactStrictMode: false,
 
-  // webpack5: true,
+  webpack5: true,
 
   // swcMinify: true,
-  distDir: 'build',
+  // distDir: 'build',
 
   // output: 'export',
   images: {
@@ -26,7 +26,7 @@ module.exports = {
     // }
   },
 
-  transpilePackages: ['mui-one-time-password-input'],
+  // transpilePackages: ['mui-one-time-password-input'],
 
   // transpilePackages: ['@mui/x-charts', 'react-hook-mousetrap'],
   // transpilePackages: ['@mui/x-charts'],
