@@ -12,7 +12,7 @@ import * as yup from 'yup'
 
 import ModalDialog from 'src/components/dialog'
 import { generateSignature } from '/helpers/general'
-import { handleCheckValidOTP, handleResendOTP, handleSubmitRegister } from '/hooks/auth'
+import { handleCheckValidOTP, handleResendOTP, handleSubmitRegisterAffiliator } from '/hooks/auth'
 import { handleChangeEl } from '/hooks/general'
 
 // ** MUI Components
@@ -85,7 +85,6 @@ const RegisterPage = () => {
     merchant_name: yup.string().required(),
     merchant_address: yup.string().required(),
     merchant_wa: yup.number().required(),
-    reff_code: yup.string(),
     email: yup.string().email().required(),
     password: yup
       .string()
@@ -118,7 +117,6 @@ const RegisterPage = () => {
     merchant_name: '',
     merchant_address: '',
     merchant_wa: '',
-    reff_code: '',
     email: '',
     password: ''
   })
@@ -201,7 +199,7 @@ const RegisterPage = () => {
 
         return false
       } else {
-        const res = await handleSubmitRegister(e, schemaData, values).catch(() => setLoading(false))
+        const res = await handleSubmitRegisterAffiliator(e, schemaData, values).catch(() => setLoading(false))
 
         // console.log('res?.data: ', res?.data)
         // console.log('res?.data?.token: ', res?.data?.token)
@@ -373,7 +371,7 @@ const RegisterPage = () => {
           </Box>
           <Box sx={{ mb: 6 }}>
             <Typography variant='h5' sx={{ fontWeight: 600, marginBottom: 1.5 }}>
-              Register {themeConfig.templateName} 👋🏻
+              Register Affiliator {themeConfig.templateName} 👋🏻
             </Typography>
             <Typography variant='body2'>Register dan rasakan pengalaman kemudahannya.</Typography>
           </Box>
@@ -395,7 +393,7 @@ const RegisterPage = () => {
               fullWidth
               size='small'
               id='merchant_name'
-              label='Nama Toko'
+              label='Nama Affiliator'
               sx={{ marginBottom: 4 }}
               onChange={e => handleChangeEl('merchant_name', e, values, setValues, schemaData, setErrorsField)}
               value={values?.merchant_name}
@@ -407,7 +405,7 @@ const RegisterPage = () => {
               fullWidth
               size='small'
               id='merchant_address'
-              label='Alamat Toko'
+              label='Alamat Affiliator'
               sx={{ marginBottom: 4 }}
               onChange={e => handleChangeEl('merchant_address', e, values, setValues, schemaData, setErrorsField)}
               value={values?.merchant_address}
@@ -453,7 +451,6 @@ const RegisterPage = () => {
                 error={errorsField?.password}
                 helperText={errorsField?.password}
                 type={showPassword ? 'text' : 'password'}
-                sx={{ marginBottom: 4 }}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position='end'>
@@ -469,19 +466,6 @@ const RegisterPage = () => {
                 }}
               />
             </FormControl>
-
-            <TextField
-              autoFocus
-              fullWidth
-              size='small'
-              id='reff_code'
-              label='Kode Referal'
-              sx={{ marginBottom: 4 }}
-              onChange={e => handleChangeEl('reff_code', e, values, setValues, schemaData, setErrorsField)}
-              value={values?.reff_code}
-              error={errorsField?.reff_code}
-              helperText={errorsField?.reff_code}
-            />
 
             <Box
               sx={{

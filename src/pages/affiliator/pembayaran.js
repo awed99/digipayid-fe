@@ -1,7 +1,6 @@
 // ** MUI Imports
 import {
   Alert,
-  Autocomplete,
   Backdrop,
   Button,
   CircularProgress,
@@ -12,13 +11,14 @@ import {
   Divider,
   IconButton,
   InputAdornment,
+  MenuItem,
+  Select,
   Snackbar,
   TextField
 } from '@mui/material'
 import Card from '@mui/material/Card'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
-import { styled } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
 
 import { Close, Delete, PhotoCamera } from '@mui/icons-material'
@@ -42,17 +42,15 @@ import CryptoJS from 'crypto-js'
 import { filter } from 'lodash'
 import ModalImage from 'react-modal-image'
 import ModalDialog from 'src/components/dialog'
-import { format_rupiah, generateSignature, spacing4Char } from '/helpers/general'
+import { format_rupiah, generateSignature } from '/helpers/general'
 import { handleChangeEl } from '/hooks/general'
-import TablePagination from '/src/components/table-pagination'
 
 const MUITable = () => {
   // ** States
   const [page, setPage] = useState(0)
-  const [amountToPay, setAmountToPay] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // ** States
-  const [isWaitingForPayment, setIsWaitingForPayment] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errorsField, setErrorsField] = useState()
   const [isAdd, setIsAdd] = useState(true)
@@ -60,21 +58,17 @@ const MUITable = () => {
   const [openModal2, setOpenModal2] = useState(false)
   const [openModal3, setOpenModal3] = useState(false)
   const [openModal4, setOpenModal4] = useState(false)
-  const [openModalWarning, setOpenModalWarning] = useState(false)
-  const [openModalSuccessPayment, setOpenModalSuccessPayment] = useState(false)
   const [searchProduct, setSearchProduct] = useState('')
   const [countDownSearchProduct, setCountDownSearchProduct] = useState(4)
   const [titleModal, setTitleModal] = useState('Ambil produk dari katalog')
   const [titleModal2, setTitleModal2] = useState('Tambahkan produk baru secara manual')
-  const [titleModal3, setTitleModal3] = useState('Detail Pembayaran')
+  const [titleModal3, setTitleModal3] = useState('Detail pembayaran')
   const [rowSelectionModel, setRowSelectionModel] = useState([])
   const [paymentMethods, setPaymentMethods] = useState([])
   const [paymentDetail, setPaymentDetail] = useState([])
   const [reffID, setReffID] = useState(null)
 
   // const [valueModal, setValueModal] = useState({ id_product_category: null, product_category: '' })
-  const [saldo, setSaldo] = useState(0)
-  const [taxPercentage, setTaxPercentage] = useState(0)
   const [data, setData] = useState([])
   const [dataFinal, setDataFinal] = useState([])
   const [dataSearch, setDataSearch] = useState([])
@@ -100,24 +94,11 @@ const MUITable = () => {
     fee: 0
   })
 
-  const [alertMessage, setAlertMessage] = useState({
-    open: false,
-    type: 'success',
-    message: ''
-  })
-
   let schemaDataProduct = yup.object().shape({
-    product_code: yup.string(),
+    product_code: yup.string().required(),
     product_name: yup.string().required(),
     product_qty: yup.number().min(1).required(),
     product_price: yup.number().min(100).required()
-  })
-
-  // Styled component for the trophy image
-  const TrophyImg = styled('img')({
-    // right: 36,
-    // top: 70,
-    // position: 'absolute'
   })
 
   const useFakeMutation = () => {
@@ -197,20 +178,14 @@ const MUITable = () => {
           .then(res => {
             // console.log(res?.data)
             setData(res?.data)
-            setSaldo(res?.saldo)
-            setTaxPercentage(parseInt(res?.tax_percentage))
-            if (res?.saldo < 10000) {
-              setOpenModalWarning(true)
-            }
-            setLoading(false)
           })
-          .catch(() => setLoading(false))
+          .catch(() => false)
       })
-      .catch(() => setLoading(false))
+      .catch(() => false)
   }
 
   useEffect(() => {
-    setLoading(true)
+    getData()
     getPaymentMethods()
     function handleResize() {
       setWidthScreen(window.innerWidth)
@@ -218,9 +193,13 @@ const MUITable = () => {
     window.addEventListener('resize', handleResize)
     handleResize()
 
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      setIsWaitingForPayment(false)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  useLayoutEffect(() => {
+    // componentWillMount events
+    if (!localStorage.getItem('data-module')) {
+      router.push('/auth')
     }
   }, [])
 
@@ -367,19 +346,7 @@ const MUITable = () => {
   }
 
   const handleCreateTransaction = async () => {
-    if (
-      parseInt(valueModalTransaction?.id_payment_method) > 0 &&
-      valueModalTransaction?.wa_customer?.length < 10 &&
-      valueModalTransaction?.email_customer?.length < 10
-    ) {
-      setAlertMessage({
-        open: true,
-        type: 'error',
-        message: 'Pembayaran Digital wajib mencantumkan email atau whatsapp pelanggan!'
-      })
-
-      return false
-    }
+    setLoading(true)
     if (
       valueModalTransaction?.amount_to_pay === null ||
       valueModalTransaction?.amount_to_pay === '' ||
@@ -396,8 +363,6 @@ const MUITable = () => {
 
       return false
     }
-
-    setLoading(true)
 
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
@@ -431,49 +396,28 @@ const MUITable = () => {
         )
 
         const _pg_fee_amount = parseFloat(
-          filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method?.toString() })[0]
-            ?.fee_original ?? '0'
+          filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method })[0]?.fee_original ??
+            '0'
         )
 
-        const _pg_fee_percent = parseFloat(
-          filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method?.toString() })[0]
-            ?.fee_original_percent ?? '0'
-        )
+        const _pg_fee_percent =
+          parseFloat(
+            filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method })[0]
+              ?.fee_original_percent ?? '0'
+          ) / 100
 
         const _app_fee_amount = parseFloat(
-          filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method?.toString() })[0]
-            ?.fee_app ?? '500'
+          filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method })[0]?.fee_app ?? '500'
         )
 
-        const _app_fee_percent = parseFloat(
-          filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method?.toString() })[0]
-            ?.fee_app_percent ?? '0'
-        )
+        const _app_fee_percent =
+          parseFloat(
+            filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method })[0]
+              ?.fee_app_percent ?? '0'
+          ) / 100
 
-        const _tax_amount = (_total_amount * taxPercentage) / 100
-        const _fee_percent = _pg_fee_percent + _app_fee_percent
-        const _fee_percent_0 = 100 - _fee_percent
-        const _amount0 = _total_amount + _pg_fee_amount + _app_fee_amount + _tax_amount
-        let _final_amount = Math.ceil(((_amount0 * 100) / _fee_percent_0).toFixed(1))
-
-        const _pg_fee = Math.ceil(((_final_amount * _pg_fee_percent) / 100).toFixed(1)) + _pg_fee_amount
-        const _app_fee = Math.ceil(((_final_amount * _app_fee_percent) / 100).toFixed(1)) + _app_fee_amount
-        _final_amount = _total_amount + _pg_fee + _app_fee + _tax_amount
-
-        // console.log('_app_fee: ', _app_fee)
-        // console.log('_pg_fee: ', _pg_fee)
-        // console.log('_total_amount: ', _total_amount)
-        // console.log('_pg_fee_percent: ', _pg_fee_percent)
-        // console.log('_pg_fee_amount: ', _pg_fee_amount)
-        // console.log('_app_fee_percent: ', _app_fee_percent)
-        // console.log('_app_fee_amount: ', _app_fee_amount)
-        // console.log('_fee_percent: ', _fee_percent)
-        // console.log('_fee_percent_0: ', _fee_percent_0)
-        // console.log('_amount0: ', _amount0)
-        // console.log('_final_amount: ', _final_amount)
-        // setLoading(false)
-
-        // return false
+        const _pg_fee = _total_amount * _pg_fee_percent + _pg_fee_amount
+        const _app_fee = _total_amount * _app_fee_percent + _app_fee_amount
 
         const _fee_on_merchant =
           parseInt(
@@ -496,14 +440,13 @@ const MUITable = () => {
             email_customer: valueModalTransaction?.email_customer,
             wa_customer: valueModalTransaction?.wa_customer,
             total_product: dataFinal?.length,
-            amount: _fee_on_merchant === 0 ? _final_amount : _total_amount + _tax_amount,
-            tax_percentage: taxPercentage,
-            amount_tax: _tax_amount,
+            amount: _fee_on_merchant === 0 ? _total_amount + _pg_fee + _app_fee : _total_amount,
+
             amount_to_pay:
               parseInt(valueModalTransaction?.id_payment_method) > 0
                 ? _fee_on_merchant === 0
-                  ? _final_amount
-                  : _total_amount + _tax_amount
+                  ? _total_amount + _pg_fee + _app_fee
+                  : _total_amount
                 : parseInt(valueModalTransaction?.amount_to_pay.toString().replace(/\./g, '')),
 
             pg_fee: _pg_fee,
@@ -531,29 +474,11 @@ const MUITable = () => {
 
             // return
 
-            if (res?.error !== '') {
-              setAlertMessage({
-                type: 'error',
-                open: true,
-                message: res?.error
-              })
-              setLoading(false)
-
-              return false
-            }
-
             if (res?.code === 1) {
+              setReffID(res?.payment?.req?.reff_id)
               setPaymentDetail(res?.payment)
               setOpenModal4(true)
-              setIsWaitingForPayment(true)
-              if (res?.payment?.req?.reff_id) {
-                setReffID(res?.reff_id)
-              }
             } else {
-              setReffID(res?.reff_id)
-              setOpenModal4(true)
-              setIsWaitingForPayment(true)
-              setAmountToPay(_fee_on_merchant === 0 ? _total_amount + _pg_fee + _app_fee : _total_amount)
               setValueModalTransaction({
                 email_customer: '',
                 wa_customer: '',
@@ -564,7 +489,7 @@ const MUITable = () => {
               })
             }
 
-            // setReffID(null)
+            setReffID(null)
             setData(res?.data)
             getPaymentMethods()
             setOpenModal3(false)
@@ -577,163 +502,12 @@ const MUITable = () => {
       .catch(() => setLoading(false))
   }
 
-  const handleCheckStatus = async (_reffID, _loop = 10) => {
-    const _isWaitingForPayment = isWaitingForPayment
-    const _paymentDetail = paymentDetail
-
-    if (!_isWaitingForPayment) {
-      return false
-    }
-
-    // setLoading(true)
-    const _uri0 = '/api/check-auth'
-    const _secret0 = await generateSignature(_uri0)
-
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
-      method: 'POST',
-      headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
-      },
-      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
-    })
-      .then(res => res.json())
-      .then(async res => {
-        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
-          // console.log(res?.auth?.user)
-          router.push('/auth')
-
-          return false
-        } else {
-          return res
-        }
-      })
-      .then(async res => {
-        const _uri = '/transactions/orders/check_status'
-        const _secret = await generateSignature(_uri)
-
-        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
-          method: 'POST',
-          headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
-            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
-              .toString(CryptoJS.enc.Utf8)
-              .replace(/\"/g, '')
-          },
-
-          body: JSON.stringify({ invoice_number: _reffID })
-
-          // body: dataX
-        })
-          .then(res => res.json())
-          .then(res => {
-            if (parseInt(res?.status) > 0) {
-              setAlertMessage({
-                open: true,
-                type: 'success',
-                message: 'Pembayaran Berhasil.'
-              })
-              setOpenModal4(false)
-              setOpenModalSuccessPayment(true)
-              setIsWaitingForPayment(false)
-              setReffID(null)
-            } else {
-              // console.log('_isWaitingForPayment: ', _isWaitingForPayment)
-              // console.log('reff_id: ', _paymentDetail?.req?.reff_id)
-              _loop = _loop + 1
-              if (_isWaitingForPayment === true && _paymentDetail?.req?.reff_id && _loop < 10) {
-                setTimeout(() => handleCheckStatus(_reffID, _loop), 5000)
-              } else {
-                setIsWaitingForPayment(false)
-              }
-            }
-            setLoading(false)
-          })
-          .catch(() => setLoading(false))
-      })
-      .catch(() => setLoading(false))
-  }
-
-  const reSendBilling = async _reffID => {
-    setLoading(true)
-    const _uri0 = '/api/check-auth'
-    const _secret0 = await generateSignature(_uri0)
-
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
-      method: 'POST',
-      headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
-      },
-      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
-    })
-      .then(res => res.json())
-      .then(async res => {
-        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
-          // console.log(res?.auth?.user)
-          router.push('/auth')
-
-          return false
-        } else {
-          return res
-        }
-      })
-      .then(async res => {
-        const _uri = '/transactions/orders/resend_billing'
-        const _secret = await generateSignature(_uri)
-
-        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
-          method: 'POST',
-          headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
-            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
-              .toString(CryptoJS.enc.Utf8)
-              .replace(/\"/g, '')
-          },
-
-          body: JSON.stringify({ invoice_number: _reffID })
-
-          // body: dataX
-        })
-          .then(res => res.json())
-          .then(res => {
-            // console.log(res?.data)
-            // setData(res?.data)
-            // setOpenModal2(false)
-            setAlertMessage({
-              open: true,
-              type: 'success',
-              message: 'Sukses mengirim ulang tagihan'
-            })
-            setLoading(false)
-          })
-          .catch(() => setLoading(false))
-      })
-      .catch(() => setLoading(false))
-  }
-
   const handleCreateTempProducts = async (isDelete = false) => {
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
     if ((await schemaDataProduct.isValid(valueModalProduct)) === false) {
-      // alert('Mohon lengkapi semua data.')
-      setAlertMessage({
-        open: true,
-        type: 'error',
-        message: 'Mohon lengkapi semua data.'
-      })
-
-      return false
-    }
-    if (!selectedFile) {
-      setAlertMessage({
-        open: true,
-        type: 'error',
-        message: 'Foto produk wajib ada!'
-      })
+      alert('Mohon lengkapi semua data.')
 
       return false
     }
@@ -902,24 +676,13 @@ const MUITable = () => {
   }
 
   useEffect(() => {
-    // console.log('isWaitingForPayment', isWaitingForPayment)
-    if (isWaitingForPayment === true && reffID) {
-      setTimeout(() => handleCheckStatus(reffID, 0), 5000)
+    if (searchProduct.length > 0) {
+      setCountDownSearchProduct(1)
     }
-  }, [isWaitingForPayment, reffID])
-
-  useEffect(() => {
-    // if (searchProduct.length > 0) {
-    //   setCountDownSearchProduct(1)
-    // }
-    setCountDownSearchProduct(1)
   }, [searchProduct])
 
   useEffect(() => {
-    // console.log('openModal4', openModal4)
-    if (openModal4 === false) {
-      setReffID(null)
-      setAmountToPay(0)
+    if (!openModal4) {
       setValueModalTransaction({
         email_customer: '',
         wa_customer: '',
@@ -928,7 +691,6 @@ const MUITable = () => {
         payment_method_code: '',
         fee: 0
       })
-      setIsWaitingForPayment(false)
     }
   }, [openModal4])
 
@@ -950,29 +712,24 @@ const MUITable = () => {
     )
 
     const _pg_fee_amount = parseFloat(
-      filter(paymentMethods, {
-        id_payment_method: valueModalTransaction?.id_payment_method?.toString()
-      })?.[0]?.fee_original ?? '500'
+      filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method })?.[0]?.fee_original ??
+        '500'
     )
 
     const _pg_fee_percent =
       parseFloat(
-        filter(paymentMethods, {
-          id_payment_method: valueModalTransaction?.id_payment_method?.toString()
-        })?.[0]?.fee_original_percent ?? '0'
+        filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method })?.[0]
+          ?.fee_original_percent ?? '0'
       ) / 100
 
     const _app_fee_amount = parseFloat(
-      filter(paymentMethods, {
-        id_payment_method: valueModalTransaction?.id_payment_method?.toString()
-      })?.[0]?.fee_app ?? '0'
+      filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method })?.[0]?.fee_app ?? '0'
     )
 
     const _app_fee_percent =
       parseFloat(
-        filter(paymentMethods, {
-          id_payment_method: valueModalTransaction?.id_payment_method?.toString()
-        })?.[0]?.fee_app_percent ?? '0'
+        filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method })?.[0]?.fee_app_percent ??
+          '0'
       ) / 100
 
     const _total_fee_percent = _pg_fee_percent + _app_fee_percent
@@ -1043,12 +800,10 @@ const MUITable = () => {
           .then(res => {
             // console.log(res?.data)
             setPaymentMethods(res?.data)
-
-            getData()
           })
-          .catch(() => setLoading(false))
+          .catch(() => false)
       })
-      .catch(() => setLoading(false))
+      .catch(() => false)
   }
 
   const searchProducts = async () => {
@@ -1099,13 +854,6 @@ const MUITable = () => {
       .catch(() => false)
   }
 
-  useLayoutEffect(() => {
-    // componentWillMount events
-    if (!localStorage.getItem('data-module')) {
-      router.push('/auth')
-    }
-  }, [])
-
   const handleUploadfile = event => {
     if (event?.target?.files[0]) {
       setSelectedFile(event?.target?.files[0])
@@ -1153,8 +901,7 @@ const MUITable = () => {
         product_qty: item?.id === response?.id ? response.product_qty : item?.product_qty,
         product_price: item?.id === response?.id ? response.product_price : item?.product_price
       }))
-
-      // console.log(_newData)
+      console.log(_newData)
       setDataFinal([..._newData])
 
       handleUpdateTempProducts(response)
@@ -1187,10 +934,7 @@ const MUITable = () => {
     return (
       <Dialog maxWidth='xs' TransitionProps={{ onEntered: handleEntered }} open={!!promiseArguments}>
         <DialogTitle>Apakah anda yakin?</DialogTitle>
-        <DialogContent dividers>
-          <Typography>Klik 'Ya' untuk merubah</Typography>
-          <Typography>{mutation}</Typography>
-        </DialogContent>
+        <DialogContent dividers>{`Klik 'Ya' untuk merubah ${mutation}.`}</DialogContent>
         <DialogActions>
           <Button ref={noButtonRef} onClick={handleNo}>
             Tidak
@@ -1210,13 +954,7 @@ const MUITable = () => {
         <Typography variant='body2'>Pembelian produk</Typography>
         <Divider />
         <Typography variant='body2'>
-          <Button
-            variant='contained'
-            size='small'
-            sx={{ mr: 3.5, mb: 5 }}
-            onClick={() => handleClickButton()}
-            disabled={saldo < 10000}
-          >
+          <Button variant='contained' size='small' sx={{ mr: 3.5, mb: 5 }} onClick={() => handleClickButton()}>
             Katalog Produk
           </Button>
           &emsp; &emsp;
@@ -1226,7 +964,6 @@ const MUITable = () => {
             size='small'
             sx={{ mr: 3.5, mb: 5 }}
             onClick={() => handleClickButtonNew()}
-            disabled={saldo < 10000}
           >
             Produk Baru
           </Button>
@@ -1239,7 +976,6 @@ const MUITable = () => {
                 size='small'
                 sx={{ mr: 3.5, mb: 5 }}
                 onClick={() => setOpenModal3(true)}
-                disabled={saldo < 10000}
               >
                 ($) Proses Pembayaran
               </Button>
@@ -1257,21 +993,12 @@ const MUITable = () => {
               rows={data}
               columns={columns}
               getRowId={row => row.id}
-              initialState={{
-                ...data.initialState,
-                pagination: { paginationModel: { pageSize: 25 } }
-              }}
-              editMode='row'
+              pageSizeOptions={[100]}
               slots={{
                 toolbar: GridToolbar,
                 noRowsOverlay: CustomNoRowsOverlay,
                 footer: () => (
                   <Box sx={{ p: 3 }}>
-                    <Divider />
-                    <Box>
-                      <TablePagination />
-                    </Box>
-                    <Divider />
                     <Typography>
                       <b>{data?.length} Produk</b>
                     </Typography>
@@ -1362,11 +1089,8 @@ const MUITable = () => {
                   rows={dataSearch}
                   columns={columnsSearch}
                   getRowId={row => row.id_product}
-                  initialState={{
-                    ...data.initialState,
-                    pagination: { paginationModel: { pageSize: 25 } }
-                  }}
-                  slots={{ toolbar: GridToolbar, noRowsOverlay: CustomNoRowsOverlay, pagination: TablePagination }}
+                  pageSizeOptions={[100]}
+                  slots={{ toolbar: GridToolbar, noRowsOverlay: CustomNoRowsOverlay }}
                   slotProps={{
                     toolbar: {
                       showQuickFilter: true
@@ -1594,37 +1318,19 @@ const MUITable = () => {
                       dataFinal?.reduce(
                         (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                         0
-                      ) +
-                        parseInt(valueModalTransaction?.fee) +
-                        (dataFinal?.reduce(
-                          (total, item) =>
-                            parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
-                          0
-                        ) *
-                          taxPercentage) /
-                          100
+                      ) + parseInt(valueModalTransaction?.fee)
                     )
                   : format_rupiah(valueModalTransaction?.amount_to_pay)
               }
             />
           </Box>
-
-          <Box sx={{ mt: 5 }}>
-            <Autocomplete
-              value={{
-                id: filter(paymentMethods, [
-                  'id_payment_method',
-                  valueModalTransaction?.id_payment_method.toString()
-                ])[0]?.id,
-                label: filter(paymentMethods, [
-                  'id_payment_method',
-                  valueModalTransaction?.id_payment_method.toString()
-                ])[0]?.payment_method_name
-              }}
-              onChange={(event, newValuePM) => {
+          <Box sx={{ mt: 2 }}>
+            <Select
+              size='small'
+              onChange={e =>
                 handleChangeEl(
                   'id_payment_method',
-                  newValuePM?.id_payment_method,
+                  e,
                   valueModalTransaction,
                   setValueModalTransaction,
                   schemaDataProduct,
@@ -1632,53 +1338,20 @@ const MUITable = () => {
                   errorsField,
                   'int'
                 )
-              }}
-              id='combo-box-demo'
-              size='small'
-              options={paymentMethods?.map(item => ({
-                ...item,
-                id: item?.payment_method_id,
-                label: item?.payment_method_name
-              }))}
-              renderInput={params => (
-                <TextField
-                  size='small'
-                  {...params}
-                  label='Metode Pembayaran'
-                  fullWidth={false}
-                  sx={{ minWidth: '300px' }}
-                />
-              )}
-            />
-          </Box>
-          <Box sx={{ mt: 2 }}>
-            <TrophyImg
-              alt={
-                filter(paymentMethods, ['id_payment_method', valueModalTransaction?.id_payment_method.toString()])[0]
-                  ?.payment_method_name
               }
-              src={
-                filter(paymentMethods, ['id_payment_method', valueModalTransaction?.id_payment_method.toString()])[0]
-                  ?.payment_method_image_url
-              }
-              width={70}
-              height={'auto'}
-            />
+              value={valueModalTransaction?.id_payment_method}
+            >
+              {paymentMethods?.map((item, index) => (
+                <MenuItem key={index} value={item?.id_payment_method}>
+                  {item?.payment_method_name}
+                </MenuItem>
+              ))}
+              {/* <MenuItem value={0}>Tunai (Cash)</MenuItem> */}
+            </Select>
           </Box>
           <Divider />
 
           <Box>
-            <h3>
-              Pajak : IDR{' '}
-              {format_rupiah(
-                (dataFinal?.reduce(
-                  (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
-                  0
-                ) *
-                  taxPercentage) /
-                  100
-              )}
-            </h3>
             <h3>
               Pembayaran : IDR{' '}
               {parseInt(valueModalTransaction?.id_payment_method) > 0
@@ -1686,14 +1359,7 @@ const MUITable = () => {
                     dataFinal?.reduce(
                       (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                       0
-                    ) +
-                      parseInt(valueModalTransaction?.fee) +
-                      (dataFinal?.reduce(
-                        (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
-                        0
-                      ) *
-                        taxPercentage) /
-                        100
+                    ) + parseInt(valueModalTransaction?.fee)
                   )
                 : format_rupiah(valueModalTransaction?.amount_to_pay)}
             </h3>
@@ -1709,15 +1375,7 @@ const MUITable = () => {
                           (total, item) =>
                             parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                           0
-                        ) +
-                          parseInt(valueModalTransaction?.fee) +
-                          (dataFinal?.reduce(
-                            (total, item) =>
-                              parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
-                            0
-                          ) *
-                            taxPercentage) /
-                            100
+                        ) + parseInt(valueModalTransaction?.fee)
                       )
                     )?.toString()
                   )}
@@ -1809,159 +1467,42 @@ const MUITable = () => {
           style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
         >
           <Box style={{ width: 550, textAlign: 'center' }}>
-            <Box>
-              <Typography>
-                <h3>IDR {format_rupiah(paymentDetail?.res?.data?.total_bayar ?? amountToPay)}</h3>
-              </Typography>
-            </Box>
-            <Box>
-              <Typography>Berlaku dalam 10 Menit</Typography>
-            </Box>
-            <Box>
-              <Typography>
-                Metode Pembayaran :{' '}
-                {filter(paymentMethods, {
-                  id_payment_method: valueModalTransaction?.id_payment_method.toString()
-                })[0]?.payment_method_name ?? 'QRIS'}
-              </Typography>
-            </Box>
-            <Box>
-              {parseInt(valueModalTransaction?.id_payment_method) == 18 ||
-              parseInt(valueModalTransaction?.id_payment_method) == 19 ? (
+            {parseInt(valueModalTransaction?.id_payment_method) >= 18 &&
+              parseInt(valueModalTransaction?.id_payment_method) <= 19 && (
                 <>
-                  <img src={`${process.env.NEXT_PUBLIC_API}/${paymentDetail?.image_src}`} />
-                </>
-              ) : (parseInt(valueModalTransaction?.id_payment_method) >= 11 &&
-                  parseInt(valueModalTransaction?.id_payment_method) <= 17) ||
-                (parseInt(valueModalTransaction?.id_payment_method) >= 20 &&
-                  parseInt(valueModalTransaction?.id_payment_method) <= 23) ||
-                (parseInt(valueModalTransaction?.id_payment_method) >= 35 &&
-                  parseInt(valueModalTransaction?.id_payment_method) <= 37) ? (
-                <>
-                  <a
-                    href={
-                      paymentDetail?.res?.data?.ovo_push ??
-                      paymentDetail?.res?.data?.checkout_url ??
-                      paymentDetail?.res?.data?.pay_url
-                    }
-                    target='_blank'
-                  >
-                    <Button variant='contained' size='small' sx={{ m: 3 }}>
-                      Bayar{' '}
-                      {
-                        filter(paymentMethods, {
-                          id_payment_method: valueModalTransaction?.id_payment_method.toString()
-                        })[0]?.payment_method_name
-                      }
-                    </Button>
-                  </a>
-                </>
-              ) : parseInt(valueModalTransaction?.id_payment_method) >= 1 &&
-                parseInt(valueModalTransaction?.id_payment_method) <= 10 ? (
-                <>
-                  <Typography>
-                    Nomor Rekening Tujuan :<br />
-                    <b>
-                      {spacing4Char(
-                        parseInt(valueModalTransaction?.id_payment_method) === 4
-                          ? '70017' + paymentDetail?.res?.data?.nomor_va
-                          : '' + paymentDetail?.res?.data?.nomor_va
-                      )}
-                    </b>
-                  </Typography>
-                </>
-              ) : (
-                <>
-                  <Typography>Mohon bayar tunai sesuai tagihan.</Typography>
+                  <Box>
+                    <Typography>
+                      <h3>IDR {format_rupiah(paymentDetail?.res?.data?.total_bayar)}</h3>
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography>Berlaku dalam 10 Menit</Typography>
+                  </Box>
+                  <Box>
+                    <Typography>
+                      Metode Pembayaran :{' '}
+                      {filter(paymentMethods, [
+                        'id_payment_method',
+                        parseInt(valueModalTransaction?.id_payment_method ?? 0)
+                      ])[0]?.payment_method_name ?? 'QRIS'}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    {parseInt(valueModalTransaction?.id_payment_method) == 18 ||
+                    parseInt(valueModalTransaction?.id_payment_method) == 19 ? (
+                      <>
+                        <img src={`${process.env.NEXT_PUBLIC_API}/${paymentDetail?.image_src}`} />
+                      </>
+                    ) : (
+                      <>
+                        <Typography>
+                          Nomor Rekening Tujuan : <b>{paymentDetail?.payment_number}</b>
+                        </Typography>
+                      </>
+                    )}
+                  </Box>
                 </>
               )}
-            </Box>
-            <Box>
-              <Typography>
-                <Divider>Status Pembayaran</Divider>
-              </Typography>
-            </Box>
-            <Box sx={{ position: 'relative' }}>
-              <Button
-                variant='contained'
-                size='small'
-                sx={{ m: 3 }}
-                disabled={isWaitingForPayment}
-                onClick={() => setIsWaitingForPayment(true)}
-              >
-                {isWaitingForPayment ? 'Dalam Pengecekan' : 'Cek Status Pembayaran'}
-              </Button>
-              {isWaitingForPayment && (
-                <CircularProgress
-                  size={24}
-                  sx={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    marginTop: '-12px',
-                    marginLeft: '-12px'
-                  }}
-                />
-              )}
-            </Box>
-            <Box>
-              <Typography>
-                <Divider>atau</Divider>
-              </Typography>
-            </Box>
-            <Box>
-              <Button
-                variant='contained'
-                size='small'
-                color='warning'
-                sx={{ m: 3 }}
-                onClick={() => reSendBilling(paymentDetail?.req?.reff_id)}
-              >
-                Kirim Ulang Tagihan (WA/Email)
-              </Button>
-            </Box>
-          </Box>
-        </Box>
-      </ModalDialog>
-
-      <ModalDialog titleModal='Peringatan' openModal={openModalWarning} setOpenModal={setOpenModalWarning}>
-        <Box
-          alignItems='center'
-          justify='center'
-          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
-        >
-          <Box style={{ width: 550, paddingBottom: 15, textAlign: 'center' }}>
-            <Typography>
-              <h3>Saldo Anda IDR {format_rupiah(saldo)}</h3>
-              <h5>Minimal saldo penggunaan Menu Kasir adalah IDR {format_rupiah(10000)}</h5>
-              <Button variant='contained' onClick={() => router.push('/dompet-digital')}>
-                Deposit Saldo
-              </Button>
-            </Typography>
-          </Box>
-        </Box>
-      </ModalDialog>
-
-      <ModalDialog
-        titleModal='Notifikasi'
-        openModal={openModalSuccessPayment}
-        setOpenModal={setOpenModalSuccessPayment}
-      >
-        <Box
-          alignItems='center'
-          justify='center'
-          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
-        >
-          <Box style={{ width: 550, paddingBottom: 15, textAlign: 'center' }}>
-            <Typography>
-              Transaksi <b>{paymentDetail?.req?.reff_id}</b>
-            </Typography>
-            <Typography>telah dibayar</Typography>
-            {paymentDetail?.res?.data?.total_bayar ? (
-              <Typography variant='h5'>IDR {format_rupiah(paymentDetail?.res?.data?.total_bayar)}</Typography>
-            ) : (
-              <Typography variant='h5'>Dengan uang tunai.</Typography>
-            )}
           </Box>
         </Box>
       </ModalDialog>
@@ -1969,23 +1510,6 @@ const MUITable = () => {
       <Backdrop sx={{ color: '#fff', zIndex: theme => theme.zIndex.drawer + 999999 }} open={loading}>
         <CircularProgress size={100} variant='indeterminate' />
       </Backdrop>
-
-      <Snackbar
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        open={alertMessage?.open}
-        autoHideDuration={6000}
-        onClose={() =>
-          setAlertMessage({
-            open: false,
-            type: alertMessage?.type,
-            message: ''
-          })
-        }
-      >
-        <Alert variant='filled' severity={alertMessage?.type} sx={{ width: '100%' }}>
-          {alertMessage?.message}
-        </Alert>
-      </Snackbar>
     </Grid>
   )
 }
