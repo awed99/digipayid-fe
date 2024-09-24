@@ -26,7 +26,7 @@ import {
 import { handleChangeEl } from '/hooks/general'
 
 // ** MUI Components
-import { Alert, Backdrop, CircularProgress, Snackbar } from '@mui/material'
+import { Alert, Backdrop, CircularProgress, Divider, Snackbar } from '@mui/material'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import MuiCard from '@mui/material/Card'
@@ -274,13 +274,18 @@ const LoginPage = () => {
             .then(res => {
               setCountDown(60)
               setOpenModalOTPLogin(true)
-              if (parseInt(_user_role) > 1) {
+              if (parseInt(_user_role) === 2) {
                 setUserRole('user')
 
                 // store.set('module', 'user')
                 // setTimeout(() => router.push('/'), 100)
-              } else {
+              } else if (parseInt(_user_role) === 1) {
                 setUserRole('admin')
+
+                // store.set('module', 'admin')
+                // setTimeout(() => router.push('/admin'), 100)
+              } else {
+                setUserRole('affiliator')
 
                 // store.set('module', 'admin')
                 // setTimeout(() => router.push('/admin'), 100)
@@ -339,6 +344,9 @@ const LoginPage = () => {
       } else if (userRole && userRole == 'admin') {
         store.set('module', 'admin')
         setTimeout(() => router.push('/admin'), 100)
+      } else if (userRole && userRole == 'affiliator') {
+        store.set('module', 'affiliator')
+        setTimeout(() => router.push('/affiliator'), 100)
       }
 
       setUserRole(false)
@@ -640,6 +648,14 @@ const LoginPage = () => {
                   <LinkStyled>Register Akun</LinkStyled>
                 </Link>
               </Typography>
+            </Box>
+
+            <Divider>atau</Divider>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <Link passHref href='/auth/register-affiliator'>
+                Register Sebagai Affiliator
+              </Link>
             </Box>
           </form>
         </CardContent>
