@@ -24,6 +24,14 @@ const navigation = () => {
       path: '/admin'
     },
     {
+      sectionTitle: 'Affiliators'
+    },
+    {
+      title: 'List Affiliator',
+      icon: Storefront,
+      path: '/admin/master/list-affiliator'
+    },
+    {
       sectionTitle: 'Merchants'
     },
     {

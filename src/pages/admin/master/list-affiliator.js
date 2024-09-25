@@ -1,10 +1,22 @@
 // ** MUI Imports
-import { Backdrop, CircularProgress, Switch } from '@mui/material'
+import {
+  Backdrop,
+  CircularProgress,
+  IconButton,
+  InputAdornment,
+  InputLabel,
+  MenuItem,
+  Select,
+  Switch
+} from '@mui/material'
 import Card from '@mui/material/Card'
 import Divider from '@mui/material/Divider'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
+import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+
+import { Edit, Visibility, VisibilityOff } from '@mui/icons-material'
 
 // ** React Imports
 import { useEffect, useLayoutEffect, useState } from 'react'
@@ -22,7 +34,10 @@ import CustomNoRowsOverlay from '/src/components/no-rows-table'
 import * as yup from 'yup'
 
 import CryptoJS from 'crypto-js'
+import { filter } from 'lodash'
+import ModalDialog from 'src/components/dialog'
 import { generateSignature } from '/helpers/general'
+import { handleChangeEl } from '/hooks/general'
 
 const MUITable = () => {
   // ** States
@@ -76,19 +91,35 @@ const MUITable = () => {
       field: 'is_active',
       headerName: 'Status',
       width: 100,
-      renderCell: params => <Switch checked={params?.value === '1'} inputProps={{ 'aria-label': 'controlled' }} />
+      renderCell: params => (
+        <Switch
+          checked={params?.value === '1'}
+          onChange={async e => {
+            setIsAdd(false)
+            const _row = params?.row
+            _row.is_active = e?.target?.checked === true ? 1 : 0
+            _row.user_status = e?.target?.checked === true ? 'ACTIVE' : 'NON ACTIVE'
+            delete _row.id_user_privilege
+            delete _row.user_privilege_name
+            delete _row.user_privilege_type
+            delete _row.user_privilege_updated_at
+            setValueModal(_row)
+            setTriggerUpdateStatus(triggerUpdateStatus + 1)
+          }}
+          inputProps={{ 'aria-label': 'controlled' }}
+        />
+      )
+    },
+    {
+      field: 'update',
+      headerName: 'Update',
+      width: 100,
+      renderCell: params => (
+        <IconButton aria-label='delete' onClick={() => handleClickButton(false, params)}>
+          <Edit color='primary' />
+        </IconButton>
+      )
     }
-
-    // {
-    //   field: 'update',
-    //   headerName: 'Update',
-    //   width: 100,
-    //   renderCell: params => (
-    //     <IconButton aria-label='delete' onClick={() => handleClickButton(false, params)}>
-    //       <Edit color='primary' />
-    //     </IconButton>
-    //   )
-    // }
 
     // {
     //   field: 'delete',
@@ -126,7 +157,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/affiliator/master/user/list_merchant'
+        const _uri = '/admin/master/user/list_affiliator'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
@@ -176,7 +207,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/affiliator/master/user/privilege_list'
+        const _uri = '/admin/master/user/privilege_list'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
@@ -210,122 +241,122 @@ const MUITable = () => {
     }
   }, [triggerUpdateStatus])
 
-  // const handleClickButton = async (_isAdd = false, _params = {}) => {
-  //   if (_isAdd === true) {
-  //     setIsAdd(true)
-  //     setTitleModal('Tambah User')
-  //     handleChangeEl('merchant_name', '', valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('username', '', valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('email', '', valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('password', '', valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('telp', '', valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('user_privilege', '', valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('id_user', null, valueModal, setValueModal, schemaData, setErrorsField)
-  //   } else {
-  //     setIsAdd(false)
-  //     setTitleModal('Ubah User')
-  //     handleChangeEl(
-  //       'merchant_name',
-  //       _params?.row?.merchant_name,
-  //       valueModal,
-  //       setValueModal,
-  //       schemaData,
-  //       setErrorsField
-  //     )
-  //     handleChangeEl('username', _params?.row?.username, valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('email', _params?.row?.email, valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('password', '', valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('telp', _params?.row?.telp, valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl(
-  //       'user_privilege',
-  //       _params?.row?.user_privilege,
-  //       valueModal,
-  //       setValueModal,
-  //       schemaData,
-  //       setErrorsField
-  //     )
-  //     handleChangeEl('id_user', _params?.row?.id_user, valueModal, setValueModal, schemaData, setErrorsField)
-  //   }
+  const handleClickButton = async (_isAdd = false, _params = {}) => {
+    if (_isAdd === true) {
+      setIsAdd(true)
+      setTitleModal('Tambah User')
+      handleChangeEl('merchant_name', '', valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('username', '', valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('email', '', valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('password', '', valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('telp', '', valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('user_privilege', '', valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('id_user', null, valueModal, setValueModal, schemaData, setErrorsField)
+    } else {
+      setIsAdd(false)
+      setTitleModal('Ubah User')
+      handleChangeEl(
+        'merchant_name',
+        _params?.row?.merchant_name,
+        valueModal,
+        setValueModal,
+        schemaData,
+        setErrorsField
+      )
+      handleChangeEl('username', _params?.row?.username, valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('email', _params?.row?.email, valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('password', '', valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('telp', _params?.row?.telp, valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl(
+        'user_privilege',
+        _params?.row?.user_privilege,
+        valueModal,
+        setValueModal,
+        schemaData,
+        setErrorsField
+      )
+      handleChangeEl('id_user', _params?.row?.id_user, valueModal, setValueModal, schemaData, setErrorsField)
+    }
 
-  //   setOpenModal(true)
-  // }
+    setOpenModal(true)
+  }
 
-  // const handleClickDelete = async (_params = {}) => {
-  //   setIsAdd(false)
-  //   const _x = confirm('Anda yakin ingin menghapus Merchant ' + _params?.row?.username + ' ?')
-  //   if (_x) {
-  //     handleChangeEl('username', _params?.row?.username, valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('id_user', _params?.row?.id_user, valueModal, setValueModal, schemaData, setErrorsField)
+  const handleClickDelete = async (_params = {}) => {
+    setIsAdd(false)
+    const _x = confirm('Anda yakin ingin menghapus Merchant ' + _params?.row?.username + ' ?')
+    if (_x) {
+      handleChangeEl('username', _params?.row?.username, valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('id_user', _params?.row?.id_user, valueModal, setValueModal, schemaData, setErrorsField)
 
-  //     handleSubmit(true)
-  //   }
-  // }
+      handleSubmit(true)
+    }
+  }
 
-  // const handleSubmit = async (isDelete = false) => {
-  //   setLoading(true)
-  //   const _uri0 = '/api/check-auth'
-  //   const _secret0 = await generateSignature(_uri0)
+  const handleSubmit = async (isDelete = false) => {
+    setLoading(true)
+    const _uri0 = '/api/check-auth'
+    const _secret0 = await generateSignature(_uri0)
 
-  //   fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
-  //     method: 'POST',
-  //     headers: {
-  //       'x-signature': _secret0?.signature,
-  //       'x-timestamp': _secret0?.timestamp
-  //     },
-  //     body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
-  //   })
-  //     .then(res => res.json())
-  //     .then(async res => {
-  //       if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
-  //         // console.log(res?.auth?.user)
-  //         router.push('/auth')
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+      method: 'POST',
+      headers: {
+        'x-signature': _secret0?.signature,
+        'x-timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          // console.log(res?.auth?.user)
+          router.push('/auth')
 
-  //         return false
-  //       } else {
-  //         return res
-  //       }
-  //     })
-  //     .then(async res => {
-  //       const _uri =
-  //         isAdd === true && isDelete === false
-  //           ? '/admin/master/user/create'
-  //           : isDelete === true
-  //           ? '/admin/master/user/delete'
-  //           : '/admin/master/user/update'
-  //       const _secret = await generateSignature(_uri)
+          return false
+        } else {
+          return res
+        }
+      })
+      .then(async res => {
+        const _uri =
+          isAdd === true && isDelete === false
+            ? '/admin/master/user/create'
+            : isDelete === true
+            ? '/admin/master/user/delete'
+            : '/admin/master/user/update'
+        const _secret = await generateSignature(_uri)
 
-  //       const _valueModal = valueModal
-  //       if (!_valueModal?.password) {
-  //         delete _valueModal?.password
-  //       }
+        const _valueModal = valueModal
+        if (!_valueModal?.password) {
+          delete _valueModal?.password
+        }
 
-  //       fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
-  //         method: 'POST',
-  //         headers: {
-  //           'x-signature': _secret?.signature,
-  //           'x-timestamp': _secret?.timestamp,
-  //           Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
-  //             .toString(CryptoJS.enc.Utf8)
-  //             .replace(/\"/g, '')
-  //         },
-  //         body: JSON.stringify(_valueModal)
-  //       })
-  //         .then(res => res.json())
-  //         .then(res => {
-  //           // console.log(res?.data)
-  //           // setData(res?.data)
-  //           getData()
-  //           setOpenModal(false)
-  //           setIsAdd(true)
-  //           setTitleModal('Tambah Merchant')
-  //           handleChangeEl('username', '', valueModal, setValueModal, schemaData, setErrorsField)
-  //           handleChangeEl('id_user', null, valueModal, setValueModal, schemaData, setErrorsField)
-  //           setLoading(false)
-  //         })
-  //         .catch(() => setLoading(false))
-  //     })
-  //     .catch(() => setLoading(false))
-  // }
+        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
+          method: 'POST',
+          headers: {
+            'x-signature': _secret?.signature,
+            'x-timestamp': _secret?.timestamp,
+            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+              .toString(CryptoJS.enc.Utf8)
+              .replace(/\"/g, '')
+          },
+          body: JSON.stringify(_valueModal)
+        })
+          .then(res => res.json())
+          .then(res => {
+            // console.log(res?.data)
+            // setData(res?.data)
+            getData()
+            setOpenModal(false)
+            setIsAdd(true)
+            setTitleModal('Tambah Merchant')
+            handleChangeEl('username', '', valueModal, setValueModal, schemaData, setErrorsField)
+            handleChangeEl('id_user', null, valueModal, setValueModal, schemaData, setErrorsField)
+            setLoading(false)
+          })
+          .catch(() => setLoading(false))
+      })
+      .catch(() => setLoading(false))
+  }
 
   useLayoutEffect(() => {
     // componentWillMount events
@@ -370,7 +401,7 @@ const MUITable = () => {
         </Card>
       </Grid>
 
-      {/* <ModalDialog
+      <ModalDialog
         titleModal={titleModal}
         openModal={openModal}
         setOpenModal={setOpenModal}
@@ -489,7 +520,7 @@ const MUITable = () => {
             ))}
           </Select>
         </Box>
-      </ModalDialog> */}
+      </ModalDialog>
 
       <Backdrop sx={{ color: '#fff', zIndex: theme => theme.zIndex.drawer + 999999 }} open={loading}>
         <CircularProgress size={100} variant='indeterminate' />
