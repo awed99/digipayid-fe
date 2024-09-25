@@ -82,7 +82,7 @@ const RegisterPage = () => {
 
   let schemaData = yup.object().shape({
     username: yup.string().required(),
-    merchant_name: yup.string().required(),
+    merchant_name: yup.string(),
     merchant_address: yup.string().required(),
     merchant_wa: yup.number().required(),
     email: yup.string().email().required(),
@@ -102,6 +102,7 @@ const RegisterPage = () => {
   const [captchaRisk, setCaptchaRisk] = useState(0)
   const [openModalOTPEmail, setOpenModalOTPEmail] = useState(false)
   const [openModalOTPWA, setOpenModalOTPWA] = useState(false)
+  const [openModalSuccess, setOpenModalSuccess] = useState(false)
   const [oTPEmail, setOTPEmail] = useState('')
   const [oTPWA, setOTPWA] = useState('')
   const [loading, setLoading] = useState(false)
@@ -296,7 +297,10 @@ const RegisterPage = () => {
       } else {
         setOpenModalOTPEmail(false)
         setOpenModalOTPWA(false)
-        router.push('/auth')
+        setOpenModalSuccess(true)
+        setTimeout(() => {
+          router.push('/auth')
+        }, 10000)
       }
     }
   }
@@ -383,22 +387,13 @@ const RegisterPage = () => {
               id='username'
               label='Nama Lengkap'
               sx={{ marginBottom: 4 }}
-              onChange={e => handleChangeEl('username', e, values, setValues, schemaData, setErrorsField)}
+              onChange={e => {
+                handleChangeEl('username', e, values, setValues, schemaData, setErrorsField)
+                handleChangeEl('merchant_name', e, values, setValues, schemaData, setErrorsField)
+              }}
               value={values?.username}
               error={errorsField?.username}
               helperText={errorsField?.username}
-            />
-            <TextField
-              autoFocus
-              fullWidth
-              size='small'
-              id='merchant_name'
-              label='Nama Affiliator'
-              sx={{ marginBottom: 4 }}
-              onChange={e => handleChangeEl('merchant_name', e, values, setValues, schemaData, setErrorsField)}
-              value={values?.merchant_name}
-              error={errorsField?.merchant_name}
-              helperText={errorsField?.merchant_name}
             />
             <TextField
               autoFocus
@@ -586,6 +581,16 @@ const RegisterPage = () => {
             )}
           </Typography>
         </Box>
+      </ModalDialog>
+
+      <ModalDialog
+        titleModal='Registrasi Sukses'
+        openModal={openModalSuccess}
+        setOpenModal={setOpenModalSuccess}
+        handleSubmitFunction={() => router.push('/auth')}
+      >
+        <Typography>Akun anda berhasil terdaftar.</Typography>
+        <Typography>Silahkan login untuk melanjutkan.</Typography>
       </ModalDialog>
     </Box>
   )
