@@ -286,7 +286,7 @@ const MUITable = () => {
     <Grid container spacing={6}>
       <Grid item xs={12}>
         <Typography variant='h5'>
-          <Link>Jurnal Keuangan</Link>
+          <Link>Jurnal Keuangan Affiliator</Link>
         </Typography>
         <Typography variant='body2'>Jurnal Keuangan</Typography>
       </Grid>

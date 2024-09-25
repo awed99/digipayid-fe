@@ -163,7 +163,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/admin/master/user/list'
+        const _uri = '/affiliator/master/user/list'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
@@ -213,7 +213,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/admin/master/user/privilege_list'
+        const _uri = '/affiliator/master/user/privilege_list'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
@@ -323,10 +323,10 @@ const MUITable = () => {
       .then(async res => {
         const _uri =
           isAdd === true && isDelete === false
-            ? '/admin/master/user/create'
+            ? '/affiliator/master/user/create'
             : isDelete === true
-            ? '/admin/master/user/delete'
-            : '/admin/master/user/update'
+            ? '/affiliator/master/user/delete'
+            : '/affiliator/master/user/update'
         const _secret = await generateSignature(_uri)
 
         const _valueModal = valueModal
