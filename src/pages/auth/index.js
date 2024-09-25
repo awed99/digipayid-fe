@@ -231,7 +231,7 @@ const LoginPage = () => {
 
         setAlertMessage({
           open: true,
-          type: res?.code > 0 ? 'error' : 'primary',
+          type: res?.code > 0 || parseInt(res?.status) > 0 ? 'error' : 'primary',
           message: res?.code > 0 ? res?.error : res?.message
         })
         setLoading(false)
