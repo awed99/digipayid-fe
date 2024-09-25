@@ -1,12 +1,10 @@
 // ** Icon imports
 import AccountMultipleOutline from 'mdi-material-ui/AccountMultipleOutline'
-import BankTransferOut from 'mdi-material-ui/BankTransferOut'
 import BookOpenVariant from 'mdi-material-ui/BookOpenVariant'
 import Cash100 from 'mdi-material-ui/Cash100'
 import InvoiceTextCheckOutline from 'mdi-material-ui/InvoiceTextCheckOutline'
 import Storefront from 'mdi-material-ui/Storefront'
 import ViewDashboard from 'mdi-material-ui/ViewDashboard'
-import Wallet from 'mdi-material-ui/Wallet'
 
 const navigation = () => {
   return [
@@ -30,24 +28,14 @@ const navigation = () => {
       sectionTitle: 'Laporan Affiliator'
     },
     {
-      title: 'Dompet Digital',
-      icon: Wallet,
-      path: '/affiliator/dompet-digital'
+      title: 'Withdraw Affiliator',
+      icon: Cash100,
+      path: '/affiliator/withdraw-affiliator'
     },
     {
       title: 'Jurnal Affiliator',
       icon: BookOpenVariant,
       path: '/affiliator/jurnal-keuangan'
-    },
-    {
-      title: 'Proses Kliring',
-      icon: BankTransferOut,
-      path: '/affiliator/proses-kliring'
-    },
-    {
-      title: 'Withdraw Affiliator',
-      icon: Cash100,
-      path: '/affiliator/withdraw'
     },
     {
       sectionTitle: 'Transaksi Merchants'
