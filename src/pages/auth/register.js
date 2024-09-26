@@ -5,7 +5,7 @@ import { Fragment, useEffect, useLayoutEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 
-import { values as vals } from 'lodash'
+import { size, values as vals } from 'lodash'
 import { MuiOtp } from 'mui-otp-input-field'
 import ReCAPTCHA from 'react-google-recaptcha'
 import * as yup from 'yup'
@@ -148,6 +148,13 @@ const RegisterPage = () => {
       })
       .catch(() => false)
   }
+
+  useEffect(() => {
+    // console.log(router?.query?.reff_code)
+    if (router?.query?.reff_code && size(router?.query?.reff_code) > 0) {
+      setValues({ ...values, reff_code: router?.query?.reff_code })
+    }
+  }, [router?.query?.reff_code])
 
   useEffect(() => {
     handleChangeEl('username', '', values, setValues, schemaData, setErrorsField)
@@ -395,7 +402,6 @@ const RegisterPage = () => {
               helperText={errorsField?.username}
             />
             <TextField
-              autoFocus
               fullWidth
               size='small'
               id='merchant_name'
@@ -407,7 +413,6 @@ const RegisterPage = () => {
               helperText={errorsField?.merchant_name}
             />
             <TextField
-              autoFocus
               fullWidth
               size='small'
               id='merchant_address'
@@ -422,7 +427,6 @@ const RegisterPage = () => {
             <Divider />
 
             <TextField
-              autoFocus
               fullWidth
               size='small'
               id='merchant_wa'
@@ -475,7 +479,6 @@ const RegisterPage = () => {
             </FormControl>
 
             <TextField
-              autoFocus
               fullWidth
               size='small'
               id='reff_code'
@@ -567,7 +570,7 @@ const RegisterPage = () => {
         <Typography>Kode OTP Email anda sudah dikirim ke Email anda {values?.email}.</Typography>
         <Typography>Silahkan konfirmasikan dengan memasukkan kode OTP Melalui Email.</Typography>
         <Box sx={{ p: 10 }}>
-          <MuiOtp length={6} value={oTPEmail} onChange={e => setOTPEmail(e)} />
+          <MuiOtp autoFocus length={6} value={oTPEmail} onChange={e => setOTPEmail(e)} />
         </Box>
 
         <Box>
@@ -592,7 +595,7 @@ const RegisterPage = () => {
         <Typography>Kode OTP Email anda sudah dikirim ke WhatsApp anda {values?.merchant_wa}.</Typography>
         <Typography>Silahkan konfirmasikan dengan memasukkan kode OTP Melalui WhatsApp.</Typography>
         <Box sx={{ p: 10 }}>
-          <MuiOtp length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
+          <MuiOtp autoFocus length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
         </Box>
 
         <Box>

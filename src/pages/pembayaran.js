@@ -39,7 +39,7 @@ import CustomNoRowsOverlay from '/src/components/no-rows-table'
 import * as yup from 'yup'
 
 import CryptoJS from 'crypto-js'
-import { filter } from 'lodash'
+import { filter, size } from 'lodash'
 import ModalImage from 'react-modal-image'
 import ModalDialog from 'src/components/dialog'
 import { format_rupiah, generateSignature, spacing4Char } from '/helpers/general'
@@ -61,6 +61,7 @@ const MUITable = () => {
   const [openModal3, setOpenModal3] = useState(false)
   const [openModal4, setOpenModal4] = useState(false)
   const [openModalWarning, setOpenModalWarning] = useState(false)
+  const [openModalResendBilling, setOpenModalResendBilling] = useState(false)
   const [openModalSuccessPayment, setOpenModalSuccessPayment] = useState(false)
   const [searchProduct, setSearchProduct] = useState('')
   const [countDownSearchProduct, setCountDownSearchProduct] = useState(4)
@@ -367,19 +368,21 @@ const MUITable = () => {
   }
 
   const handleCreateTransaction = async () => {
-    if (
-      parseInt(valueModalTransaction?.id_payment_method) > 0 &&
-      valueModalTransaction?.wa_customer?.length < 10 &&
-      valueModalTransaction?.email_customer?.length < 10
-    ) {
-      setAlertMessage({
-        open: true,
-        type: 'error',
-        message: 'Pembayaran Digital wajib mencantumkan email atau whatsapp pelanggan!'
-      })
+    // if (
+    //   parseInt(valueModalTransaction?.id_payment_method) > 0 &&
+    //   valueModalTransaction?.wa_customer?.length < 10 &&
+    //   valueModalTransaction?.email_customer?.length < 10 &&
+    //   parseInt(valueModalTransaction?.id_payment_method) !== 18 &&
+    //   parseInt(valueModalTransaction?.email_customer) !== 19
+    // ) {
+    //   setAlertMessage({
+    //     open: true,
+    //     type: 'error',
+    //     message: 'Pembayaran Digital wajib mencantumkan email atau whatsapp pelanggan!'
+    //   })
 
-      return false
-    }
+    //   return false
+    // }
     if (
       valueModalTransaction?.amount_to_pay === null ||
       valueModalTransaction?.amount_to_pay === '' ||
@@ -655,7 +658,7 @@ const MUITable = () => {
       .catch(() => setLoading(false))
   }
 
-  const reSendBilling = async _reffID => {
+  const reSendBilling = async (_reffID, _valueModalTransaction) => {
     setLoading(true)
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
@@ -693,7 +696,12 @@ const MUITable = () => {
               .replace(/\"/g, '')
           },
 
-          body: JSON.stringify({ invoice_number: _reffID })
+          body: JSON.stringify({
+            invoice_number: _reffID,
+            email_customer:
+              size(_valueModalTransaction?.email_customer) < 5 ? undefined : _valueModalTransaction?.email_customer,
+            wa_customer: size(_valueModalTransaction?.wa_customer) < 5 ? undefined : _valueModalTransaction?.wa_customer
+          })
 
           // body: dataX
         })
@@ -707,7 +715,12 @@ const MUITable = () => {
               type: 'success',
               message: 'Sukses mengirim ulang tagihan'
             })
+            setOpenModalResendBilling(false)
             setLoading(false)
+            setValueModalTransaction({
+              email_customer: '',
+              wa_customer: ''
+            })
           })
           .catch(() => setLoading(false))
       })
@@ -1915,7 +1928,7 @@ const MUITable = () => {
                 size='small'
                 color='warning'
                 sx={{ m: 3 }}
-                onClick={() => reSendBilling(paymentDetail?.req?.reff_id)}
+                onClick={() => setOpenModalResendBilling(true)}
               >
                 Kirim Ulang Tagihan (WA/Email)
               </Button>
@@ -1938,6 +1951,60 @@ const MUITable = () => {
                 Deposit Saldo
               </Button>
             </Typography>
+          </Box>
+        </Box>
+      </ModalDialog>
+
+      <ModalDialog
+        titleModal='Kirim Ulang Tagihan (WA/Email)'
+        openModal={openModalResendBilling}
+        setOpenModal={setOpenModalResendBilling}
+        handleSubmitFunction={() =>
+          (size(valueModalTransaction?.email_customer) > 0 || size(valueModalTransaction?.wa_customer) > 0) &&
+          reSendBilling(paymentDetail?.req?.reff_id, valueModalTransaction)
+        }
+        size='sm'
+      >
+        <Box>
+          <h5>Data Pelanggan (Struk Digital - Go Green)</h5>
+          <Box sx={{ mt: -4 }}>
+            <TextField
+              label='Email Pelanggan'
+              variant='outlined'
+              fullWidth
+              size='small'
+              onChange={e =>
+                handleChangeEl(
+                  'email_customer',
+                  e,
+                  valueModalTransaction,
+                  setValueModalTransaction,
+                  schemaDataProduct,
+                  setErrorsField
+                )
+              }
+              value={valueModalTransaction?.email_customer}
+            />
+          </Box>
+          <Box>
+            <TextField
+              label='No Whatsapp'
+              variant='outlined'
+              fullWidth
+              size='small'
+              sx={{ mt: 4 }}
+              onChange={e =>
+                handleChangeEl(
+                  'wa_customer',
+                  e,
+                  valueModalTransaction,
+                  setValueModalTransaction,
+                  schemaDataProduct,
+                  setErrorsField
+                )
+              }
+              value={valueModalTransaction?.wa_customer}
+            />
           </Box>
         </Box>
       </ModalDialog>

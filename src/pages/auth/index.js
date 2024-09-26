@@ -692,7 +692,7 @@ const LoginPage = () => {
         <Typography>Kode OTP Email anda sudah dikirim ke Email anda {values?.email}.</Typography>
         <Typography>Silahkan konfirmasikan dengan memasukkan kode OTP Melalui Email.</Typography>
         <Box sx={{ p: 10 }}>
-          <MuiOtp length={6} value={oTPEmail} onChange={e => setOTPEmail(e)} />
+          <MuiOtp autoFocus length={6} value={oTPEmail} onChange={e => setOTPEmail(e)} />
         </Box>
 
         <Box>
@@ -717,7 +717,7 @@ const LoginPage = () => {
         <Typography>Kode OTP Email anda sudah dikirim ke WhatsApp anda {values?.merchant_wa}.</Typography>
         <Typography>Silahkan konfirmasikan dengan memasukkan kode OTP Melalui WhatsApp.</Typography>
         <Box sx={{ p: 10 }}>
-          <MuiOtp length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
+          <MuiOtp autoFocus length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
         </Box>
 
         <Box>
@@ -829,11 +829,11 @@ const LoginPage = () => {
             <Typography>Silahkan konfirmasikan dengan memasukkan kode OTP Melalui Email & WhatsApp.</Typography>
             <Box sx={{ p: 10 }}>
               <Typography>Masukkan OTP Email</Typography>
-              <MuiOtp length={6} value={oTPEmail} onChange={e => setOTPEmail(e)} />
+              <MuiOtp autoFocus length={6} value={oTPEmail} onChange={e => setOTPEmail(e)} />
             </Box>
             <Box sx={{ p: 10 }}>
               <Typography>Masukkan OTP WhatsApp</Typography>
-              <MuiOtp length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
+              <MuiOtp autoFocus length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
             </Box>
 
             <Box>
@@ -925,7 +925,7 @@ const LoginPage = () => {
         </Typography>
         <Typography>Silakan masukkan kode OTP.</Typography>
         <Box sx={{ p: 10 }}>
-          <MuiOtp length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
+          <MuiOtp autoFocus length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
         </Box>
 
         <Box>

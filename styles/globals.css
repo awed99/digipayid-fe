@@ -59,8 +59,17 @@ code[class*='language-'] {
 
 a {
   text-decoration: none;
+  cursor: pointer !important;
 }
 
 .css-1mswima {
   padding: 10px !important;
+}
+
+.css-bwjvwr-MuiTypography-root {
+  text-transform: capitalize !important;
+}
+
+.css-b8de9x-MuiListSubheader-root {
+  margin-top: 0 !important;
 }

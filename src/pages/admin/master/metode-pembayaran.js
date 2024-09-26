@@ -152,7 +152,7 @@ const MUITable = () => {
           <Grid container spacing={2}>
             {filter(data, ['payment_method_type', '0'])?.map((item, index) => (
               <Grid item xs={12} md={4} key={item?.payment_method_code}>
-                <MetodePembayaran data={item} updateData={updateData} />
+                <MetodePembayaran data={item} updateData={() => true} />
               </Grid>
             ))}
           </Grid>

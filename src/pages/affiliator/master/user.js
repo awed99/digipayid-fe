@@ -186,7 +186,7 @@ const MUITable = () => {
     setOpenModal(true)
   }
 
-  const handeBeforeSubmit = async () => {
+  const handleBeforeSubmit = async () => {
     setLoading(true)
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
@@ -428,7 +428,10 @@ const MUITable = () => {
               message: res?.message ?? 'Invalid OTP'
             })
 
-            handleSubmit(true)
+            if (res?.code === 0) {
+              handleSubmit(true)
+            }
+
             setLoading(false)
             setOpenModalOTP(false)
           })
@@ -478,7 +481,7 @@ const MUITable = () => {
         titleModal={titleModal}
         openModal={openModal}
         setOpenModal={setOpenModal}
-        handleSubmitFunction={() => handeBeforeSubmit()}
+        handleSubmitFunction={() => handleBeforeSubmit()}
       >
         <Box sx={{ p: 2 }}>
           <TextField
@@ -574,7 +577,7 @@ const MUITable = () => {
         </Typography>
         <Typography>Silakan masukkan kode OTP.</Typography>
         <Box sx={{ p: 10 }}>
-          <MuiOtp length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
+          <MuiOtp autoComplete length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
         </Box>
 
         <Box>

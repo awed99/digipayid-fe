@@ -32,6 +32,11 @@ const navigation = () => {
       path: '/admin/master/list-affiliator'
     },
     {
+      title: 'Withdraw Affiliator Request',
+      icon: Cash100,
+      path: '/affiliator/withdraw-request'
+    },
+    {
       sectionTitle: 'Merchants'
     },
     {

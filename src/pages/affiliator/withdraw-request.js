@@ -38,9 +38,6 @@ const MUITable = () => {
   const [fee, setFee] = useState(5000)
   const [valuePM, setValuePM] = useState()
 
-  const [IdMerchantSelected, setIdMerchantSelected] = useState(0)
-  const [merchants, setMerchants] = useState([])
-
   const [valueWD, setValueWD] = useState({
     amount: 0,
     bank_account: '',
@@ -331,12 +328,12 @@ const MUITable = () => {
     <Grid container spacing={6}>
       <Grid item xs={12}>
         <Typography variant='h5'>
-          <Link>Withdraw Request Merchants</Link>
+          <Link>Withdraw Request Affiliator</Link>
         </Typography>
         <Typography variant='h6'>
           <Link>Current Admin Saldo : IDR {format_rupiah(saldo)}</Link>
         </Typography>
-        <Typography variant='body2'>Merchants Withdraw Request List</Typography>
+        <Typography variant='body2'>Affiliator Withdraw Request List</Typography>
       </Grid>
 
       <Grid item xs={12}>
