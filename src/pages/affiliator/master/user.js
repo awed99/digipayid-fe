@@ -1,23 +1,13 @@
 // ** MUI Imports
-import {
-  Alert,
-  Backdrop,
-  CircularProgress,
-  IconButton,
-  InputAdornment,
-  InputLabel,
-  MenuItem,
-  Select,
-  Snackbar,
-  Switch
-} from '@mui/material'
-import Button from '@mui/material/Button'
+import { Alert, Backdrop, CircularProgress, IconButton, InputAdornment, Snackbar, Switch } from '@mui/material'
 import Card from '@mui/material/Card'
 import Divider from '@mui/material/Divider'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
+import { styled } from '@mui/material/styles'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+import { MuiOtp } from 'mui-otp-input-field'
 
 import { Edit, Visibility, VisibilityOff } from '@mui/icons-material'
 
@@ -37,16 +27,22 @@ import CustomNoRowsOverlay from '/src/components/no-rows-table'
 import * as yup from 'yup'
 
 import CryptoJS from 'crypto-js'
-import { filter } from 'lodash'
 import ModalDialog from 'src/components/dialog'
 import { generateSignature } from '/helpers/general'
 import { handleChangeEl } from '/hooks/general'
+
+const LinkStyled = styled('a')(({ theme }) => ({
+  fontSize: '0.875rem',
+  textDecoration: 'none',
+  color: theme.palette.primary.main
+}))
 
 const MUITable = () => {
   // ** States
   const [loading, setLoading] = useState(true)
 
   // ** States
+  const [countDown, setCountDown] = useState(0)
   const [triggerUpdateStatus, setTriggerUpdateStatus] = useState(0)
   const [errorsField, setErrorsField] = useState()
   const [isAdd, setIsAdd] = useState(true)
@@ -56,6 +52,9 @@ const MUITable = () => {
   const [valueModal, setValueModal] = useState({ id_user: null, username: '' })
   const [data, setData] = useState([])
   const [userPrivileges, setUserPrivileges] = useState([])
+  const [openModalOTP, setOpenModalOTP] = useState(false)
+  const [oTPEmail, setOTPEmail] = useState('')
+  const [oTPWA, setOTPWA] = useState('')
 
   const [alertMessage, setAlertMessage] = useState({
     open: false,
@@ -80,63 +79,34 @@ const MUITable = () => {
   let _loopNumber = 1
 
   const columns = [
-    { field: 'username', headerName: 'Name', width: 200 },
-    { field: 'user_privilege_name', headerName: 'Hak Akses', width: 200 },
+    { field: 'username', headerName: 'Name', width: 250 },
     {
       field: 'telp',
       headerName: 'Telp/WA',
-      width: 200,
+      width: 250,
       renderCell: params => (
         <a target='_blank' href={'//wa.me/+62' + params.value} rel='noreferrer'>
           +62{params.value}
         </a>
       )
     },
-    { field: 'email', headerName: 'Email', width: 250 },
+    { field: 'email', headerName: 'Email', width: 300 },
     {
       field: 'is_active',
       headerName: 'Status',
-      width: 100,
-      renderCell: params => (
-        <Switch
-          checked={params?.value === '1'}
-          onChange={async e => {
-            setIsAdd(false)
-            const _row = params?.row
-            _row.is_active = e?.target?.checked === true ? 1 : 0
-            _row.user_status = e?.target?.checked === true ? 'ACTIVE' : 'NON ACTIVE'
-            delete _row.id_user_privilege
-            delete _row.user_privilege_name
-            delete _row.user_privilege_type
-            delete _row.user_privilege_updated_at
-            setValueModal(_row)
-            setTriggerUpdateStatus(triggerUpdateStatus + 1)
-          }}
-          inputProps={{ 'aria-label': 'controlled' }}
-        />
-      )
+      width: 150,
+      renderCell: params => <Switch checked={params?.value === '1'} inputProps={{ 'aria-label': 'controlled' }} />
     },
     {
       field: 'update',
       headerName: 'Update',
-      width: 100,
+      width: 150,
       renderCell: params => (
         <IconButton aria-label='delete' onClick={() => handleClickButton(false, params)}>
           <Edit color='primary' />
         </IconButton>
       )
     }
-
-    // {
-    //   field: 'delete',
-    //   headerName: 'Delete',
-    //   width: 100,
-    //   renderCell: params => (
-    //     <IconButton aria-label='delete' onClick={() => handleClickDelete(params)}>
-    //       <Delete color='error' />
-    //     </IconButton>
-    //   )
-    // }
   ]
 
   const getData = async () => {
@@ -181,7 +151,6 @@ const MUITable = () => {
           .then(res => {
             // console.log(res?.data)
             setData(res?.data)
-            getUserPrivileges()
             setLoading(false)
           })
           .catch(() => setLoading(false))
@@ -189,7 +158,36 @@ const MUITable = () => {
       .catch(() => setLoading(false))
   }
 
-  const getUserPrivileges = async () => {
+  useEffect(() => {
+    getData()
+  }, [])
+
+  useLayoutEffect(() => {
+    // componentWillMount events
+    if (!localStorage.getItem('data-module')) {
+      router.push('/auth')
+    }
+  }, [])
+
+  useEffect(() => {
+    if (triggerUpdateStatus > 0) {
+      handleSubmit()
+    }
+  }, [triggerUpdateStatus])
+
+  const handleClickButton = async (_isAdd = false, _params = {}) => {
+    setIsAdd(false)
+    setTitleModal('Ubah User')
+    handleChangeEl('username', _params?.row?.username, valueModal, setValueModal, schemaData, setErrorsField)
+    handleChangeEl('email', _params?.row?.email, valueModal, setValueModal, schemaData, setErrorsField)
+    handleChangeEl('password', '', valueModal, setValueModal, schemaData, setErrorsField)
+    handleChangeEl('telp', _params?.row?.telp, valueModal, setValueModal, schemaData, setErrorsField)
+    handleChangeEl('id_user', _params?.row?.id_user, valueModal, setValueModal, schemaData, setErrorsField)
+    setOpenModal(true)
+  }
+
+  const handeBeforeSubmit = async () => {
+    setLoading(true)
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
@@ -213,7 +211,85 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/affiliator/master/user/privilege_list'
+        const _uri = '/affiliator/master/user/getOTP'
+
+        const _secret = await generateSignature(_uri)
+
+        const _valueModal = valueModal
+        if (!_valueModal?.password) {
+          delete _valueModal?.password
+        }
+
+        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
+          method: 'POST',
+          headers: {
+            'x-signature': _secret?.signature,
+            'x-timestamp': _secret?.timestamp,
+            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+              .toString(CryptoJS.enc.Utf8)
+              .replace(/\"/g, '')
+          },
+          body: JSON.stringify(valueModal)
+        })
+          .then(res => res.json())
+          .then(res => {
+            setAlertMessage({
+              open: true,
+              type: res?.code === 0 ? 'primary' : 'error',
+              message: res?.message
+            })
+
+            setLoading(false)
+            setOpenModal(false)
+            setOpenModalOTP(true)
+          })
+          .catch(() => setLoading(false))
+      })
+      .catch(() => setLoading(false))
+  }
+
+  const _handleResendOTP = async _type => {
+    setCountDown(60)
+    setLoading(true)
+    let _values = {}
+    if (_type == 'otp_email') {
+      _values = {
+        type: 'otp_email',
+        email: data?.email
+      }
+    } else if (_type == 'otp_wa') {
+      _values = {
+        type: 'otp_wa',
+        merchant_wa: data?.merchant_wa,
+        email: data?.email
+      }
+    }
+    setLoading(true)
+    const _uri0 = '/api/check-auth'
+    const _secret0 = await generateSignature(_uri0)
+
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+      method: 'POST',
+      headers: {
+        'x-signature': _secret0?.signature,
+        'x-timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          // console.log(res?.auth?.user)
+          router.push('/auth')
+
+          return false
+        } else {
+          return res
+        }
+      })
+      .then(async res => {
+        const _uri = '/affiliator/master/user/resend_otp'
+
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
@@ -225,75 +301,21 @@ const MUITable = () => {
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
           },
-          body: JSON.stringify({ id: 0 })
+          body: JSON.stringify(_values)
         })
           .then(res => res.json())
           .then(res => {
-            // console.log(res?.data)
-            setUserPrivileges(res?.data)
+            setAlertMessage({
+              open: true,
+              type: res?.code === 0 ? 'primary' : 'error',
+              message: res?.message
+            })
+
+            setLoading(false)
           })
-          .catch(() => false)
+          .catch(() => setLoading(false))
       })
-      .catch(() => false)
-  }
-
-  useEffect(() => {
-    getData()
-  }, [])
-
-  useLayoutEffect(() => {
-    // componentWillMount events
-    if (!localStorage.getItem('data-module')) {
-      router.push('/auth')
-    }
-  }, [])
-
-  useEffect(() => {
-    if (triggerUpdateStatus > 0) {
-      handleSubmit()
-    }
-  }, [triggerUpdateStatus])
-
-  const handleClickButton = async (_isAdd = false, _params = {}) => {
-    if (_isAdd === true) {
-      setIsAdd(true)
-      setTitleModal('Tambah User')
-      handleChangeEl('username', '', valueModal, setValueModal, schemaData, setErrorsField)
-      handleChangeEl('email', '', valueModal, setValueModal, schemaData, setErrorsField)
-      handleChangeEl('password', '', valueModal, setValueModal, schemaData, setErrorsField)
-      handleChangeEl('telp', '', valueModal, setValueModal, schemaData, setErrorsField)
-      handleChangeEl('user_privilege', '', valueModal, setValueModal, schemaData, setErrorsField)
-      handleChangeEl('id_user', null, valueModal, setValueModal, schemaData, setErrorsField)
-    } else {
-      setIsAdd(false)
-      setTitleModal('Ubah User')
-      handleChangeEl('username', _params?.row?.username, valueModal, setValueModal, schemaData, setErrorsField)
-      handleChangeEl('email', _params?.row?.email, valueModal, setValueModal, schemaData, setErrorsField)
-      handleChangeEl('password', '', valueModal, setValueModal, schemaData, setErrorsField)
-      handleChangeEl('telp', _params?.row?.telp, valueModal, setValueModal, schemaData, setErrorsField)
-      handleChangeEl(
-        'user_privilege',
-        _params?.row?.user_privilege,
-        valueModal,
-        setValueModal,
-        schemaData,
-        setErrorsField
-      )
-      handleChangeEl('id_user', _params?.row?.id_user, valueModal, setValueModal, schemaData, setErrorsField)
-    }
-
-    setOpenModal(true)
-  }
-
-  const handleClickDelete = async (_params = {}) => {
-    setIsAdd(false)
-    const _x = confirm('Anda yakin ingin menghapus User ' + _params?.row?.username + ' ?')
-    if (_x) {
-      handleChangeEl('username', _params?.row?.username, valueModal, setValueModal, schemaData, setErrorsField)
-      handleChangeEl('id_user', _params?.row?.id_user, valueModal, setValueModal, schemaData, setErrorsField)
-
-      handleSubmit(true)
-    }
+      .catch(() => setLoading(false))
   }
 
   const handleSubmit = async (isDelete = false) => {
@@ -321,12 +343,8 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri =
-          isAdd === true && isDelete === false
-            ? '/affiliator/master/user/create'
-            : isDelete === true
-            ? '/affiliator/master/user/delete'
-            : '/affiliator/master/user/update'
+        const _uri = '/affiliator/master/user/update'
+
         const _secret = await generateSignature(_uri)
 
         const _valueModal = valueModal
@@ -353,21 +371,77 @@ const MUITable = () => {
               message: res?.message
             })
 
-            if (res?.code === 0) {
-              // console.log(res?.data)
-              setData(res?.data)
-              setOpenModal(false)
-              setIsAdd(true)
-              setTitleModal('Tambah User')
-              handleChangeEl('username', '', valueModal, setValueModal, schemaData, setErrorsField)
-              handleChangeEl('id_user', null, valueModal, setValueModal, schemaData, setErrorsField)
-            }
+            setData(res?.data)
             setLoading(false)
+            setOpenModal(false)
           })
           .catch(() => setLoading(false))
       })
       .catch(() => setLoading(false))
   }
+
+  const _handleCheckValidOTP = async _type => {
+    setLoading(true)
+
+    const _uri0 = '/api/check-auth'
+    const _secret0 = await generateSignature(_uri0)
+
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+      method: 'POST',
+      headers: {
+        'x-signature': _secret0?.signature,
+        'x-timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          router.push('/auth')
+
+          return false
+        } else {
+          return res
+        }
+      })
+      .then(async res => {
+        const _uri = '/affiliator/master/user/check_valid_otp'
+
+        const _secret = await generateSignature(_uri)
+
+        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
+          method: 'POST',
+          headers: {
+            'x-signature': _secret?.signature,
+            'x-timestamp': _secret?.timestamp,
+            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+              .toString(CryptoJS.enc.Utf8)
+              .replace(/\"/g, '')
+          },
+          body: JSON.stringify({ otp_wa: oTPWA })
+        })
+          .then(res => res.json())
+          .then(res => {
+            setAlertMessage({
+              open: true,
+              type: res?.code === 0 ? 'primary' : 'error',
+              message: res?.message ?? 'Invalid OTP'
+            })
+
+            handleSubmit(true)
+            setLoading(false)
+            setOpenModalOTP(false)
+          })
+          .catch(() => setLoading(false))
+      })
+      .catch(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    if (countDown > 0) {
+      setTimeout(() => setCountDown(countDown - 1), 1000)
+    }
+  }, [countDown])
 
   return (
     <Grid container spacing={6}>
@@ -377,11 +451,6 @@ const MUITable = () => {
         </Typography>
         <Typography variant='body2'>Semua User yang tersedia</Typography>
         <Divider />
-        <Typography variant='body2'>
-          <Button variant='contained' size='small' sx={{ marginRight: 3.5 }} onClick={() => handleClickButton(true)}>
-            Tambah
-          </Button>
-        </Typography>
       </Grid>
       <Grid item xs={12}>
         <Card>
@@ -409,7 +478,7 @@ const MUITable = () => {
         titleModal={titleModal}
         openModal={openModal}
         setOpenModal={setOpenModal}
-        handleSubmitFunction={() => handleSubmit()}
+        handleSubmitFunction={() => handeBeforeSubmit()}
       >
         <Box sx={{ p: 2 }}>
           <TextField
@@ -490,23 +559,39 @@ const MUITable = () => {
             }}
           />
         </Box>
-        <Box sx={{ p: 2 }}>
-          <InputLabel id='demo-simple-select-label'>Privilege</InputLabel>
-          <Select
-            fullWidth
-            labelId='demo-simple-select-label'
-            id='demo-simple-select'
-            value={valueModal?.user_privilege}
-            label='Privilege'
-            size='small'
-            onChange={e => handleChangeEl('user_privilege', e, valueModal, setValueModal, schemaData, setErrorsField)}
-          >
-            {filter(userPrivileges, ['user_privilege_type', '1'])?.map(item => (
-              <MenuItem key={item?.id_user_privilege} value={item?.id_user_privilege}>
-                {item?.user_privilege_name}
-              </MenuItem>
-            ))}
-          </Select>
+      </ModalDialog>
+
+      <ModalDialog
+        titleModal='Konfirmasi OTP Ubah Data Affiliator'
+        openModal={openModalOTP}
+        setOpenModal={setOpenModalOTP}
+        handleSubmitFunction={_handleCheckValidOTP}
+      >
+        <Typography>
+          Kode OTP Login anda sudah dikirim
+          <br />
+          ke Email & WhatsApp anda {data?.merchant_wa}.
+        </Typography>
+        <Typography>Silakan masukkan kode OTP.</Typography>
+        <Box sx={{ p: 10 }}>
+          <MuiOtp length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
+        </Box>
+
+        <Box>
+          <Typography variant='body2'>
+            {countDown == 0 ? (
+              <>
+                <LinkStyled onClick={e => _handleResendOTP('otp_wa')}>Kirim Ulang Kode OTP Melalui WhatsApp</LinkStyled>
+                <br />
+                <br />
+                <LinkStyled onClick={e => _handleResendOTP('otp_email')}>Kirim Ulang Kode OTP Melalui Email</LinkStyled>
+              </>
+            ) : (
+              <LinkStyled disabled={true} sx={{ color: 'gray' }}>
+                Kirim Ulang Kode OTP dalam ({countDown})
+              </LinkStyled>
+            )}
+          </Typography>
         </Box>
       </ModalDialog>
 
