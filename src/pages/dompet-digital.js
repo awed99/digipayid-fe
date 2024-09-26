@@ -26,6 +26,8 @@ import { useRouter } from 'next/router'
 // ** MUI Imports
 import { AccessTime, Close, Done } from '@mui/icons-material'
 import Box from '@mui/material/Box'
+import { styled } from '@mui/material/styles'
+import { MuiOtp } from 'mui-otp-input-field'
 
 // ** Demo Components Imports
 import { DataGrid, GridToolbar } from '@mui/x-data-grid'
@@ -42,12 +44,20 @@ import { handleChangeEl } from '/hooks/general'
 import CustomNoRowsOverlay from '/src/components/no-rows-table'
 import TablePagination from '/src/components/table-pagination'
 
+const LinkStyled = styled('a')(({ theme }) => ({
+  fontSize: '0.875rem',
+  textDecoration: 'none',
+  color: theme.palette.primary.main
+}))
+
 const MUITable = () => {
   // ** States
+  const [countDown, setCountDown] = useState(0)
   const [loading, setLoading] = useState(false)
   const [openModal, setOpenModal] = useState(false)
   const [openModalPayment, setOpenModalPayment] = useState(false)
   const [openModalPaymentInfo, setOpenModalPaymentInfo] = useState(false)
+  const [openModalOTP, setOpenModalOTP] = useState(false)
   const [data, setData] = useState([])
   const [dataBank, setDataBank] = useState([])
   const [amountDeposit, setAmountDeposit] = useState(0)
@@ -62,6 +72,7 @@ const MUITable = () => {
   const [saldo, setSaldo] = useState(0)
   const [errorsField, setErrorsField] = useState({})
   const [valuePM, setValuePM] = useState()
+  const [oTPWA, setOTPWA] = useState('')
 
   const [valueWD, setValueWD] = useState({
     amount: 0,
@@ -702,6 +713,200 @@ const MUITable = () => {
     }
   }, [])
 
+  const handleBeforeSubmit = async () => {
+    setLoading(true)
+    const _uri0 = '/api/check-auth'
+    const _secret0 = await generateSignature(_uri0)
+
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+      method: 'POST',
+      headers: {
+        'x-signature': _secret0?.signature,
+        'x-timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          // console.log(res?.auth?.user)
+          router.push('/auth')
+
+          return false
+        } else {
+          return res
+        }
+      })
+      .then(async res => {
+        const _uri = '/transactions/journal/getOTP'
+
+        const _secret = await generateSignature(_uri)
+
+        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
+          method: 'POST',
+          headers: {
+            'x-signature': _secret?.signature,
+            'x-timestamp': _secret?.timestamp,
+            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+              .toString(CryptoJS.enc.Utf8)
+              .replace(/\"/g, '')
+          },
+          body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+        })
+          .then(res => res.json())
+          .then(res => {
+            setAlertMessage({
+              open: true,
+              type: res?.code === 0 ? 'primary' : 'error',
+              message: res?.message
+            })
+
+            setLoading(false)
+            setOpenModal(false)
+            setOpenModalOTP(true)
+          })
+          .catch(() => setLoading(false))
+      })
+      .catch(() => setLoading(false))
+  }
+
+  const _handleResendOTP = async _type => {
+    setCountDown(60)
+    setLoading(true)
+    let _values = {}
+    if (_type == 'otp_email') {
+      _values = {
+        type: 'otp_email',
+        email: JSON.parse(localStorage.getItem('data-module'))?.email
+      }
+    } else if (_type == 'otp_wa') {
+      _values = {
+        type: 'otp_wa',
+
+        // merchant_wa: data?.merchant_wa,
+        email: JSON.parse(localStorage.getItem('data-module'))?.email
+      }
+    }
+    setLoading(true)
+    const _uri0 = '/api/check-auth'
+    const _secret0 = await generateSignature(_uri0)
+
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+      method: 'POST',
+      headers: {
+        'x-signature': _secret0?.signature,
+        'x-timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          // console.log(res?.auth?.user)
+          router.push('/auth')
+
+          return false
+        } else {
+          return res
+        }
+      })
+      .then(async res => {
+        const _uri = '/transactions/journal/resend_otp'
+
+        const _secret = await generateSignature(_uri)
+
+        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
+          method: 'POST',
+          headers: {
+            'x-signature': _secret?.signature,
+            'x-timestamp': _secret?.timestamp,
+            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+              .toString(CryptoJS.enc.Utf8)
+              .replace(/\"/g, '')
+          },
+          body: JSON.stringify(_values)
+        })
+          .then(res => res.json())
+          .then(res => {
+            setAlertMessage({
+              open: true,
+              type: res?.code === 0 ? 'primary' : 'error',
+              message: res?.message
+            })
+
+            setLoading(false)
+          })
+          .catch(() => setLoading(false))
+      })
+      .catch(() => setLoading(false))
+  }
+
+  const _handleCheckValidOTP = async _type => {
+    setLoading(true)
+
+    const _uri0 = '/api/check-auth'
+    const _secret0 = await generateSignature(_uri0)
+
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+      method: 'POST',
+      headers: {
+        'x-signature': _secret0?.signature,
+        'x-timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          router.push('/auth')
+
+          return false
+        } else {
+          return res
+        }
+      })
+      .then(async res => {
+        const _uri = '/transactions/journal/check_valid_otp'
+
+        const _secret = await generateSignature(_uri)
+
+        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
+          method: 'POST',
+          headers: {
+            'x-signature': _secret?.signature,
+            'x-timestamp': _secret?.timestamp,
+            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+              .toString(CryptoJS.enc.Utf8)
+              .replace(/\"/g, '')
+          },
+          body: JSON.stringify({ otp_wa: oTPWA })
+        })
+          .then(res => res.json())
+          .then(res => {
+            setAlertMessage({
+              open: true,
+              type: res?.code === 0 ? 'primary' : 'error',
+              message: res?.message ?? 'Invalid OTP'
+            })
+
+            if (res?.code === 0) {
+              handleWithdraw(true)
+            }
+
+            setLoading(false)
+            setOpenModalOTP(false)
+          })
+          .catch(() => setLoading(false))
+      })
+      .catch(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    if (countDown > 0) {
+      setTimeout(() => setCountDown(countDown - 1), 1000)
+    }
+  }, [countDown])
+
   return (
     <Grid container spacing={6}>
       <Grid item xs={12}>
@@ -1087,7 +1292,7 @@ const MUITable = () => {
         titleModal='Konfirmasi Penarikan Dana'
         openModal={openModal}
         setOpenModal={setOpenModal}
-        handleSubmitFunction={handleWithdraw}
+        handleSubmitFunction={async () => handleBeforeSubmit()}
       >
         <Box style={{ width: 550 }}>
           Apakah anda yakin ingin melakukan penarikan dana sebesar <br />
@@ -1263,6 +1468,40 @@ const MUITable = () => {
               </>
             }
           </Box>
+        </Box>
+      </ModalDialog>
+
+      <ModalDialog
+        titleModal='Konfirmasi OTP Withdraw'
+        openModal={openModalOTP}
+        setOpenModal={setOpenModalOTP}
+        handleSubmitFunction={_handleCheckValidOTP}
+      >
+        <Typography>
+          Kode OTP Login anda sudah dikirim
+          <br />
+          ke Email & WhatsApp anda {data?.merchant_wa}.
+        </Typography>
+        <Typography>Silakan masukkan kode OTP.</Typography>
+        <Box sx={{ p: 10 }}>
+          <MuiOtp autoComplete length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
+        </Box>
+
+        <Box>
+          <Typography variant='body2'>
+            {countDown == 0 ? (
+              <>
+                <LinkStyled onClick={e => _handleResendOTP('otp_wa')}>Kirim Ulang Kode OTP Melalui WhatsApp</LinkStyled>
+                <br />
+                <br />
+                <LinkStyled onClick={e => _handleResendOTP('otp_email')}>Kirim Ulang Kode OTP Melalui Email</LinkStyled>
+              </>
+            ) : (
+              <LinkStyled disabled={true} sx={{ color: 'gray' }}>
+                Kirim Ulang Kode OTP dalam ({countDown})
+              </LinkStyled>
+            )}
+          </Typography>
         </Box>
       </ModalDialog>
 

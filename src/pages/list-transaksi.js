@@ -1,8 +1,10 @@
 // ** MUI Imports
-import { Alert, Backdrop, Button, Card, Chip, CircularProgress, Divider, Snackbar } from '@mui/material'
+import { Alert, Backdrop, Button, Card, Chip, CircularProgress, Divider, Snackbar, TextField } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
+
+import * as yup from 'yup'
 
 // ** React Imports
 import { useEffect, useLayoutEffect, useState } from 'react'
@@ -16,10 +18,11 @@ import Box from '@mui/material/Box'
 
 // ** Demo Components Imports
 import { DataGrid, GridToolbar } from '@mui/x-data-grid'
+import { handleChangeEl } from '/hooks/general'
 import CustomNoRowsOverlay from '/src/components/no-rows-table'
 
 // import CryptoJS from 'crypto-js/aes'
-import { filter } from 'lodash'
+import { filter, size } from 'lodash'
 import moment from 'moment'
 import DateRangePicker from 'src/components/date-range-picker'
 import ModalDialog from 'src/components/dialog'
@@ -36,9 +39,11 @@ const MUITable = () => {
   const [openModalSuccessPayment, setOpenModalSuccessPayment] = useState(false)
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState([])
+  const [errorsField, setErrorsField] = useState()
   const [dataProduct, setDataProduct] = useState([])
   const [paymentDetail, setPaymentDetail] = useState([])
   const [openModal, setOpenModal] = useState(false)
+  const [openModalResendBilling, setOpenModalResendBilling] = useState(false)
   const [openModalConfirmationDelete, setOpenModalConfirmationDelete] = useState(false)
   const [openModalPayment, setOpenModalPayment] = useState(false)
   const [dataSelected, setDataSelected] = useState({})
@@ -49,6 +54,16 @@ const MUITable = () => {
     open: false,
     type: 'success',
     message: ''
+  })
+
+  const [valueModalTransaction, setValueModalTransaction] = useState({
+    email_customer: '',
+    wa_customer: ''
+  })
+
+  let schemaDataProduct = yup.object().shape({
+    email_customer: yup.string().email(),
+    wa_customer: yup.string()
   })
 
   // ** Hooks
@@ -278,7 +293,7 @@ const MUITable = () => {
       .catch(() => setLoading(false))
   }
 
-  const reSendBilling = async _reffID => {
+  const reSendBilling = async (_reffID, _valueModalTransaction) => {
     setLoading(true)
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
@@ -316,7 +331,12 @@ const MUITable = () => {
               .replace(/\"/g, '')
           },
 
-          body: JSON.stringify({ invoice_number: _reffID })
+          body: JSON.stringify({
+            invoice_number: _reffID,
+            email_customer:
+              size(_valueModalTransaction?.email_customer) < 5 ? undefined : _valueModalTransaction?.email_customer,
+            wa_customer: size(_valueModalTransaction?.wa_customer) < 5 ? undefined : _valueModalTransaction?.wa_customer
+          })
 
           // body: dataX
         })
@@ -331,6 +351,13 @@ const MUITable = () => {
               message: 'Sukses mengirim ulang tagihan'
             })
             setLoading(false)
+            setOpenModalResendBilling(false)
+            setValueModalTransaction({
+              email_customer: '',
+              wa_customer: ''
+            })
+            handleChangeEl('email_customer', '', valueModal, setValueModal, schemaData, setErrorsField)
+            handleChangeEl('wa_customer', '', valueModal, setValueModal, schemaData, setErrorsField)
           })
           .catch(() => setLoading(false))
       })
@@ -920,11 +947,65 @@ const MUITable = () => {
                 size='small'
                 color='warning'
                 sx={{ m: 3 }}
-                onClick={() => reSendBilling(paymentDetail?.req?.reff_id)}
+                onClick={() => setOpenModalResendBilling(true)}
               >
                 Kirim Ulang Tagihan (WA/Email)
               </Button>
             </Box>
+          </Box>
+        </Box>
+      </ModalDialog>
+
+      <ModalDialog
+        titleModal='Kirim Ulang Tagihan (WA/Email)'
+        openModal={openModalResendBilling}
+        setOpenModal={setOpenModalResendBilling}
+        handleSubmitFunction={() =>
+          (size(valueModalTransaction?.email_customer) > 0 || size(valueModalTransaction?.wa_customer) > 0) &&
+          reSendBilling(paymentDetail?.req?.reff_id, valueModalTransaction)
+        }
+        size='sm'
+      >
+        <Box>
+          <h5>Data Pelanggan (Struk Digital - Go Green)</h5>
+          <Box sx={{ mt: -4 }}>
+            <TextField
+              label='Email Pelanggan'
+              variant='outlined'
+              fullWidth
+              size='small'
+              onChange={e =>
+                handleChangeEl(
+                  'email_customer',
+                  e,
+                  valueModalTransaction,
+                  setValueModalTransaction,
+                  schemaDataProduct,
+                  setErrorsField
+                )
+              }
+              value={valueModalTransaction?.email_customer}
+            />
+          </Box>
+          <Box>
+            <TextField
+              label='No Whatsapp'
+              variant='outlined'
+              fullWidth
+              size='small'
+              sx={{ mt: 4 }}
+              onChange={e =>
+                handleChangeEl(
+                  'wa_customer',
+                  e,
+                  valueModalTransaction,
+                  setValueModalTransaction,
+                  schemaDataProduct,
+                  setErrorsField
+                )
+              }
+              value={valueModalTransaction?.wa_customer}
+            />
           </Box>
         </Box>
       </ModalDialog>
