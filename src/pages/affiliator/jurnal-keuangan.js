@@ -1,5 +1,5 @@
 // ** MUI Imports
-import { Autocomplete, Backdrop, Card, Chip, CircularProgress, Divider, TextField } from '@mui/material'
+import { Backdrop, Card, Chip, CircularProgress, Divider } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
@@ -18,7 +18,6 @@ import Box from '@mui/material/Box'
 import { DataGrid, GridToolbar } from '@mui/x-data-grid'
 
 // import CryptoJS from 'crypto-js/aes'
-import { filter } from 'lodash'
 import moment from 'moment'
 import DateRangePicker from 'src/components/date-range-picker'
 import { format_rupiah, generateSignature } from '/helpers/general'
@@ -181,7 +180,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/admin/transactions/journal/list'
+        const _uri = '/affiliator/transactions/journal/list'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API_HOST}${_uri}`, {
@@ -206,74 +205,9 @@ const MUITable = () => {
       .catch(() => setLoading(false))
   }
 
-  const getMerchants = async () => {
-    const _uri0 = '/api/check-auth'
-    const _secret0 = await generateSignature(_uri0)
-
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
-      method: 'POST',
-      headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
-      },
-      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
-    })
-      .then(res => res.json())
-      .then(async res => {
-        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
-          // console.log(res?.auth?.user)
-          router.push('/auth')
-
-          return false
-        } else {
-          return res
-        }
-      })
-      .then(async res => {
-        const _uri = '/admin/master/user/lists'
-        const _secret = await generateSignature(_uri)
-
-        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
-          method: 'POST',
-          headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
-            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
-              .toString(CryptoJS.enc.Utf8)
-              .replace(/\"/g, '')
-          },
-          body: JSON.stringify({ id: 0 })
-        })
-          .then(res => res.json())
-          .then(res => {
-            // console.log(res?.data)
-            const _merchants = []
-            filter(res?.data, { id_user_parent: '0' })?.forEach(item => {
-              _merchants.push({ id: item?.id_user, label: item?.merchant_name })
-            })
-
-            // console.log('merchants: ', _merchants)
-            setMerchants(_merchants)
-
-            getPaymentMethods()
-          })
-          .catch(() => setLoading(false))
-      })
-      .catch(() => setLoading(false))
-  }
-
   useEffect(() => {
-    getMerchants()
+    getData()
   }, [])
-
-  useEffect(() => {
-    // console.log('IdMerchantSelected: ', IdMerchantSelected)
-    if (IdMerchantSelected > 0) {
-      getData()
-    } else {
-      setData([])
-    }
-  }, [IdMerchantSelected])
 
   useLayoutEffect(() => {
     // componentWillMount events
@@ -296,18 +230,6 @@ const MUITable = () => {
             <Box>
               <DateRangePicker
                 onChange={(_startDate, _endDate) => IdMerchantSelected > 0 && getData(_startDate, _endDate)}
-              />{' '}
-              &emsp;
-              <Autocomplete
-                disablePortal
-                id='combo-box-demo'
-                options={merchants}
-                sx={{ width: 300, display: 'inline-block', verticalAlign: 'middle' }}
-                value={filter(merchants, ['id', IdMerchantSelected])[0]}
-                onChange={(_event, newValue) => {
-                  setIdMerchantSelected(newValue?.id ?? 0)
-                }}
-                renderInput={params => <TextField {...params} label='Pilih Merchant' />}
               />
             </Box>
 
