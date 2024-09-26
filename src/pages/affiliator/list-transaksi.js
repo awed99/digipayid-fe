@@ -51,17 +51,12 @@ const MUITable = () => {
     {
       field: 'invoice_number',
       headerName: 'No. Invoice',
-      width: 200,
-      renderCell: params => (
-        <Button size='small' variant='contained' onClick={() => handleGetProducts(params?.row?.invoice_number)}>
-          {params?.value}
-        </Button>
-      )
+      width: 200
     },
     {
       field: 'status_transaction',
       headerName: 'Status',
-      width: 200,
+      width: 150,
       renderCell: params =>
         parseInt(params?.value) === 0 ? (
           <Chip
@@ -69,7 +64,6 @@ const MUITable = () => {
             label='Menunggu Pembayaran'
             color='warning'
             deleteIcon={<AccessTime />}
-            onClick={() => handleGetProducts(params?.row?.invoice_number)}
             sx={{
               height: 24,
               fontSize: '0.75rem',
@@ -83,7 +77,6 @@ const MUITable = () => {
             color='primary'
             deleteIcon={<Done />}
             size='small'
-            onClick={() => handleGetProducts(params?.row?.invoice_number)}
             sx={{
               height: 24,
               fontSize: '0.75rem',
@@ -95,7 +88,6 @@ const MUITable = () => {
           <Chip
             label='Selesai'
             color='success'
-            onClick={() => handleGetProducts(params?.row?.invoice_number)}
             deleteIcon={<AccessTime />}
             size='small'
             sx={{
@@ -111,7 +103,6 @@ const MUITable = () => {
             label='Batal'
             color='error'
             deleteIcon={<Close />}
-            onClick={() => handleGetProducts(params?.row?.invoice_number)}
             sx={{
               height: 24,
               fontSize: '0.75rem',
@@ -129,48 +120,6 @@ const MUITable = () => {
       width: 180
 
       // renderCell: params => format_rupiah((params?.value).toString())
-    },
-    {
-      field: 'total_product',
-      headerName: 'Jml Produk',
-      type: 'number',
-      width: 110,
-      renderCell: params => format_rupiah((params?.value).toString())
-    },
-    {
-      field: 'amount_to_pay',
-      headerName: 'Dibayar',
-      type: 'number',
-      width: 110,
-      renderCell: params => format_rupiah((params?.value).toString())
-    },
-    {
-      field: 'amount_to_back',
-      headerName: 'Kembalian',
-      type: 'number',
-      width: 110,
-      renderCell: params => format_rupiah('-' + (params?.value).toString())
-    },
-    {
-      field: 'amount',
-      headerName: 'Sub Total',
-      type: 'number',
-      width: 110,
-      renderCell: params => format_rupiah((params?.value).toString())
-    },
-    {
-      field: 'fee',
-      headerName: 'Fee',
-      type: 'number',
-      width: 110,
-      renderCell: params => format_rupiah('-' + (params?.value).toString())
-    },
-    {
-      field: 'amount_to_receive',
-      headerName: 'DIterima',
-      type: 'number',
-      width: 110,
-      renderCell: params => format_rupiah((params?.value).toString())
     },
     {
       field: 'time_transaction',
@@ -236,7 +185,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/admin/master/user/lists'
+        const _uri = '/affiliator/master/user/lists'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
@@ -295,7 +244,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/admin/transactions/orders/list'
+        const _uri = '/affiliator/transactions/orders/list'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API_HOST}${_uri}`, {
@@ -348,7 +297,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/admin/transactions/orders/get_products'
+        const _uri = '/affiliator/transactions/orders/get_products'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API_HOST}${_uri}`, {
@@ -399,7 +348,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/admin/transactions/orders/cancel_transaction'
+        const _uri = '/affiliator/transactions/orders/cancel_transaction'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API_HOST}${_uri}`, {
@@ -464,7 +413,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/admin/transactions/journal/check_deposit_ewallet'
+        const _uri = '/affiliator/transactions/journal/check_deposit_ewallet'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
@@ -559,20 +508,20 @@ const MUITable = () => {
                         )}
                       </b>
                     </Typography>
-                    <Typography>
+                    {/* <Typography>
                       <b>Transaksi Kliring :{format_rupiah(filter(data, ['status_transaction', '1'])?.length)}</b>
-                    </Typography>
+                    </Typography> */}
                     <Typography>
                       <b>Transaksi Sukses :{format_rupiah(filter(data, ['status_transaction', '2'])?.length)}</b>
                     </Typography>
-                    <Typography>
+                    {/* <Typography>
                       <b>
                         Transaksi Belum terbayar :{format_rupiah(filter(data, ['status_transaction', '0'])?.length)}
                       </b>
-                    </Typography>
-                    <Typography>
+                    </Typography> */}
+                    {/* <Typography>
                       <b>Transaksi Batal :{format_rupiah(filter(data, ['status_transaction', '9'])?.length)}</b>
-                    </Typography>
+                    </Typography> */}
                     <Typography>
                       <b>
                         Total Terbayar : IDR{' '}
