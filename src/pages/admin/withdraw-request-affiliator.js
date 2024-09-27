@@ -199,7 +199,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/admin/transactions/journal/list_withdraw_request'
+        const _uri = '/admin/transactions/journal/list_withdraw_request_affiliator'
         const _secret = await generateSignature(_uri)
 
         await fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
@@ -283,7 +283,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/admin/transactions/journal/update_withdraw_request'
+        const _uri = '/admin/transactions/journal/update_withdraw_request_affiliator'
         const _secret = await generateSignature(_uri)
 
         await fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
