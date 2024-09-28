@@ -667,9 +667,9 @@ const MUITable = () => {
     // selectRef?.current
   }, [textSelectRef])
 
-  useEffect(() => {
-    console.log('valueWD: ', valueWD)
-  }, [valueWD])
+  // useEffect(() => {
+  //   console.log('valueWD: ', valueWD)
+  // }, [valueWD])
 
   useLayoutEffect(() => {
     // componentWillMount events
