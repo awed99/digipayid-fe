@@ -23,7 +23,7 @@ import Table from 'src/pages/admin/views/dashboard/Table'
 import TableMerchants from 'src/pages/admin/views/dashboard/TableMerchants'
 import TotalEarning from 'src/pages/admin/views/dashboard/TotalEarning'
 import Trophy from 'src/pages/admin/views/dashboard/Trophy'
-import TrophyReal from 'src/pages/admin/views/dashboard/TrophyReal'
+import TrophyReffCode from 'src/pages/admin/views/dashboard/TrophyReffCode'
 import WeeklyOverview from 'src/pages/admin/views/dashboard/WeeklyOverview'
 import WeeklyOverviewWithdraw from 'src/pages/admin/views/dashboard/WeeklyOverviewWithdraw'
 
@@ -65,7 +65,7 @@ const Dashboard = () => {
         }
       })
       .then(async res => {
-        const _uri = '/admin/dashboard/data'
+        const _uri = '/affiliator/dashboard/data'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API_HOST}${_uri}`, {
@@ -110,7 +110,7 @@ const Dashboard = () => {
           <Trophy saldo={data?.saldo} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TrophyReal saldo={data?.saldo_real} />
+          <TrophyReffCode reffCode={data?.user?.reff_code} />
         </Grid>
         {/* <Grid item xs={12} md={12}>
           <StatisticsCard

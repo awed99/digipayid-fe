@@ -26,6 +26,7 @@ import WeeklyOverview from 'src/views/dashboard/WeeklyOverview'
 // import CryptoJS from 'crypto-js/aes'
 import { filter } from 'lodash'
 import { useRouter } from 'next/router'
+import store from 'store'
 import { format_rupiah, generateSignature } from '/helpers/general'
 
 const Dashboard = () => {
@@ -90,7 +91,19 @@ const Dashboard = () => {
   }
 
   useEffect(() => {
-    getData()
+    console.log(store.get('module'))
+
+    if (store.get('module') === 'admin') {
+      router.push('/admin')
+    } else if (store.get('module') === 'affiliator') {
+      router.push('/affiliator')
+    } else if (store.get('module') === 'user') {
+      getData()
+    } else if (store.get('module') === null || localStorage.get('module') === undefined) {
+      // router.push('/auth')
+    } else {
+      // router.push('/auth')
+    }
   }, [])
 
   useLayoutEffect(() => {

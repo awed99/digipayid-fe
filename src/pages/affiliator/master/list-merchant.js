@@ -144,7 +144,8 @@ const MUITable = () => {
           .then(res => {
             // console.log(res?.data)
             setData(res?.data)
-            getUserPrivileges()
+
+            // getUserPrivileges()
             setLoading(false)
           })
           .catch(() => setLoading(false))
