@@ -352,6 +352,7 @@ const RegisterPage = () => {
       .then(async res => {
         setCaptchaRisk(res?.riskAnalysis?.score)
       })
+      .catch(() => false)
   }, [captcha])
 
   useEffect(() => {
