@@ -79,11 +79,12 @@ const MUITable = () => {
   let _loopNumber = 1
 
   const columns = [
-    { field: 'username', headerName: 'Name', width: 250 },
+    { field: 'reff_code', headerName: 'Kode Refferal', width: 130 },
+    { field: 'username', headerName: 'Nama', width: 250 },
     {
       field: 'telp',
       headerName: 'Telp/WA',
-      width: 250,
+      width: 180,
       renderCell: params => (
         <a target='_blank' href={'//wa.me/+62' + params.value} rel='noreferrer'>
           +62{params.value}
@@ -94,13 +95,13 @@ const MUITable = () => {
     {
       field: 'is_active',
       headerName: 'Status',
-      width: 150,
+      width: 100,
       renderCell: params => <Switch checked={params?.value === '1'} inputProps={{ 'aria-label': 'controlled' }} />
     },
     {
       field: 'update',
       headerName: 'Update',
-      width: 150,
+      width: 100,
       renderCell: params => (
         <IconButton aria-label='delete' onClick={() => handleClickButton(false, params)}>
           <Edit color='primary' />
