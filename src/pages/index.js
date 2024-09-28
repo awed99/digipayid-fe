@@ -100,9 +100,9 @@ const Dashboard = () => {
     } else if (store.get('module') === 'user') {
       getData()
     } else if (store.get('module') === null || localStorage.get('module') === undefined) {
-      // router.push('/auth')
+      router.push('/auth')
     } else {
-      // router.push('/auth')
+      router.push('/auth')
     }
   }, [])
 
