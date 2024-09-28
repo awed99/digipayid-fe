@@ -393,22 +393,6 @@ const MUITable = () => {
       .catch(() => setLoading(false))
   }
 
-  useEffect(() => {
-    setLoading(true)
-    getPaymentMethods()
-  }, [])
-
-  useEffect(() => {
-    if (withdrawMethods?.length > 0) {
-      // console.log('withdrawMethods: ', withdrawMethods)
-      // getData(
-      //   dayjs().startOf('month').format('YYYY-MM-DD'),
-      //   dayjs().endOf('month').format('YYYY-MM-DD'),
-      //   withdrawMethods
-      // )
-    }
-  }, [withdrawMethods])
-
   const handleWithdraw = async () => {
     setLoading(true)
     const _uri0 = '/api/check-auth'
@@ -693,6 +677,26 @@ const MUITable = () => {
       router.push('/auth')
     }
   }, [])
+  useEffect(() => {
+    setLoading(true)
+    getPaymentMethods()
+  }, [])
+
+  useEffect(() => {
+    if (withdrawMethods?.length > 0) {
+      // console.log('withdrawMethods: ', withdrawMethods)
+      // getData(
+      //   dayjs().startOf('month').format('YYYY-MM-DD'),
+      //   dayjs().endOf('month').format('YYYY-MM-DD'),
+      //   withdrawMethods
+      // )
+    }
+  }, [withdrawMethods])
+  useEffect(() => {
+    if (countDown > 0) {
+      setTimeout(() => setCountDown(countDown - 1), 1000)
+    }
+  }, [countDown])
 
   return (
     <Grid container spacing={6}>
