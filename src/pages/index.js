@@ -91,7 +91,7 @@ const Dashboard = () => {
   }
 
   useEffect(() => {
-    console.log(store.get('module'))
+    // console.log(store.get('module'))
 
     if (store.get('module') === 'admin') {
       router.push('/admin')
