@@ -1208,7 +1208,7 @@ const MUITable = () => {
               columns={columns}
               getRowId={row => row.id}
               initialState={{
-                ...data.initialState,
+                ...data?.initialState,
                 pagination: { paginationModel: { pageSize: 25 } }
               }}
               slots={{

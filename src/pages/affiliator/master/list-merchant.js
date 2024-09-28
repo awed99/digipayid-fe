@@ -29,15 +29,7 @@ const MUITable = () => {
   const [loading, setLoading] = useState(true)
 
   // ** States
-  const [triggerUpdateStatus, setTriggerUpdateStatus] = useState(0)
-  const [errorsField, setErrorsField] = useState()
-  const [isAdd, setIsAdd] = useState(true)
-  const [showPassword, setShowPassword] = useState(false)
-  const [openModal, setOpenModal] = useState(false)
-  const [titleModal, setTitleModal] = useState('Tambah User')
-  const [valueModal, setValueModal] = useState({ id_user: null, username: '' })
   const [data, setData] = useState([])
-  const [userPrivileges, setUserPrivileges] = useState([])
 
   // ** Hooks
   const router = useRouter()
@@ -60,7 +52,6 @@ const MUITable = () => {
     { field: 'merchant_name', headerName: 'Merchant Name', width: 200 },
     { field: 'username', headerName: 'Owner Name', width: 200 },
 
-    // { field: 'user_privilege_name', headerName: 'Hak Akses', width: 200 },
     {
       field: 'telp',
       headerName: 'Telp/WA',
@@ -78,28 +69,6 @@ const MUITable = () => {
       width: 100,
       renderCell: params => <Switch checked={params?.value === '1'} inputProps={{ 'aria-label': 'controlled' }} />
     }
-
-    // {
-    //   field: 'update',
-    //   headerName: 'Update',
-    //   width: 100,
-    //   renderCell: params => (
-    //     <IconButton aria-label='delete' onClick={() => handleClickButton(false, params)}>
-    //       <Edit color='primary' />
-    //     </IconButton>
-    //   )
-    // }
-
-    // {
-    //   field: 'delete',
-    //   headerName: 'Delete',
-    //   width: 100,
-    //   renderCell: params => (
-    //     <IconButton aria-label='delete' onClick={() => handleClickDelete(params)}>
-    //       <Delete color='error' />
-    //     </IconButton>
-    //   )
-    // }
   ]
 
   const getData = async () => {
@@ -142,9 +111,13 @@ const MUITable = () => {
         })
           .then(res => res.json())
           .then(res => {
+<<<<<<< HEAD
             // console.log(res?.data)
             setData(res?.data)
 
+=======
+            setData(res?.data ?? [])
+>>>>>>> a8c343847aa494af5fc21e5d5e48d9d9a334f7b4
             // getUserPrivileges()
             setLoading(false)
           })
@@ -153,180 +126,9 @@ const MUITable = () => {
       .catch(() => setLoading(false))
   }
 
-  const getUserPrivileges = async () => {
-    const _uri0 = '/api/check-auth'
-    const _secret0 = await generateSignature(_uri0)
-
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
-      method: 'POST',
-      headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
-      },
-      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
-    })
-      .then(res => res.json())
-      .then(async res => {
-        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
-          // console.log(res?.auth?.user)
-          router.push('/auth')
-
-          return false
-        } else {
-          return res
-        }
-      })
-      .then(async res => {
-        const _uri = '/affiliator/master/user/privilege_list'
-        const _secret = await generateSignature(_uri)
-
-        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
-          method: 'POST',
-          headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
-            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
-              .toString(CryptoJS.enc.Utf8)
-              .replace(/\"/g, '')
-          },
-          body: JSON.stringify({ id: 0 })
-        })
-          .then(res => res.json())
-          .then(res => {
-            // console.log(res?.data)
-            setUserPrivileges(res?.data)
-          })
-          .catch(() => false)
-      })
-      .catch(() => false)
-  }
-
   useEffect(() => {
     getData()
   }, [])
-
-  useEffect(() => {
-    if (triggerUpdateStatus > 0) {
-      handleSubmit()
-    }
-  }, [triggerUpdateStatus])
-
-  // const handleClickButton = async (_isAdd = false, _params = {}) => {
-  //   if (_isAdd === true) {
-  //     setIsAdd(true)
-  //     setTitleModal('Tambah User')
-  //     handleChangeEl('merchant_name', '', valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('username', '', valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('email', '', valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('password', '', valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('telp', '', valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('user_privilege', '', valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('id_user', null, valueModal, setValueModal, schemaData, setErrorsField)
-  //   } else {
-  //     setIsAdd(false)
-  //     setTitleModal('Ubah User')
-  //     handleChangeEl(
-  //       'merchant_name',
-  //       _params?.row?.merchant_name,
-  //       valueModal,
-  //       setValueModal,
-  //       schemaData,
-  //       setErrorsField
-  //     )
-  //     handleChangeEl('username', _params?.row?.username, valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('email', _params?.row?.email, valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('password', '', valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('telp', _params?.row?.telp, valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl(
-  //       'user_privilege',
-  //       _params?.row?.user_privilege,
-  //       valueModal,
-  //       setValueModal,
-  //       schemaData,
-  //       setErrorsField
-  //     )
-  //     handleChangeEl('id_user', _params?.row?.id_user, valueModal, setValueModal, schemaData, setErrorsField)
-  //   }
-
-  //   setOpenModal(true)
-  // }
-
-  // const handleClickDelete = async (_params = {}) => {
-  //   setIsAdd(false)
-  //   const _x = confirm('Anda yakin ingin menghapus Merchant ' + _params?.row?.username + ' ?')
-  //   if (_x) {
-  //     handleChangeEl('username', _params?.row?.username, valueModal, setValueModal, schemaData, setErrorsField)
-  //     handleChangeEl('id_user', _params?.row?.id_user, valueModal, setValueModal, schemaData, setErrorsField)
-
-  //     handleSubmit(true)
-  //   }
-  // }
-
-  // const handleSubmit = async (isDelete = false) => {
-  //   setLoading(true)
-  //   const _uri0 = '/api/check-auth'
-  //   const _secret0 = await generateSignature(_uri0)
-
-  //   fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
-  //     method: 'POST',
-  //     headers: {
-  //       'x-signature': _secret0?.signature,
-  //       'x-timestamp': _secret0?.timestamp
-  //     },
-  //     body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
-  //   })
-  //     .then(res => res.json())
-  //     .then(async res => {
-  //       if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
-  //         // console.log(res?.auth?.user)
-  //         router.push('/auth')
-
-  //         return false
-  //       } else {
-  //         return res
-  //       }
-  //     })
-  //     .then(async res => {
-  //       const _uri =
-  //         isAdd === true && isDelete === false
-  //           ? '/admin/master/user/create'
-  //           : isDelete === true
-  //           ? '/admin/master/user/delete'
-  //           : '/admin/master/user/update'
-  //       const _secret = await generateSignature(_uri)
-
-  //       const _valueModal = valueModal
-  //       if (!_valueModal?.password) {
-  //         delete _valueModal?.password
-  //       }
-
-  //       fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
-  //         method: 'POST',
-  //         headers: {
-  //           'x-signature': _secret?.signature,
-  //           'x-timestamp': _secret?.timestamp,
-  //           Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
-  //             .toString(CryptoJS.enc.Utf8)
-  //             .replace(/\"/g, '')
-  //         },
-  //         body: JSON.stringify(_valueModal)
-  //       })
-  //         .then(res => res.json())
-  //         .then(res => {
-  //           // console.log(res?.data)
-  //           // setData(res?.data)
-  //           getData()
-  //           setOpenModal(false)
-  //           setIsAdd(true)
-  //           setTitleModal('Tambah Merchant')
-  //           handleChangeEl('username', '', valueModal, setValueModal, schemaData, setErrorsField)
-  //           handleChangeEl('id_user', null, valueModal, setValueModal, schemaData, setErrorsField)
-  //           setLoading(false)
-  //         })
-  //         .catch(() => setLoading(false))
-  //     })
-  //     .catch(() => setLoading(false))
-  // }
 
   useLayoutEffect(() => {
     // componentWillMount events
@@ -343,11 +145,6 @@ const MUITable = () => {
         </Typography>
         <Typography variant='body2'>Semua Merchant yang ada</Typography>
         <Divider />
-        {/* <Typography variant='body2'>
-          <Button variant='contained' size='small' sx={{ marginRight: 3.5 }} onClick={() => handleClickButton(true)}>
-            Tambah
-          </Button>
-        </Typography> */}
       </Grid>
       <Grid item xs={12}>
         <Card>
@@ -370,127 +167,6 @@ const MUITable = () => {
           </Box>
         </Card>
       </Grid>
-
-      {/* <ModalDialog
-        titleModal={titleModal}
-        openModal={openModal}
-        setOpenModal={setOpenModal}
-        handleSubmitFunction={() => handleSubmit()}
-      >
-        <Box sx={{ p: 2 }}>
-          <TextField
-            label='Merchant Name'
-            variant='outlined'
-            fullWidth
-            size='small'
-            autoComplete={false}
-            onChange={e => handleChangeEl('merchant_name', e, valueModal, setValueModal, schemaData, setErrorsField)}
-            value={valueModal?.merchant_name}
-            error={errorsField?.merchant_name}
-            helperText={errorsField?.merchant_name}
-            inputProps={{
-              autoComplete: 'new-password'
-            }}
-          />
-        </Box>
-        <Box sx={{ p: 2 }}>
-          <TextField
-            label='User Name'
-            variant='outlined'
-            fullWidth
-            size='small'
-            autoComplete={false}
-            onChange={e => handleChangeEl('username', e, valueModal, setValueModal, schemaData, setErrorsField)}
-            value={valueModal?.username}
-            error={errorsField?.username}
-            helperText={errorsField?.username}
-            inputProps={{
-              autoComplete: 'new-password'
-            }}
-          />
-        </Box>
-        <Box sx={{ p: 2 }}>
-          <TextField
-            label='Email'
-            variant='outlined'
-            fullWidth
-            size='small'
-            autoComplete={false}
-            onChange={e => handleChangeEl('email', e, valueModal, setValueModal, schemaData, setErrorsField)}
-            value={valueModal?.email}
-            error={errorsField?.email}
-            helperText={errorsField?.email}
-            inputProps={{
-              autoComplete: 'new-password'
-            }}
-          />
-        </Box>
-        <Box sx={{ p: 2 }}>
-          <TextField
-            fullWidth
-            id='standard-basic'
-            label={'Password'}
-            variant='outlined'
-            size='small'
-            autoComplete={false}
-            onChange={e => handleChangeEl('password', e, valueModal, setValueModal, schemaData, setErrorsField)}
-            value={valueModal?.password}
-            error={errorsField?.password}
-            helperText={errorsField?.password}
-            type={showPassword ? 'text' : 'password'}
-            InputProps={{
-              autoComplete: 'new-password',
-              endAdornment: (
-                <InputAdornment position='end'>
-                  <IconButton
-                    edge='end'
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label='toggle password visibility'
-                  >
-                    {!showPassword ? <Visibility /> : <VisibilityOff />}
-                  </IconButton>
-                </InputAdornment>
-              )
-            }}
-          />
-        </Box>
-        <Box sx={{ p: 2 }}>
-          <TextField
-            fullWidth
-            id='standard-basic'
-            label={'Telephone/Whatsapp'}
-            variant='outlined'
-            size='small'
-            autoComplete={false}
-            onChange={e => handleChangeEl('telp', e, valueModal, setValueModal, schemaData, setErrorsField)}
-            value={valueModal?.telp}
-            error={errorsField?.telp}
-            helperText={errorsField?.telp}
-            InputProps={{
-              autoComplete: 'new-password',
-              startAdornment: <InputAdornment position='start'>+62</InputAdornment>
-            }}
-          />
-        </Box>
-        <Box sx={{ p: 2 }}>
-          <InputLabel id='demo-simple-select-label'>Privilege</InputLabel>
-          <Select
-            fullWidth
-            labelId='demo-simple-select-label'
-            id='demo-simple-select'
-            value={valueModal?.user_privilege}
-            label='Privilege'
-            size='small'
-            onChange={e => handleChangeEl('user_privilege', e, valueModal, setValueModal, schemaData, setErrorsField)}
-          >
-            {filter(userPrivileges, ['id_user_privilege', '5'])?.map(item => (
-              <MenuItem key={item?.id_user_privilege} value={item?.id_user_privilege}>
-                {item?.user_privilege_name}
-              </MenuItem>
-            ))}
-          </Select>
-        </Box>
-      </ModalDialog> */}
 
       <Backdrop sx={{ color: '#fff', zIndex: theme => theme.zIndex.drawer + 999999 }} open={loading}>
         <CircularProgress size={100} variant='indeterminate' />
