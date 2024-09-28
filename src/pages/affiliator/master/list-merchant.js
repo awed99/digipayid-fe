@@ -111,13 +111,8 @@ const MUITable = () => {
         })
           .then(res => res.json())
           .then(res => {
-<<<<<<< HEAD
-            // console.log(res?.data)
-            setData(res?.data)
-
-=======
             setData(res?.data ?? [])
->>>>>>> a8c343847aa494af5fc21e5d5e48d9d9a334f7b4
+
             // getUserPrivileges()
             setLoading(false)
           })

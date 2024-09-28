@@ -32,7 +32,8 @@ export default function CustomizedDialogs({
     setOpen(true)
   }
 
-  const handleClose = () => {
+  const handleClose = (e, reason) => {
+    if (reason && reason === 'backdropClick') return
     setOpen(false)
     setOpenModal(false)
   }

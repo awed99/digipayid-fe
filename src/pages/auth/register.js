@@ -361,6 +361,7 @@ const RegisterPage = () => {
       .then(async res => {
         setCaptchaRisk(res?.riskAnalysis?.score)
       })
+      .catch(() => false)
   }, [captcha])
 
   useEffect(() => {
@@ -482,12 +483,13 @@ const RegisterPage = () => {
               fullWidth
               size='small'
               id='reff_code'
-              label='Kode Referal'
+              label='Kode Referal (opsional)'
               sx={{ marginBottom: 4 }}
               onChange={e => handleChangeEl('reff_code', e, values, setValues, schemaData, setErrorsField)}
               value={values?.reff_code}
               error={errorsField?.reff_code}
               helperText={errorsField?.reff_code}
+              disabled={router?.query?.reff_code ? true : false}
             />
 
             <Box
