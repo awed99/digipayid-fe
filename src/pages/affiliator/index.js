@@ -141,7 +141,7 @@ const Dashboard = () => {
                 color='success'
                 trendNumber='100%'
                 title='Total Keuntungan'
-                subtitle='Bulan Ini'
+                subtitle='Keseluruhan'
               />
             </Grid>
             {/* <Grid item xs={6}>
@@ -152,7 +152,7 @@ const Dashboard = () => {
                 trendNumber='100%'
                 color='warning'
                 title='Total Penarikan Admin'
-                subtitle='Bulan Ini'
+                subtitle='Keseluruhan'
               />
             </Grid> */}
             {/* <Grid item xs={6}>
@@ -163,7 +163,7 @@ const Dashboard = () => {
                 // trend='negative'
                 trendNumber='100%'
                 title='Total Deposit Merchant'
-                subtitle='Bulan Ini'
+                subtitle='Keseluruhan'
               />
             </Grid> */}
             <Grid item xs={6}>
@@ -174,7 +174,7 @@ const Dashboard = () => {
                 color='error'
                 trendNumber='100%'
                 title='Total Penarikan'
-                subtitle='Bulan Ini'
+                subtitle='Keseluruhan'
               />
             </Grid>
           </Grid>
