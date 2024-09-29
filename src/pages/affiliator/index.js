@@ -7,7 +7,6 @@ import { Backdrop, CircularProgress } from '@mui/material'
 import Grid from '@mui/material/Grid'
 
 // ** Icons Imports
-import BriefcaseVariantOutline from 'mdi-material-ui/BriefcaseVariantOutline'
 import CurrencyUsd from 'mdi-material-ui/CurrencyUsd'
 import Poll from 'mdi-material-ui/Poll'
 
@@ -18,14 +17,14 @@ import CardStatisticsVerticalComponent from 'src/@core/components/card-statistic
 import ApexChartWrapper from 'src/@core/styles/libs/react-apexcharts'
 
 // ** Demo Components Imports
-// import StatisticsCard from 'src/pages/admin/views/dashboard/StatisticsCard'
-import Table from 'src/pages/admin/views/dashboard/Table'
-import TableMerchants from 'src/pages/admin/views/dashboard/TableMerchants'
-import TotalEarning from 'src/pages/admin/views/dashboard/TotalEarning'
-import Trophy from 'src/pages/admin/views/dashboard/Trophy'
-import TrophyReffCode from 'src/pages/admin/views/dashboard/TrophyReffCode'
-import WeeklyOverview from 'src/pages/admin/views/dashboard/WeeklyOverview'
-import WeeklyOverviewWithdraw from 'src/pages/admin/views/dashboard/WeeklyOverviewWithdraw'
+// import StatisticsCard from 'src/pages/affiliator/views/dashboard/StatisticsCard'
+import Table from 'src/pages/affiliator/views/dashboard/Table'
+import TableMerchants from 'src/pages/affiliator/views/dashboard/TableMerchants'
+import TotalEarning from 'src/pages/affiliator/views/dashboard/TotalEarning'
+import Trophy from 'src/pages/affiliator/views/dashboard/Trophy'
+import TrophyReffCode from 'src/pages/affiliator/views/dashboard/TrophyReffCode'
+import WeeklyOverview from 'src/pages/affiliator/views/dashboard/WeeklyOverview'
+import WeeklyOverviewWithdraw from 'src/pages/affiliator/views/dashboard/WeeklyOverviewWithdraw'
 
 // import CryptoJS from 'crypto-js/aes'
 import { filter } from 'lodash'
@@ -141,11 +140,11 @@ const Dashboard = () => {
                 icon={<Poll />}
                 color='success'
                 trendNumber='100%'
-                title='Total Keuntungan Admin'
+                title='Total Keuntungan'
                 subtitle='Bulan Ini'
               />
             </Grid>
-            <Grid item xs={6}>
+            {/* <Grid item xs={6}>
               <CardStatisticsVerticalComponent
                 stats={format_rupiah(data?.trends?.withdraw) ?? 0}
                 icon={<BriefcaseVariantOutline />}
@@ -155,8 +154,8 @@ const Dashboard = () => {
                 title='Total Penarikan Admin'
                 subtitle='Bulan Ini'
               />
-            </Grid>
-            <Grid item xs={6}>
+            </Grid> */}
+            {/* <Grid item xs={6}>
               <CardStatisticsVerticalComponent
                 stats={format_rupiah(data?.trends?.deposit_merchant) ?? 0}
                 icon={<CurrencyUsd />}
@@ -166,15 +165,15 @@ const Dashboard = () => {
                 title='Total Deposit Merchant'
                 subtitle='Bulan Ini'
               />
-            </Grid>
+            </Grid> */}
             <Grid item xs={6}>
               <CardStatisticsVerticalComponent
-                stats={format_rupiah(data?.trends?.withdraw_merchant) ?? 0}
+                stats={format_rupiah(data?.trends?.withdraw_affiliator) ?? 0}
                 icon={<CurrencyUsd />}
                 // trend='negative'
                 color='error'
                 trendNumber='100%'
-                title='Total Penarikan Merchant'
+                title='Total Penarikan'
                 subtitle='Bulan Ini'
               />
             </Grid>
