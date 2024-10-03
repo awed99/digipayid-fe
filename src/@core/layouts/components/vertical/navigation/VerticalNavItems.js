@@ -3,7 +3,7 @@ import VerticalNavLink from './VerticalNavLink'
 import VerticalNavSectionTitle from './VerticalNavSectionTitle'
 
 const resolveNavItemComponent = item => {
-  if (item.sectionTitle) return VerticalNavSectionTitle
+  if (item?.sectionTitle) return VerticalNavSectionTitle
 
   return VerticalNavLink
 }

@@ -36,7 +36,7 @@ const Trophy = ({ saldo = '0' }) => {
       <CardContent>
         <Typography variant='h6'>Saldo Saat Ini</Typography>
         <Typography variant='body2' sx={{ letterSpacing: '0.25px' }}>
-          Uang yang tersedia setelah porses kliring
+          Uang yang tersedia setelah proses kliring
         </Typography>
         <Typography variant='h5' sx={{ my: 4, color: 'primary.main' }}>
           IDR {format_rupiah(saldo)}
