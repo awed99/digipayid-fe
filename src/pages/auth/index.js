@@ -26,7 +26,7 @@ import {
 import { handleChangeEl } from '/hooks/general'
 
 // ** MUI Components
-import { Alert, Backdrop, CircularProgress, Snackbar } from '@mui/material'
+import { Alert, Backdrop, CircularProgress, Divider, Snackbar } from '@mui/material'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import MuiCard from '@mui/material/Card'
@@ -231,7 +231,7 @@ const LoginPage = () => {
 
         setAlertMessage({
           open: true,
-          type: res?.code > 0 ? 'error' : 'primary',
+          type: res?.code > 0 || parseInt(res?.status) > 0 ? 'error' : 'primary',
           message: res?.code > 0 ? res?.error : res?.message
         })
         setLoading(false)
@@ -274,13 +274,18 @@ const LoginPage = () => {
             .then(res => {
               setCountDown(60)
               setOpenModalOTPLogin(true)
-              if (parseInt(_user_role) > 1) {
+              if (parseInt(_user_role) === 2) {
                 setUserRole('user')
 
                 // store.set('module', 'user')
                 // setTimeout(() => router.push('/'), 100)
-              } else {
+              } else if (parseInt(_user_role) === 1) {
                 setUserRole('admin')
+
+                // store.set('module', 'admin')
+                // setTimeout(() => router.push('/admin'), 100)
+              } else {
+                setUserRole('affiliator')
 
                 // store.set('module', 'admin')
                 // setTimeout(() => router.push('/admin'), 100)
@@ -339,6 +344,9 @@ const LoginPage = () => {
       } else if (userRole && userRole == 'admin') {
         store.set('module', 'admin')
         setTimeout(() => router.push('/admin'), 100)
+      } else if (userRole && userRole == 'affiliator') {
+        store.set('module', 'affiliator')
+        setTimeout(() => router.push('/affiliator'), 100)
       }
 
       setUserRole(false)
@@ -641,6 +649,14 @@ const LoginPage = () => {
                 </Link>
               </Typography>
             </Box>
+
+            <Divider>atau</Divider>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <Link passHref href='/auth/register-affiliator'>
+                Register Sebagai Affiliator
+              </Link>
+            </Box>
           </form>
         </CardContent>
       </Card>
@@ -676,7 +692,7 @@ const LoginPage = () => {
         <Typography>Kode OTP Email anda sudah dikirim ke Email anda {values?.email}.</Typography>
         <Typography>Silahkan konfirmasikan dengan memasukkan kode OTP Melalui Email.</Typography>
         <Box sx={{ p: 10 }}>
-          <MuiOtp length={6} value={oTPEmail} onChange={e => setOTPEmail(e)} />
+          <MuiOtp autoFocus length={6} value={oTPEmail} onChange={e => setOTPEmail(e)} />
         </Box>
 
         <Box>
@@ -701,7 +717,7 @@ const LoginPage = () => {
         <Typography>Kode OTP Email anda sudah dikirim ke WhatsApp anda {values?.merchant_wa}.</Typography>
         <Typography>Silahkan konfirmasikan dengan memasukkan kode OTP Melalui WhatsApp.</Typography>
         <Box sx={{ p: 10 }}>
-          <MuiOtp length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
+          <MuiOtp autoFocus length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
         </Box>
 
         <Box>
@@ -813,11 +829,11 @@ const LoginPage = () => {
             <Typography>Silahkan konfirmasikan dengan memasukkan kode OTP Melalui Email & WhatsApp.</Typography>
             <Box sx={{ p: 10 }}>
               <Typography>Masukkan OTP Email</Typography>
-              <MuiOtp length={6} value={oTPEmail} onChange={e => setOTPEmail(e)} />
+              <MuiOtp autoFocus length={6} value={oTPEmail} onChange={e => setOTPEmail(e)} />
             </Box>
             <Box sx={{ p: 10 }}>
               <Typography>Masukkan OTP WhatsApp</Typography>
-              <MuiOtp length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
+              <MuiOtp autoFocus length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
             </Box>
 
             <Box>
@@ -909,7 +925,7 @@ const LoginPage = () => {
         </Typography>
         <Typography>Silakan masukkan kode OTP.</Typography>
         <Box sx={{ p: 10 }}>
-          <MuiOtp length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
+          <MuiOtp autoFocus length={6} value={oTPWA} onChange={e => setOTPWA(e)} />
         </Box>
 
         <Box>

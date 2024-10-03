@@ -24,6 +24,19 @@ const navigation = () => {
       path: '/admin'
     },
     {
+      sectionTitle: 'Affiliators'
+    },
+    {
+      title: 'List Affiliator',
+      icon: Storefront,
+      path: '/admin/master/list-affiliator'
+    },
+    {
+      title: 'Withdraw Affiliator Request',
+      icon: Cash100,
+      path: '/admin/withdraw-request-affiliator'
+    },
+    {
       sectionTitle: 'Merchants'
     },
     {

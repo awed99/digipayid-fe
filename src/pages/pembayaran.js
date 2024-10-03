@@ -39,7 +39,7 @@ import CustomNoRowsOverlay from '/src/components/no-rows-table'
 import * as yup from 'yup'
 
 import CryptoJS from 'crypto-js'
-import { filter } from 'lodash'
+import { filter, size } from 'lodash'
 import ModalImage from 'react-modal-image'
 import ModalDialog from 'src/components/dialog'
 import { format_rupiah, generateSignature, spacing4Char } from '/helpers/general'
@@ -61,7 +61,9 @@ const MUITable = () => {
   const [openModal3, setOpenModal3] = useState(false)
   const [openModal4, setOpenModal4] = useState(false)
   const [openModalWarning, setOpenModalWarning] = useState(false)
+  const [openModalResendBilling, setOpenModalResendBilling] = useState(false)
   const [openModalSuccessPayment, setOpenModalSuccessPayment] = useState(false)
+  const [openModalSuccessConfirmation, setOpenModalSuccessConfirmation] = useState(false)
   const [searchProduct, setSearchProduct] = useState('')
   const [countDownSearchProduct, setCountDownSearchProduct] = useState(4)
   const [titleModal, setTitleModal] = useState('Ambil produk dari katalog')
@@ -107,7 +109,7 @@ const MUITable = () => {
   })
 
   let schemaDataProduct = yup.object().shape({
-    product_code: yup.string().required(),
+    product_code: yup.string(),
     product_name: yup.string().required(),
     product_qty: yup.number().min(1).required(),
     product_price: yup.number().min(100).required()
@@ -367,19 +369,29 @@ const MUITable = () => {
   }
 
   const handleCreateTransaction = async () => {
-    if (
-      parseInt(valueModalTransaction?.id_payment_method) > 0 &&
-      valueModalTransaction?.wa_customer?.length < 10 &&
-      valueModalTransaction?.email_customer?.length < 10
-    ) {
-      setAlertMessage({
-        open: true,
-        type: 'error',
-        message: 'Pembayaran Digital wajib mencantumkan email atau whatsapp pelanggan!'
-      })
+    // if (
+    //   parseInt(valueModalTransaction?.id_payment_method) > 0 &&
+    //   valueModalTransaction?.wa_customer?.length < 10 &&
+    //   valueModalTransaction?.email_customer?.length < 10 &&
+    //   parseInt(valueModalTransaction?.id_payment_method) !== 18 &&
+    //   parseInt(valueModalTransaction?.email_customer) !== 19
+    // ) {
+    //   setAlertMessage({
+    //     open: true,
+    //     type: 'error',
+    //     message: 'Pembayaran Digital wajib mencantumkan email atau whatsapp pelanggan!'
+    //   })
 
-      return false
-    }
+    //   return false
+    // }
+    const _tax =
+      (dataFinal?.reduce(
+        (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+        0
+      ) *
+        taxPercentage) /
+      100
+
     if (
       valueModalTransaction?.amount_to_pay === null ||
       valueModalTransaction?.amount_to_pay === '' ||
@@ -389,7 +401,14 @@ const MUITable = () => {
             dataFinal?.reduce(
               (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
               0
-            )
+            ) +
+              parseInt(valueModalTransaction?.fee) +
+              (dataFinal?.reduce(
+                (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                0
+              ) *
+                taxPercentage) /
+                100
           ))
     ) {
       alert('Uang pembayaran masih kurang!')
@@ -568,6 +587,7 @@ const MUITable = () => {
             setData(res?.data)
             getPaymentMethods()
             setOpenModal3(false)
+            setOpenModalSuccessConfirmation(false)
 
             // Finish And Go To New Payment
             setLoading(false)
@@ -655,7 +675,7 @@ const MUITable = () => {
       .catch(() => setLoading(false))
   }
 
-  const reSendBilling = async _reffID => {
+  const reSendBilling = async (_reffID, _valueModalTransaction) => {
     setLoading(true)
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
@@ -693,7 +713,12 @@ const MUITable = () => {
               .replace(/\"/g, '')
           },
 
-          body: JSON.stringify({ invoice_number: _reffID })
+          body: JSON.stringify({
+            invoice_number: _reffID,
+            email_customer:
+              size(_valueModalTransaction?.email_customer) < 5 ? undefined : _valueModalTransaction?.email_customer,
+            wa_customer: size(_valueModalTransaction?.wa_customer) < 5 ? undefined : _valueModalTransaction?.wa_customer
+          })
 
           // body: dataX
         })
@@ -707,7 +732,12 @@ const MUITable = () => {
               type: 'success',
               message: 'Sukses mengirim ulang tagihan'
             })
+            setOpenModalResendBilling(false)
             setLoading(false)
+            setValueModalTransaction({
+              email_customer: '',
+              wa_customer: ''
+            })
           })
           .catch(() => setLoading(false))
       })
@@ -1522,30 +1552,14 @@ const MUITable = () => {
         titleModal={titleModal3}
         openModal={openModal3}
         setOpenModal={setOpenModal3}
-        handleSubmitFunction={() => handleCreateTransaction()}
+        handleSubmitFunction={() => setOpenModalSuccessConfirmation(true)}
+
+        // handleSubmitFunction={() => handleCreateTransaction()}
       >
         <Box>
           <h5>Data Pelanggan (Struk Digital - Go Green)</h5>
-          <Box sx={{ mt: -4 }}>
-            <TextField
-              label='Email Pelanggan'
-              variant='outlined'
-              fullWidth
-              size='small'
-              onChange={e =>
-                handleChangeEl(
-                  'email_customer',
-                  e,
-                  valueModalTransaction,
-                  setValueModalTransaction,
-                  schemaDataProduct,
-                  setErrorsField
-                )
-              }
-              value={valueModalTransaction?.email_customer}
-            />
-          </Box>
-          <Box>
+
+          <Box sx={{ mt: -6 }}>
             <TextField
               label='No Whatsapp'
               variant='outlined'
@@ -1565,22 +1579,16 @@ const MUITable = () => {
               value={valueModalTransaction?.wa_customer}
             />
           </Box>
-          <Divider />
-          <h5>Metode Pembayaran</h5>
-          <Box sx={{ mt: -6 }}>
+
+          <Box sx={{ mt: 2 }}>
             <TextField
-              label='Jumlah Pembayaran'
+              label='Email Pelanggan'
               variant='outlined'
+              fullWidth
               size='small'
-              sx={{ mt: 4 }}
-              InputProps={{
-                startAdornment: <InputAdornment position='start'>IDR</InputAdornment>
-              }}
-              disabled={parseInt(valueModalTransaction?.id_payment_method) > 0}
-              onFocus={e => e.target.select()}
               onChange={e =>
                 handleChangeEl(
-                  'amount_to_pay',
+                  'email_customer',
                   e,
                   valueModalTransaction,
                   setValueModalTransaction,
@@ -1588,28 +1596,15 @@ const MUITable = () => {
                   setErrorsField
                 )
               }
-              value={
-                parseInt(valueModalTransaction?.id_payment_method) > 0
-                  ? format_rupiah(
-                      dataFinal?.reduce(
-                        (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
-                        0
-                      ) +
-                        parseInt(valueModalTransaction?.fee) +
-                        (dataFinal?.reduce(
-                          (total, item) =>
-                            parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
-                          0
-                        ) *
-                          taxPercentage) /
-                          100
-                    )
-                  : format_rupiah(valueModalTransaction?.amount_to_pay)
-              }
+              value={valueModalTransaction?.email_customer}
             />
           </Box>
 
-          <Box sx={{ mt: 5 }}>
+          <Divider />
+
+          <h5>Metode Pembayaran</h5>
+
+          <Box sx={{ mt: 0 }}>
             <Autocomplete
               value={{
                 id: filter(paymentMethods, [
@@ -1651,6 +1646,49 @@ const MUITable = () => {
               )}
             />
           </Box>
+
+          <Box sx={{ mt: 1 }}>
+            <TextField
+              label='Jumlah Pembayaran'
+              variant='outlined'
+              size='small'
+              sx={{ mt: 4 }}
+              InputProps={{
+                startAdornment: <InputAdornment position='start'>IDR</InputAdornment>
+              }}
+              disabled={parseInt(valueModalTransaction?.id_payment_method) > 0}
+              onFocus={e => e.target.select()}
+              onChange={e =>
+                handleChangeEl(
+                  'amount_to_pay',
+                  e,
+                  valueModalTransaction,
+                  setValueModalTransaction,
+                  schemaDataProduct,
+                  setErrorsField
+                )
+              }
+              value={
+                parseInt(valueModalTransaction?.id_payment_method) > 0
+                  ? format_rupiah(
+                      dataFinal?.reduce(
+                        (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                        0
+                      ) +
+                        parseInt(valueModalTransaction?.fee) +
+                        (dataFinal?.reduce(
+                          (total, item) =>
+                            parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                          0
+                        ) *
+                          taxPercentage) /
+                          100
+                    )
+                  : format_rupiah(valueModalTransaction?.amount_to_pay)
+              }
+            />
+          </Box>
+
           <Box sx={{ mt: 2 }}>
             <TrophyImg
               alt={
@@ -1665,21 +1703,29 @@ const MUITable = () => {
               height={'auto'}
             />
           </Box>
+
           <Divider />
 
           <Box>
-            <h3>
-              Pajak : IDR{' '}
+            <p>
+              Total Tagihan : IDR{' '}
               {format_rupiah(
-                (dataFinal?.reduce(
-                  (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
-                  0
-                ) *
-                  taxPercentage) /
-                  100
+                parseInt(
+                  dataFinal?.reduce(
+                    (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                    0
+                  ) +
+                    parseInt(valueModalTransaction?.fee) +
+                    (dataFinal?.reduce(
+                      (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                      0
+                    ) *
+                      taxPercentage) /
+                      100
+                )?.toString()
               )}
-            </h3>
-            <h3>
+            </p>
+            <p>
               Pembayaran : IDR{' '}
               {parseInt(valueModalTransaction?.id_payment_method) > 0
                 ? format_rupiah(
@@ -1695,33 +1741,36 @@ const MUITable = () => {
                         taxPercentage) /
                         100
                   )
-                : format_rupiah(valueModalTransaction?.amount_to_pay)}
-            </h3>
-            <h3>
-              Kembalian : IDR{' '}
-              {parseInt(valueModalTransaction?.id_payment_method) > 0
-                ? 0
-                : format_rupiah(
-                    (
-                      parseInt((valueModalTransaction?.amount_to_pay).toString().replace(/\./g, '')) -
-                      parseInt(
-                        dataFinal?.reduce(
-                          (total, item) =>
-                            parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
-                          0
-                        ) +
-                          parseInt(valueModalTransaction?.fee) +
-                          (dataFinal?.reduce(
+                : format_rupiah(valueModalTransaction?.amount_to_pay) ?? 0}
+            </p>
+            <p>
+              Kembalian :{' '}
+              <b>
+                IDR{' '}
+                {parseInt(valueModalTransaction?.id_payment_method) > 0
+                  ? 0
+                  : format_rupiah(
+                      (
+                        parseInt((valueModalTransaction?.amount_to_pay).toString().replace(/\./g, '')) -
+                        parseInt(
+                          dataFinal?.reduce(
                             (total, item) =>
                               parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                             0
-                          ) *
-                            taxPercentage) /
-                            100
-                      )
-                    )?.toString()
-                  )}
-            </h3>
+                          ) +
+                            parseInt(valueModalTransaction?.fee) +
+                            (dataFinal?.reduce(
+                              (total, item) =>
+                                parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                              0
+                            ) *
+                              taxPercentage) /
+                              100
+                        )
+                      )?.toString()
+                    ) ?? 0}
+              </b>
+            </p>
           </Box>
           <Divider />
           <h5>Total Pembelian</h5>
@@ -1768,17 +1817,27 @@ const MUITable = () => {
                 startAdornment: <InputAdornment position='start'>IDR</InputAdornment>
               }}
               disabled
-              onChange={e =>
-                handleChangeEl(
-                  'fee',
-                  e,
-                  valueModalTransaction,
-                  setValueModalTransaction,
-                  schemaDataProduct,
-                  setErrorsField
-                )
-              }
               value={format_rupiah(valueModalTransaction?.fee)}
+            />
+          </Box>
+          <Box>
+            <TextField
+              label='Pajak'
+              variant='outlined'
+              size='small'
+              sx={{ mt: 4 }}
+              InputProps={{
+                startAdornment: <InputAdornment position='start'>IDR</InputAdornment>
+              }}
+              disabled
+              value={format_rupiah(
+                (dataFinal?.reduce(
+                  (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                  0
+                ) *
+                  taxPercentage) /
+                  100
+              )}
             />
           </Box>
           <Box>
@@ -1795,7 +1854,14 @@ const MUITable = () => {
                 dataFinal?.reduce(
                   (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                   0
-                ) + parseInt(valueModalTransaction?.fee)
+                ) +
+                  parseInt(valueModalTransaction?.fee) +
+                  (dataFinal?.reduce(
+                    (total2, item2) => parseInt(total2) + parseInt(item2?.product_price) * parseInt(item2?.product_qty),
+                    0
+                  ) *
+                    taxPercentage) /
+                    100
               )}
             />
           </Box>
@@ -1915,7 +1981,7 @@ const MUITable = () => {
                 size='small'
                 color='warning'
                 sx={{ m: 3 }}
-                onClick={() => reSendBilling(paymentDetail?.req?.reff_id)}
+                onClick={() => setOpenModalResendBilling(true)}
               >
                 Kirim Ulang Tagihan (WA/Email)
               </Button>
@@ -1943,6 +2009,60 @@ const MUITable = () => {
       </ModalDialog>
 
       <ModalDialog
+        titleModal='Kirim Ulang Tagihan (WA/Email)'
+        openModal={openModalResendBilling}
+        setOpenModal={setOpenModalResendBilling}
+        handleSubmitFunction={() =>
+          (size(valueModalTransaction?.email_customer) > 0 || size(valueModalTransaction?.wa_customer) > 0) &&
+          reSendBilling(paymentDetail?.req?.reff_id, valueModalTransaction)
+        }
+        size='sm'
+      >
+        <Box>
+          <h5>Data Pelanggan (Struk Digital - Go Green)</h5>
+          <Box sx={{ mt: -4 }}>
+            <TextField
+              label='Email Pelanggan'
+              variant='outlined'
+              fullWidth
+              size='small'
+              onChange={e =>
+                handleChangeEl(
+                  'email_customer',
+                  e,
+                  valueModalTransaction,
+                  setValueModalTransaction,
+                  schemaDataProduct,
+                  setErrorsField
+                )
+              }
+              value={valueModalTransaction?.email_customer}
+            />
+          </Box>
+          <Box>
+            <TextField
+              label='No Whatsapp'
+              variant='outlined'
+              fullWidth
+              size='small'
+              sx={{ mt: 4 }}
+              onChange={e =>
+                handleChangeEl(
+                  'wa_customer',
+                  e,
+                  valueModalTransaction,
+                  setValueModalTransaction,
+                  schemaDataProduct,
+                  setErrorsField
+                )
+              }
+              value={valueModalTransaction?.wa_customer}
+            />
+          </Box>
+        </Box>
+      </ModalDialog>
+
+      <ModalDialog
         titleModal='Notifikasi'
         openModal={openModalSuccessPayment}
         setOpenModal={setOpenModalSuccessPayment}
@@ -1959,6 +2079,31 @@ const MUITable = () => {
             <Typography>telah dibayar</Typography>
             {paymentDetail?.res?.data?.total_bayar ? (
               <Typography variant='h5'>IDR {format_rupiah(paymentDetail?.res?.data?.total_bayar)}</Typography>
+            ) : (
+              <Typography variant='h5'>Dengan uang tunai.</Typography>
+            )}
+          </Box>
+        </Box>
+      </ModalDialog>
+
+      <ModalDialog
+        titleModal='Konfirmasi'
+        openModal={openModalSuccessConfirmation}
+        setOpenModal={setOpenModalSuccessConfirmation}
+        handleSubmitFunction={() => handleCreateTransaction()}
+      >
+        <Box
+          alignItems='center'
+          justify='center'
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
+        >
+          <Box style={{ width: 550, paddingBottom: 15, textAlign: 'center' }}>
+            <Typography variant='h6'>Apakah anda yakin akan meneruskan transaksi ini?</Typography>
+            <Typography>
+              Pastikan informasi pelanggan dengan benar, jika anda memasukkan Nomor Whatsapp dan/atau Email.
+            </Typography>
+            {valueModalTransaction?.amount_to_pay ? (
+              <Typography variant='h5'>IDR {format_rupiah(valueModalTransaction?.amount_to_pay)}</Typography>
             ) : (
               <Typography variant='h5'>Dengan uang tunai.</Typography>
             )}

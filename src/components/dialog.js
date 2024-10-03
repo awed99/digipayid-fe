@@ -23,7 +23,8 @@ export default function CustomizedDialogs({
   ButtonDialogs = false,
   handleSubmitFunction = false,
   openModal = false,
-  setOpenModal
+  setOpenModal,
+  size = 'md'
 }) {
   const [open, setOpen] = React.useState(false)
 
@@ -31,7 +32,8 @@ export default function CustomizedDialogs({
     setOpen(true)
   }
 
-  const handleClose = () => {
+  const handleClose = (e, reason) => {
+    if (reason && reason === 'backdropClick') return
     setOpen(false)
     setOpenModal(false)
   }
@@ -53,7 +55,7 @@ export default function CustomizedDialogs({
         aria-labelledby='customized-dialog-title'
         open={open}
         fullWidth={true}
-        maxWidth={'md'}
+        maxWidth={size}
       >
         <DialogTitle sx={{ m: 0, p: 2 }} id='customized-dialog-title'>
           {titleModal}

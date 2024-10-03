@@ -105,6 +105,41 @@ export const handleSubmitRegister = async (e, schemaData, values) => {
   })
 }
 
+export const handleSubmitRegisterAffiliator = async (e, schemaData, values) => {
+  // console.log(values)
+  return schemaData.isValid(values).then(async valid => {
+    if (valid) {
+      e.preventDefault()
+      const dataX = new FormData()
+
+      // dataX.append('email', values?.email)
+      // dataX.append('password', values?.password)
+      const _uri = 'users/register_affiliator'
+      const _secret = await generateSignature(_uri)
+
+      const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
+        method: 'POST',
+        headers: {
+          'x-signature': _secret?.signature,
+          'x-timestamp': _secret?.timestamp
+        },
+        body: JSON.stringify(values)
+
+        // body: dataX,
+      })
+        .then(async res => await res.json())
+        .then(async res => res)
+
+      return resX
+    } else {
+      return {
+        code: '001',
+        message: 'Error'
+      }
+    }
+  })
+}
+
 export const handleSubmitResetPassword = async (e, schemaData, values) => {
   // console.log(values)
   return schemaData.isValid(values).then(async valid => {

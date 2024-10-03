@@ -1,10 +1,8 @@
 // ** MUI Imports
-import { Alert, Backdrop, Button, Card, Chip, CircularProgress, Divider, Snackbar, TextField } from '@mui/material'
+import { Autocomplete, Backdrop, Button, Card, Chip, CircularProgress, Divider, TextField } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
-
-import * as yup from 'yup'
 
 // ** React Imports
 import { useEffect, useLayoutEffect, useState } from 'react'
@@ -18,15 +16,14 @@ import Box from '@mui/material/Box'
 
 // ** Demo Components Imports
 import { DataGrid, GridToolbar } from '@mui/x-data-grid'
-import { handleChangeEl } from '/hooks/general'
 import CustomNoRowsOverlay from '/src/components/no-rows-table'
 
 // import CryptoJS from 'crypto-js/aes'
-import { filter, size } from 'lodash'
+import { filter } from 'lodash'
 import moment from 'moment'
 import DateRangePicker from 'src/components/date-range-picker'
 import ModalDialog from 'src/components/dialog'
-import { format_rupiah, generateSignature, spacing4Char } from '/helpers/general'
+import { format_rupiah, generateSignature } from '/helpers/general'
 import TablePagination from '/src/components/table-pagination'
 
 import dayjs from 'dayjs'
@@ -35,36 +32,17 @@ const MUITable = () => {
   var CryptoJS = require('crypto-js')
 
   // ** States
-  const [isWaitingForPayment, setIsWaitingForPayment] = useState(false)
-  const [openModalSuccessPayment, setOpenModalSuccessPayment] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [IdMerchantSelected, setIdMerchantSelected] = useState(0)
+  const [merchants, setMerchants] = useState([])
   const [data, setData] = useState([])
-  const [errorsField, setErrorsField] = useState()
   const [dataProduct, setDataProduct] = useState([])
   const [paymentDetail, setPaymentDetail] = useState([])
   const [openModal, setOpenModal] = useState(false)
-  const [openModalResendBilling, setOpenModalResendBilling] = useState(false)
   const [openModalConfirmationDelete, setOpenModalConfirmationDelete] = useState(false)
   const [openModalPayment, setOpenModalPayment] = useState(false)
   const [dataSelected, setDataSelected] = useState({})
-  const [reffID, setReffID] = useState(null)
   let _loopNumber = 1
-
-  const [alertMessage, setAlertMessage] = useState({
-    open: false,
-    type: 'success',
-    message: ''
-  })
-
-  const [valueModalTransaction, setValueModalTransaction] = useState({
-    email_customer: '',
-    wa_customer: ''
-  })
-
-  let schemaDataProduct = yup.object().shape({
-    email_customer: yup.string().email(),
-    wa_customer: yup.string()
-  })
 
   // ** Hooks
   const router = useRouter()
@@ -73,25 +51,19 @@ const MUITable = () => {
     {
       field: 'invoice_number',
       headerName: 'No. Invoice',
-      width: 200,
-      renderCell: params => (
-        <Button size='small' variant='contained' onClick={() => handleGetProducts(params?.row?.invoice_number)}>
-          {params?.value}
-        </Button>
-      )
+      width: 200
     },
     {
       field: 'status_transaction',
       headerName: 'Status',
-      width: 200,
+      width: 150,
       renderCell: params =>
-        parseInt(params?.value) === 2 ? (
+        parseInt(params?.value) === 0 ? (
           <Chip
-            label='Selesai'
-            color='success'
-            deleteIcon={<Done />}
-            onClick={() => handleGetProducts(params?.row?.invoice_number)}
             size='small'
+            label='Menunggu Pembayaran'
+            color='warning'
+            deleteIcon={<AccessTime />}
             sx={{
               height: 24,
               fontSize: '0.75rem',
@@ -101,10 +73,9 @@ const MUITable = () => {
           />
         ) : parseInt(params?.value) === 1 ? (
           <Chip
-            label='Terbayar'
+            label='Proses Kliring'
             color='primary'
             deleteIcon={<Done />}
-            onClick={() => handleGetProducts(params?.row?.invoice_number)}
             size='small'
             sx={{
               height: 24,
@@ -113,13 +84,12 @@ const MUITable = () => {
               '& .MuiChip-label': { fontWeight: 500 }
             }}
           />
-        ) : parseInt(params?.value) === 0 ? (
+        ) : parseInt(params?.value) === 2 ? (
           <Chip
-            size='small'
-            label='Menunggu Pembayaran'
-            color='warning'
+            label='Selesai'
+            color='success'
             deleteIcon={<AccessTime />}
-            onClick={() => handleGetProducts(params?.row?.invoice_number)}
+            size='small'
             sx={{
               height: 24,
               fontSize: '0.75rem',
@@ -133,7 +103,6 @@ const MUITable = () => {
             label='Batal'
             color='error'
             deleteIcon={<Close />}
-            onClick={() => handleGetProducts(params?.row?.invoice_number)}
             sx={{
               height: 24,
               fontSize: '0.75rem',
@@ -146,59 +115,11 @@ const MUITable = () => {
     {
       field: 'payment_method_name',
       headerName: 'Metode Bayar',
-      type: 'number',
-      width: 150
+
+      // type: 'number',
+      width: 180
 
       // renderCell: params => format_rupiah((params?.value).toString())
-    },
-    {
-      field: 'total_product',
-      headerName: 'Jml Produk',
-      type: 'number',
-      width: 110,
-      renderCell: params => format_rupiah((params?.value).toString())
-    },
-    {
-      field: 'amount_to_pay',
-      headerName: 'Dibayar',
-      type: 'number',
-      width: 110,
-      renderCell: params => format_rupiah((params?.value).toString())
-    },
-    {
-      field: 'amount_to_back',
-      headerName: 'Kembalian',
-      type: 'number',
-      width: 110,
-      renderCell: params => format_rupiah('-' + (params?.value).toString())
-    },
-    {
-      field: 'amount',
-      headerName: 'Sub Total',
-      type: 'number',
-      width: 110,
-      renderCell: params => format_rupiah((params?.value).toString())
-    },
-    {
-      field: 'amount_tax',
-      headerName: 'Pajak',
-      type: 'number',
-      width: 110,
-      renderCell: params => format_rupiah('-' + (params?.value).toString())
-    },
-    {
-      field: 'fee',
-      headerName: 'Fee',
-      type: 'number',
-      width: 110,
-      renderCell: params => format_rupiah('-' + (params?.value).toString())
-    },
-    {
-      field: 'amount_to_receive',
-      headerName: 'DIterima',
-      type: 'number',
-      width: 110,
-      renderCell: params => format_rupiah((params?.value).toString())
     },
     {
       field: 'time_transaction',
@@ -240,11 +161,7 @@ const MUITable = () => {
     }
   ]
 
-  const getData = async (
-    startDate = dayjs().startOf('month').format('YYYY-MM-DD'),
-    endDate = dayjs().endOf('month').format('YYYY-MM-DD')
-  ) => {
-    setLoading(true)
+  const getMerchants = async () => {
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
@@ -268,7 +185,66 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/transactions/orders/list'
+        const _uri = '/affiliator/master/user/lists'
+        const _secret = await generateSignature(_uri)
+
+        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
+          method: 'POST',
+          headers: {
+            'x-signature': _secret?.signature,
+            'x-timestamp': _secret?.timestamp,
+            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+              .toString(CryptoJS.enc.Utf8)
+              .replace(/\"/g, '')
+          },
+          body: JSON.stringify({ id: 0 })
+        })
+          .then(res => res.json())
+          .then(res => {
+            // console.log(res?.data)
+            const _merchants = []
+            filter(res?.data, { id_user_parent: '0' })?.forEach(item => {
+              _merchants.push({ id: item?.id_user, label: item?.merchant_name })
+            })
+
+            // console.log('merchants: ', _merchants)
+            setMerchants(_merchants)
+          })
+          .catch(() => false)
+      })
+      .catch(() => false)
+  }
+
+  const getData = async (
+    startDate = dayjs().startOf('month').format('YYYY-MM-DD'),
+    endDate = dayjs().endOf('month').format('YYYY-MM-DD')
+  ) => {
+    setLoading(true)
+    const _uri0 = '/api/check-auth'
+    const _secret0 = await generateSignature(_uri0)
+
+    setData([])
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+      method: 'POST',
+      headers: {
+        'x-signature': _secret0?.signature,
+        'x-timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          // console.log(res?.auth?.user)
+          router.push('/auth')
+
+          return false
+        } else {
+          return res
+        }
+      })
+      .then(async res => {
+        const _uri = '/affiliator/transactions/orders/list'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API_HOST}${_uri}`, {
@@ -280,7 +256,7 @@ const MUITable = () => {
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
           },
-          body: JSON.stringify({ start_date: startDate, end_date: endDate })
+          body: JSON.stringify({ start_date: startDate, end_date: endDate, id_merchant: IdMerchantSelected })
         })
           .then(res => res.json())
           .then(res => {
@@ -293,78 +269,8 @@ const MUITable = () => {
       .catch(() => setLoading(false))
   }
 
-  const reSendBilling = async (_reffID, _valueModalTransaction) => {
-    setLoading(true)
-    const _uri0 = '/api/check-auth'
-    const _secret0 = await generateSignature(_uri0)
-
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
-      method: 'POST',
-      headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
-      },
-      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
-    })
-      .then(res => res.json())
-      .then(async res => {
-        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
-          // console.log(res?.auth?.user)
-          router.push('/auth')
-
-          return false
-        } else {
-          return res
-        }
-      })
-      .then(async res => {
-        const _uri = '/transactions/orders/resend_billing'
-        const _secret = await generateSignature(_uri)
-
-        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
-          method: 'POST',
-          headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
-            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
-              .toString(CryptoJS.enc.Utf8)
-              .replace(/\"/g, '')
-          },
-
-          body: JSON.stringify({
-            invoice_number: _reffID,
-            email_customer:
-              size(_valueModalTransaction?.email_customer) < 5 ? undefined : _valueModalTransaction?.email_customer,
-            wa_customer: size(_valueModalTransaction?.wa_customer) < 5 ? undefined : _valueModalTransaction?.wa_customer
-          })
-
-          // body: dataX
-        })
-          .then(res => res.json())
-          .then(res => {
-            // console.log(res?.data)
-            // setData(res?.data)
-            // setOpenModal2(false)
-            setAlertMessage({
-              open: true,
-              type: 'success',
-              message: 'Sukses mengirim ulang tagihan'
-            })
-            setLoading(false)
-            setOpenModalResendBilling(false)
-            setValueModalTransaction({
-              email_customer: '',
-              wa_customer: ''
-            })
-            handleChangeEl('email_customer', '', valueModal, setValueModal, schemaData, setErrorsField)
-            handleChangeEl('wa_customer', '', valueModal, setValueModal, schemaData, setErrorsField)
-          })
-          .catch(() => setLoading(false))
-      })
-      .catch(() => setLoading(false))
-  }
-
   const handleGetProducts = async _invoice_number => {
+    setLoading(true)
     const _dataSelected = filter(data, ['invoice_number', _invoice_number])[0]
     setDataSelected(_dataSelected)
 
@@ -391,7 +297,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/transactions/orders/get_products'
+        const _uri = '/affiliator/transactions/orders/get_products'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API_HOST}${_uri}`, {
@@ -403,20 +309,22 @@ const MUITable = () => {
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
           },
-          body: JSON.stringify({ invoice_number: _dataSelected?.invoice_number })
+          body: JSON.stringify({ invoice_number: _dataSelected?.invoice_number, id_merchant: IdMerchantSelected })
         })
           .then(res => res.json())
           .then(res => {
             // console.log(res?.data)
             setDataProduct(res?.data)
             setOpenModal(true)
+            setLoading(false)
           })
-          .catch(() => false)
+          .catch(() => setLoading(false))
       })
-      .catch(() => false)
+      .catch(() => setLoading(false))
   }
 
   const handleCancelTransaction = async () => {
+    setLoading(true)
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
@@ -440,7 +348,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/transactions/orders/cancel_transaction'
+        const _uri = '/affiliator/transactions/orders/cancel_transaction'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API_HOST}${_uri}`, {
@@ -452,7 +360,7 @@ const MUITable = () => {
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
           },
-          body: JSON.stringify({ invoice_number: dataSelected?.invoice_number })
+          body: JSON.stringify({ invoice_number: dataSelected?.invoice_number, id_merchant: IdMerchantSelected })
         })
           .then(res => res.json())
           .then(res => {
@@ -460,106 +368,25 @@ const MUITable = () => {
             setData(res?.data)
             setOpenModal(false)
             setOpenModalConfirmationDelete(false)
-          })
-          .catch(() => false)
-      })
-      .catch(() => false)
-  }
-
-  useEffect(() => {
-    return () => {
-      // window.removeEventListener('resize', handleResize)
-      setIsWaitingForPayment(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    // console.log('isWaitingForPayment', isWaitingForPayment)
-    if (isWaitingForPayment === true && reffID) {
-      setTimeout(() => handleCheckStatus(reffID, 0), 5000)
-    }
-  }, [isWaitingForPayment, reffID])
-
-  const handleCheckStatus = async (_reffID, _loop = 10) => {
-    const _isWaitingForPayment = isWaitingForPayment
-    const _paymentDetail = paymentDetail
-
-    if (!_isWaitingForPayment) {
-      return false
-    }
-
-    // setLoading(true)
-    const _uri0 = '/api/check-auth'
-    const _secret0 = await generateSignature(_uri0)
-
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
-      method: 'POST',
-      headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
-      },
-      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
-    })
-      .then(res => res.json())
-      .then(async res => {
-        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
-          // console.log(res?.auth?.user)
-          router.push('/auth')
-
-          return false
-        } else {
-          return res
-        }
-      })
-      .then(async res => {
-        const _uri = '/transactions/orders/check_status'
-        const _secret = await generateSignature(_uri)
-
-        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
-          method: 'POST',
-          headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
-            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
-              .toString(CryptoJS.enc.Utf8)
-              .replace(/\"/g, '')
-          },
-
-          body: JSON.stringify({ invoice_number: _reffID })
-
-          // body: dataX
-        })
-          .then(res => res.json())
-          .then(res => {
-            // console.log('res: ', parseInt(res?.status))
-            if (parseInt(res?.status) > 0) {
-              setAlertMessage({
-                open: true,
-                type: 'success',
-                message: 'Pembayaran Berhasil.'
-              })
-              setOpenModalPayment(false)
-              setOpenModal(false)
-              setOpenModalSuccessPayment(true)
-              setIsWaitingForPayment(false)
-              setReffID(null)
-              getData()
-            } else {
-              // console.log('_isWaitingForPayment: ', _isWaitingForPayment)
-              // console.log('reff_id: ', _paymentDetail?.req?.reff_id)
-              _loop = _loop + 1
-              if (_isWaitingForPayment === true && _paymentDetail?.req?.reff_id && _loop < 10) {
-                setTimeout(() => handleCheckStatus(_reffID, _loop), 5000)
-              } else {
-                setIsWaitingForPayment(false)
-              }
-            }
             setLoading(false)
           })
           .catch(() => setLoading(false))
       })
       .catch(() => setLoading(false))
   }
+
+  useEffect(() => {
+    getMerchants()
+  }, [])
+
+  useEffect(() => {
+    // console.log('IdMerchantSelected: ', IdMerchantSelected)
+    if (IdMerchantSelected > 0) {
+      getData()
+    } else {
+      setData([])
+    }
+  }, [IdMerchantSelected])
 
   const getDetailPayment = async (_dataSelected = dataSelected) => {
     const _uri0 = '/api/check-auth'
@@ -586,7 +413,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/transactions/journal/check_deposit_ewallet'
+        const _uri = '/affiliator/transactions/journal/check_deposit_ewallet'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
@@ -601,12 +428,12 @@ const MUITable = () => {
           body: JSON.stringify({
             invoice_number: _dataSelected?.invoice_number,
             amount: _dataSelected?.amount_to_pay,
-            payment_method: _dataSelected?.payment_method_code
+            payment_method: _dataSelected?.payment_method_code,
+            id_merchant: IdMerchantSelected
           })
         })
           .then(res => res.json())
           .then(res => {
-            setReffID(_dataSelected?.invoice_number)
             setPaymentDetail(res?.payment)
 
             // setLoading(false)
@@ -624,29 +451,33 @@ const MUITable = () => {
     }
   }, [])
 
-  useLayoutEffect(() => {
-    if (openModalPayment === false) {
-      setReffID(null)
-      setIsWaitingForPayment(false)
-    }
-  }, [openModalPayment])
-
   return (
     <Grid container spacing={6}>
       <Grid item xs={12}>
         <Typography variant='h5'>
-          <Link>List Transaksi</Link>
+          <Link>List Transaksi Merchant</Link>
         </Typography>
-        <Typography variant='body2'>List Transaksi</Typography>
+        <Typography variant='body2'>List Transaksi Merchant</Typography>
       </Grid>
       <Grid item xs={12}>
         <Card>
           <Box sx={{ width: '100%', overflow: 'auto' }}>
             <Box>
-              <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} /> &emsp;
-              <Button onClick={() => getData()} variant='contained'>
-                Refresh
-              </Button>
+              <DateRangePicker
+                onChange={(_startDate, _endDate) => IdMerchantSelected > 0 && getData(_startDate, _endDate)}
+              />{' '}
+              &emsp;
+              <Autocomplete
+                disablePortal
+                id='combo-box-demo'
+                options={merchants}
+                sx={{ width: 300, display: 'inline-block', verticalAlign: 'middle' }}
+                value={filter(merchants, ['id', IdMerchantSelected])[0]}
+                onChange={(_event, newValue) => {
+                  setIdMerchantSelected(newValue?.id ?? 0)
+                }}
+                renderInput={params => <TextField {...params} label='Pilih Merchant' />}
+              />
             </Box>
 
             <DataGrid
@@ -677,20 +508,20 @@ const MUITable = () => {
                         )}
                       </b>
                     </Typography>
-                    <Typography>
+                    {/* <Typography>
                       <b>Transaksi Kliring :{format_rupiah(filter(data, ['status_transaction', '1'])?.length)}</b>
-                    </Typography>
+                    </Typography> */}
                     <Typography>
                       <b>Transaksi Sukses :{format_rupiah(filter(data, ['status_transaction', '2'])?.length)}</b>
                     </Typography>
-                    <Typography>
+                    {/* <Typography>
                       <b>
                         Transaksi Belum terbayar :{format_rupiah(filter(data, ['status_transaction', '0'])?.length)}
                       </b>
-                    </Typography>
-                    <Typography>
+                    </Typography> */}
+                    {/* <Typography>
                       <b>Transaksi Batal :{format_rupiah(filter(data, ['status_transaction', '9'])?.length)}</b>
-                    </Typography>
+                    </Typography> */}
                     <Typography>
                       <b>
                         Total Terbayar : IDR{' '}
@@ -737,7 +568,7 @@ const MUITable = () => {
                 </Button>
               )}
 
-              {dataSelected?.status_transaction === '0' && (
+              {/* {dataSelected?.status_transaction === '0' && (
                 <Button
                   variant='contained'
                   color='success'
@@ -747,7 +578,8 @@ const MUITable = () => {
                 >
                   Bayar
                 </Button>
-              )}
+              )} */}
+
               <Button variant='contained' size='small' sx={{ m: 3 }} onClick={() => setOpenModal(false)}>
                 Tutup
               </Button>
@@ -846,189 +678,34 @@ const MUITable = () => {
           style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
         >
           <Box style={{ width: 550, textAlign: 'center' }}>
-            <Box>
-              <Typography>
-                <h3>IDR {format_rupiah(paymentDetail?.res?.data?.total_bayar ?? '0')}</h3>
-              </Typography>
-            </Box>
-            <Box>
-              <Typography>Berlaku dalam 10 Menit</Typography>
-            </Box>
-            <Box>
-              <Typography>Metode Pembayaran : {dataSelected?.payment_method_name ?? 'QRIS'}</Typography>
-            </Box>
-            <Box>
-              {parseInt(dataSelected?.id_payment_method) == 18 || parseInt(dataSelected?.id_payment_method) == 19 ? (
-                <>
-                  <img src={`${process.env.NEXT_PUBLIC_API}/${paymentDetail?.image_src}`} />
-                </>
-              ) : (parseInt(dataSelected?.id_payment_method) >= 11 &&
-                  parseInt(dataSelected?.id_payment_method) <= 17) ||
-                (parseInt(dataSelected?.id_payment_method) >= 20 && parseInt(dataSelected?.id_payment_method) <= 23) ||
-                (parseInt(dataSelected?.id_payment_method) >= 35 && parseInt(dataSelected?.id_payment_method) <= 37) ? (
-                <>
-                  <a
-                    href={
-                      paymentDetail?.res?.data?.ovo_push ??
-                      paymentDetail?.res?.data?.checkout_url ??
-                      paymentDetail?.res?.data?.pay_url
-                    }
-                    target='_blank'
-                  >
-                    <Button variant='contained' size='small' sx={{ m: 3 }}>
-                      Bayar {dataSelected?.payment_method_name}
-                    </Button>
-                  </a>
-                </>
-              ) : parseInt(dataSelected?.id_payment_method) >= 1 && parseInt(dataSelected?.id_payment_method) <= 10 ? (
-                <>
+            {parseInt(dataSelected?.id_payment_method) >= 18 && parseInt(dataSelected?.id_payment_method) <= 19 && (
+              <>
+                <Box>
                   <Typography>
-                    Nomor Rekening Tujuan :{' '}
-                    <b>
-                      {spacing4Char(
-                        parseInt(dataSelected?.id_payment_method) === 4
-                          ? '70017' + paymentDetail?.res?.data?.nomor_va
-                          : '' + paymentDetail?.res?.data?.nomor_va
-                      )}
-                    </b>
+                    <h3>IDR {format_rupiah(paymentDetail?.res?.data?.total_bayar ?? '0')}</h3>
                   </Typography>
-                </>
-              ) : (
-                <>
-                  <Typography>
-                    Nomor Rekening Tujuan :{' '}
-                    <b>
-                      {spacing4Char(
-                        parseInt(dataSelected?.id) === '4'
-                          ? '70017' + paymentDetail?.res?.data?.nomor_va
-                          : '' + paymentDetail?.res?.data?.nomor_va
-                      )}
-                    </b>
-                  </Typography>
-                </>
-              )}
-            </Box>
-            <Box>
-              <Typography>
-                <Divider>Status Pembayaran</Divider>
-              </Typography>
-            </Box>
-            <Box sx={{ position: 'relative' }}>
-              <Button
-                variant='contained'
-                size='small'
-                sx={{ m: 3 }}
-                disabled={isWaitingForPayment}
-                onClick={() => setIsWaitingForPayment(true)}
-              >
-                {isWaitingForPayment ? 'Dalam Pengecekan' : 'Cek Status Pembayaran'}
-              </Button>
-              {isWaitingForPayment && (
-                <CircularProgress
-                  size={24}
-                  sx={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    marginTop: '-12px',
-                    marginLeft: '-12px'
-                  }}
-                />
-              )}
-            </Box>
-            <Box>
-              <Typography>
-                <Divider>atau</Divider>
-              </Typography>
-            </Box>
-            <Box>
-              <Button
-                variant='contained'
-                size='small'
-                color='warning'
-                sx={{ m: 3 }}
-                onClick={() => setOpenModalResendBilling(true)}
-              >
-                Kirim Ulang Tagihan (WA/Email)
-              </Button>
-            </Box>
-          </Box>
-        </Box>
-      </ModalDialog>
-
-      <ModalDialog
-        titleModal='Kirim Ulang Tagihan (WA/Email)'
-        openModal={openModalResendBilling}
-        setOpenModal={setOpenModalResendBilling}
-        handleSubmitFunction={() =>
-          (size(valueModalTransaction?.email_customer) > 0 || size(valueModalTransaction?.wa_customer) > 0) &&
-          reSendBilling(paymentDetail?.req?.reff_id, valueModalTransaction)
-        }
-        size='sm'
-      >
-        <Box>
-          <h5>Data Pelanggan (Struk Digital - Go Green)</h5>
-          <Box sx={{ mt: -4 }}>
-            <TextField
-              label='Email Pelanggan'
-              variant='outlined'
-              fullWidth
-              size='small'
-              onChange={e =>
-                handleChangeEl(
-                  'email_customer',
-                  e,
-                  valueModalTransaction,
-                  setValueModalTransaction,
-                  schemaDataProduct,
-                  setErrorsField
-                )
-              }
-              value={valueModalTransaction?.email_customer}
-            />
-          </Box>
-          <Box>
-            <TextField
-              label='No Whatsapp'
-              variant='outlined'
-              fullWidth
-              size='small'
-              sx={{ mt: 4 }}
-              onChange={e =>
-                handleChangeEl(
-                  'wa_customer',
-                  e,
-                  valueModalTransaction,
-                  setValueModalTransaction,
-                  schemaDataProduct,
-                  setErrorsField
-                )
-              }
-              value={valueModalTransaction?.wa_customer}
-            />
-          </Box>
-        </Box>
-      </ModalDialog>
-
-      <ModalDialog
-        titleModal='Notifikasi'
-        openModal={openModalSuccessPayment}
-        setOpenModal={setOpenModalSuccessPayment}
-      >
-        <Box
-          alignItems='center'
-          justify='center'
-          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}
-        >
-          <Box style={{ width: 550, paddingBottom: 15, textAlign: 'center' }}>
-            <Typography>
-              Transaksi <b>{paymentDetail?.req?.reff_id}</b>
-            </Typography>
-            <Typography>telah dibayar</Typography>
-            {paymentDetail?.res?.data?.total_bayar ? (
-              <Typography variant='h5'>IDR {format_rupiah(paymentDetail?.res?.data?.total_bayar)}</Typography>
-            ) : (
-              <Typography variant='h5'>Dengan uang tunai.</Typography>
+                </Box>
+                <Box>
+                  <Typography>Berlaku dalam 10 Menit</Typography>
+                </Box>
+                <Box>
+                  <Typography>Metode Pembayaran : {dataSelected?.payment_method_name ?? 'QRIS'}</Typography>
+                </Box>
+                <Box>
+                  {parseInt(dataSelected?.id_payment_method) == 18 ||
+                  parseInt(dataSelected?.id_payment_method) == 19 ? (
+                    <>
+                      <img src={`${process.env.NEXT_PUBLIC_API}/${paymentDetail?.image_src}`} />
+                    </>
+                  ) : (
+                    <>
+                      <Typography>
+                        Nomor Rekening Tujuan : <b>{paymentDetail?.payment_number}</b>
+                      </Typography>
+                    </>
+                  )}
+                </Box>
+              </>
             )}
           </Box>
         </Box>
@@ -1037,23 +714,6 @@ const MUITable = () => {
       <Backdrop sx={{ color: '#fff', zIndex: theme => theme.zIndex.drawer + 999999 }} open={loading}>
         <CircularProgress size={100} variant='indeterminate' />
       </Backdrop>
-
-      <Snackbar
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        open={alertMessage?.open}
-        autoHideDuration={6000}
-        onClose={() =>
-          setAlertMessage({
-            open: false,
-            type: alertMessage?.type,
-            message: ''
-          })
-        }
-      >
-        <Alert variant='filled' severity={alertMessage?.type} sx={{ width: '100%' }}>
-          {alertMessage?.message}
-        </Alert>
-      </Snackbar>
     </Grid>
   )
 }
