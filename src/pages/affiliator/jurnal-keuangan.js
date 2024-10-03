@@ -206,7 +206,7 @@ const MUITable = () => {
   }
 
   useEffect(() => {
-    getData()
+    // getData()
   }, [])
 
   useLayoutEffect(() => {
@@ -228,9 +228,7 @@ const MUITable = () => {
         <Card>
           <Box sx={{ width: '100%', overflow: 'auto' }}>
             <Box>
-              <DateRangePicker
-                onChange={(_startDate, _endDate) => IdMerchantSelected > 0 && getData(_startDate, _endDate)}
-              />
+              <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} />
             </Box>
 
             <DataGrid
@@ -240,7 +238,7 @@ const MUITable = () => {
               columns={columns}
               getRowId={row => row.id}
               initialState={{
-                ...data.initialState,
+                ...data?.initialState,
                 pagination: { paginationModel: { pageSize: 25 } }
               }}
               slots={{

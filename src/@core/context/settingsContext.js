@@ -1,3 +1,5 @@
+'use client'
+
 // ** React Imports
 import { createContext, useState } from 'react'
 
@@ -17,6 +19,14 @@ export const SettingsContext = createContext({
 })
 
 export const SettingsProvider = ({ children }) => {
+  const initialSettings = {
+    themeColor: themeConfig.themeColor,
+    mode: themeConfig.mode,
+    contentWidth: themeConfig.contentWidth
+  }
+
+  console.log(initialSettings)
+
   // ** State
   const [settings, setSettings] = useState({ ...initialSettings })
 
