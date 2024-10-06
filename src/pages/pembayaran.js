@@ -133,7 +133,7 @@ const MUITable = () => {
       row =>
         new Promise((resolve, reject) => {
           setTimeout(() => {
-            if (row.product_qty.toString().trim() === '' || row.product_price.toString().trim() === '') {
+            if (row.product_qty?.toString().trim() === '' || row.product_price?.toString().trim() === '') {
               reject()
             } else {
               resolve(row)
@@ -253,13 +253,13 @@ const MUITable = () => {
       width: 110,
       type: 'number',
       editable: true,
-      renderCell: params => format_rupiah((params?.value).toString())
+      renderCell: params => format_rupiah(params?.value?.toString())
     },
     {
       field: 'total_price',
       headerName: 'Total Harga',
       width: 120,
-      renderCell: params => format_rupiah((params?.row?.product_qty * params?.row?.product_price).toString())
+      renderCell: params => format_rupiah((params?.row?.product_qty * params?.row?.product_price)?.toString())
     },
     {
       field: 'product_image_url',
@@ -361,7 +361,7 @@ const MUITable = () => {
               'x-signature': _secret?.signature,
               'x-timestamp': _secret?.timestamp,
               Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
-                .toString(CryptoJS.enc.Utf8)
+                ?.toString(CryptoJS.enc.Utf8)
                 .replace(/\"/g, '')
             },
             body: JSON.stringify({ id: _row?.id })
@@ -404,7 +404,7 @@ const MUITable = () => {
       valueModalTransaction?.amount_to_pay === null ||
       valueModalTransaction?.amount_to_pay === '' ||
       (parseInt(valueModalTransaction?.id_payment_method) === 0 &&
-        parseInt((valueModalTransaction?.amount_to_pay).toString().replace(/\./g, '')) <
+        parseInt(valueModalTransaction?.amount_to_pay?.toString().replace(/\./g, '')) <
           parseInt(
             dataFinal?.reduce(
               (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
@@ -509,7 +509,7 @@ const MUITable = () => {
         const _fee_on_merchant =
           parseInt(
             filter(paymentMethods, {
-              id_payment_method: valueModalTransaction?.id_payment_method.toString()
+              id_payment_method: valueModalTransaction?.id_payment_method?.toString()
             })[0]?.fee_on_merchant
           ) ?? 1
 
@@ -535,17 +535,17 @@ const MUITable = () => {
                 ? _fee_on_merchant === 0
                   ? _final_amount
                   : _total_amount + _tax_amount
-                : parseInt(valueModalTransaction?.amount_to_pay.toString().replace(/\./g, '')),
+                : parseInt(valueModalTransaction?.amount_to_pay?.toString().replace(/\./g, '')),
 
             pg_fee: _pg_fee,
             app_fee: _app_fee,
             fee: _pg_fee + _app_fee,
             id_payment_method: parseInt(valueModalTransaction?.id_payment_method),
             payment_method_code: filter(paymentMethods, {
-              id_payment_method: valueModalTransaction?.id_payment_method.toString()
+              id_payment_method: valueModalTransaction?.id_payment_method?.toString()
             })[0]?.payment_method_code,
             payment_method_name: filter(paymentMethods, {
-              id_payment_method: valueModalTransaction?.id_payment_method.toString()
+              id_payment_method: valueModalTransaction?.id_payment_method?.toString()
             })[0]?.payment_method_name,
             fee_on_merchant: _fee_on_merchant,
             invoice_number: reffID
@@ -986,7 +986,7 @@ const MUITable = () => {
     const _fee_on_merchant =
       parseInt(
         filter(paymentMethods, {
-          id_payment_method: valueModalTransaction?.id_payment_method.toString() ?? '0'
+          id_payment_method: valueModalTransaction?.id_payment_method?.toString() ?? '0'
         })[0]?.fee_on_merchant
       ) ?? 1
 
@@ -1412,34 +1412,35 @@ const MUITable = () => {
       </Grid>
 
       <ModalDialog
-        titleModal={titleModal}
+        titleModal={
+          <>
+            <Typography variant='h5'>{titleModal}</Typography>
+            <TextField
+              label='Cari Produk di Katalog'
+              variant='outlined'
+              fullWidth
+              size='small'
+              sx={{ mb: 1, mt: 3 }}
+              onChange={e => setSearchProduct(e.target.value)}
+              value={searchProduct}
+
+              // error={errorsField?.product_category}
+              // helperText={errorsField?.product_category}
+            />
+          </>
+        }
         openModal={openModal}
         setOpenModal={setOpenModal}
         handleSubmitFunction={() => handleSubmit()}
       >
         <Box sx={{ width: '100%' }}>
-          <TextField
-            label='Cari Produk di Katalog'
-            variant='outlined'
-            fullWidth
-            size='small'
-            sx={{ mb: 1 }}
-            onChange={e => setSearchProduct(e.target.value)}
-            value={searchProduct}
-
-            // error={errorsField?.product_category}
-            // helperText={errorsField?.product_category}
-          />
-
-          <Divider />
-
           <Box sx={{ width: '100%', overflow: 'auto', m: 0, justifyContent: 'center' }}>
             <Grid container spacing={2}>
               {dataSearch?.map((item, index) => (
                 <Grid
                   key={index}
                   item
-                  xs={12}
+                  xs={6}
                   sm={6}
                   md={4}
                   lg={3}
@@ -1731,11 +1732,11 @@ const MUITable = () => {
               value={{
                 id: filter(paymentMethods, [
                   'id_payment_method',
-                  valueModalTransaction?.id_payment_method.toString()
+                  valueModalTransaction?.id_payment_method?.toString()
                 ])[0]?.id,
                 label: filter(paymentMethods, [
                   'id_payment_method',
-                  valueModalTransaction?.id_payment_method.toString()
+                  valueModalTransaction?.id_payment_method?.toString()
                 ])[0]?.payment_method_name
               }}
               onChange={(event, newValuePM) => {
@@ -1814,11 +1815,11 @@ const MUITable = () => {
           <Box sx={{ mt: 2 }}>
             <TrophyImg
               alt={
-                filter(paymentMethods, ['id_payment_method', valueModalTransaction?.id_payment_method.toString()])[0]
+                filter(paymentMethods, ['id_payment_method', valueModalTransaction?.id_payment_method?.toString()])[0]
                   ?.payment_method_name
               }
               src={
-                filter(paymentMethods, ['id_payment_method', valueModalTransaction?.id_payment_method.toString()])[0]
+                filter(paymentMethods, ['id_payment_method', valueModalTransaction?.id_payment_method?.toString()])[0]
                   ?.payment_method_image_url
               }
               width={70}
@@ -1873,7 +1874,7 @@ const MUITable = () => {
                   ? 0
                   : format_rupiah(
                       (
-                        parseInt((valueModalTransaction?.amount_to_pay).toString().replace(/\./g, '')) -
+                        parseInt(valueModalTransaction?.amount_to_pay?.toString().replace(/\./g, '')) -
                         parseInt(
                           dataFinal?.reduce(
                             (total, item) =>
@@ -2009,7 +2010,7 @@ const MUITable = () => {
               <Typography>
                 Metode Pembayaran :{' '}
                 {filter(paymentMethods, {
-                  id_payment_method: valueModalTransaction?.id_payment_method.toString()
+                  id_payment_method: valueModalTransaction?.id_payment_method?.toString()
                 })[0]?.payment_method_name ?? 'QRIS'}
               </Typography>
             </Box>
@@ -2038,7 +2039,7 @@ const MUITable = () => {
                       Bayar{' '}
                       {
                         filter(paymentMethods, {
-                          id_payment_method: valueModalTransaction?.id_payment_method.toString()
+                          id_payment_method: valueModalTransaction?.id_payment_method?.toString()
                         })[0]?.payment_method_name
                       }
                     </Button>
