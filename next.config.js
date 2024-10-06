@@ -23,11 +23,12 @@ module.exports = {
     // unoptimized: true
   },
   compiler: {
-    removeConsole: true,
-    styledComponents: true,
-    removeConsole: {
-      exclude: ['error']
-    }
+    // removeConsole: true,
+    styledComponents: true
+
+    // removeConsole: {
+    //   exclude: ['info']
+    // }
   },
 
   // transpilePackages: ['mui-one-time-password-input'],

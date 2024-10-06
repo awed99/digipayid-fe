@@ -48,6 +48,35 @@ export const format_rupiah = (angka, prefix) => {
   }
 }
 
+export const format_rupiah_desimal = (angka, prefix) => {
+  if (angka) {
+    const isMinus = parseFloat(angka) < 0 ? '-' : ''
+
+    const number_string = angka
+      .toString()
+      .replace(/\,/g, '.')
+      ?.replace(/[^,\d]/g, '')
+
+    const splitx = number_string?.split('.')
+    const sisa = splitx[0]?.length % 3
+    let rupiah = splitx[0]?.substr(0, sisa)
+    const ribuan = splitx[0]?.substr(sisa).match(/\d{3}/gi)
+
+    // tambahkan titik jika yang di input sudah menjadi angka ribuan
+    if (ribuan) {
+      const separator = sisa ? '.' : ''
+      rupiah += separator + ribuan.join('.')
+    }
+
+    rupiah = splitx[1] != undefined ? rupiah + '.' + splitx[1] : rupiah
+    rupiah = isMinus + rupiah
+
+    return prefix == undefined ? rupiah : rupiah ? 'Rp. ' + rupiah : ''
+  } else {
+    return angka
+  }
+}
+
 export const spacing4Char = x => {
   const joy = x?.match(/.{1,4}/g)
 
