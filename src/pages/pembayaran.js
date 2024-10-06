@@ -4,6 +4,10 @@ import {
   Autocomplete,
   Backdrop,
   Button,
+  CardActionArea,
+  CardActions,
+  CardContent,
+  CardMedia,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -39,7 +43,7 @@ import CustomNoRowsOverlay from '/src/components/no-rows-table'
 import * as yup from 'yup'
 
 import CryptoJS from 'crypto-js'
-import { filter, size } from 'lodash'
+import { filter, includes, pull, size } from 'lodash'
 import ModalImage from 'react-modal-image'
 import ModalDialog from 'src/components/dialog'
 import { format_rupiah, generateSignature, spacing4Char } from '/helpers/general'
@@ -53,7 +57,7 @@ const MUITable = () => {
 
   // ** States
   const [isWaitingForPayment, setIsWaitingForPayment] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [errorsField, setErrorsField] = useState()
   const [isAdd, setIsAdd] = useState(true)
   const [openModal, setOpenModal] = useState(false)
@@ -82,6 +86,8 @@ const MUITable = () => {
   const [dataSearch, setDataSearch] = useState([])
   const [selectedFile, setSelectedFile] = useState()
   const [widthScreen, setWidthScreen] = useState(1100)
+
+  const [isFree, setIsFree] = useState(false)
 
   // ** Hooks
   const router = useRouter()
@@ -198,6 +204,7 @@ const MUITable = () => {
           .then(res => res.json())
           .then(res => {
             // console.log(res?.data)
+            setIsFree(res?.is_free ?? false)
             setData(res?.data)
             setSaldo(res?.saldo)
             setTaxPercentage(parseInt(res?.tax_percentage))
@@ -319,8 +326,9 @@ const MUITable = () => {
   }
 
   const handleClickDelete = async (_params = {}) => {
+    const _row = _params?.row ?? _params
     setIsAdd(false)
-    const _x = confirm('Anda yakin ingin membatalkan produk ' + _params?.row?.product_name + ' ?')
+    const _x = confirm('Anda yakin ingin membatalkan produk ' + _row?.product_name + ' ?')
     if (_x) {
       const _uri0 = '/api/check-auth'
       const _secret0 = await generateSignature(_uri0)
@@ -356,7 +364,7 @@ const MUITable = () => {
                 .toString(CryptoJS.enc.Utf8)
                 .replace(/\"/g, '')
             },
-            body: JSON.stringify({ id: _params?.row?.id })
+            body: JSON.stringify({ id: _row?.id })
           })
             .then(res => res.json())
             .then(res => {
@@ -449,7 +457,7 @@ const MUITable = () => {
           0
         )
 
-        const _pg_fee_amount = parseFloat(
+        const _pg_fee_amount = parseInt(
           filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method?.toString() })[0]
             ?.fee_original ?? '0'
         )
@@ -459,24 +467,28 @@ const MUITable = () => {
             ?.fee_original_percent ?? '0'
         )
 
-        const _app_fee_amount = parseFloat(
-          filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method?.toString() })[0]
-            ?.fee_app ?? '500'
-        )
+        const _app_fee_amount = isFree
+          ? 0
+          : parseInt(
+              filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method?.toString() })[0]
+                ?.fee_app ?? '500'
+            )
 
-        const _app_fee_percent = parseFloat(
-          filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method?.toString() })[0]
-            ?.fee_app_percent ?? '0'
-        )
+        const _app_fee_percent = isFree
+          ? 0
+          : parseFloat(
+              filter(paymentMethods, { id_payment_method: valueModalTransaction?.id_payment_method?.toString() })[0]
+                ?.fee_app_percent ?? '0'
+            )
 
         const _tax_amount = (_total_amount * taxPercentage) / 100
         const _fee_percent = _pg_fee_percent + _app_fee_percent
         const _fee_percent_0 = 100 - _fee_percent
         const _amount0 = _total_amount + _pg_fee_amount + _app_fee_amount + _tax_amount
-        let _final_amount = Math.ceil(((_amount0 * 100) / _fee_percent_0).toFixed(1))
+        let _final_amount = Math.round(((_amount0 * 100) / _fee_percent_0).toFixed(2))
 
-        const _pg_fee = Math.ceil(((_final_amount * _pg_fee_percent) / 100).toFixed(1)) + _pg_fee_amount
-        const _app_fee = Math.ceil(((_final_amount * _app_fee_percent) / 100).toFixed(1)) + _app_fee_amount
+        const _pg_fee = Math.round(((_final_amount * _pg_fee_percent) / 100).toFixed(2)) + _pg_fee_amount
+        const _app_fee = Math.round(((_final_amount * _app_fee_percent) / 100).toFixed(2)) + _app_fee_amount
         _final_amount = _total_amount + _pg_fee + _app_fee + _tax_amount
 
         // console.log('_app_fee: ', _app_fee)
@@ -947,7 +959,7 @@ const MUITable = () => {
 
   useEffect(() => {
     // console.log('openModal4', openModal4)
-    if (openModal4 === false) {
+    if (!openModal4 || !openModal3 || !openModal) {
       setReffID(null)
       setAmountToPay(0)
       setValueModalTransaction({
@@ -960,11 +972,15 @@ const MUITable = () => {
       })
       setIsWaitingForPayment(false)
     }
-  }, [openModal4])
+  }, [openModal4, openModal3, openModal])
 
   useEffect(() => {
     setDataFinal(data)
   }, [data])
+
+  useEffect(() => {
+    console.log('dataSearch: ', dataSearch)
+  }, [dataSearch])
 
   useEffect(() => {
     const _fee_on_merchant =
@@ -979,36 +995,51 @@ const MUITable = () => {
       0
     )
 
-    const _pg_fee_amount = parseFloat(
+    const _pg_fee_amount = parseInt(
       filter(paymentMethods, {
         id_payment_method: valueModalTransaction?.id_payment_method?.toString()
       })?.[0]?.fee_original ?? '500'
     )
 
-    const _pg_fee_percent =
-      parseFloat(
-        filter(paymentMethods, {
-          id_payment_method: valueModalTransaction?.id_payment_method?.toString()
-        })?.[0]?.fee_original_percent ?? '0'
-      ) / 100
-
-    const _app_fee_amount = parseFloat(
+    const _pg_fee_percent = parseFloat(
       filter(paymentMethods, {
         id_payment_method: valueModalTransaction?.id_payment_method?.toString()
-      })?.[0]?.fee_app ?? '0'
+      })?.[0]?.fee_original_percent ?? '0'
     )
 
-    const _app_fee_percent =
-      parseFloat(
-        filter(paymentMethods, {
-          id_payment_method: valueModalTransaction?.id_payment_method?.toString()
-        })?.[0]?.fee_app_percent ?? '0'
-      ) / 100
+    const _app_fee_amount = isFree
+      ? 0
+      : parseInt(
+          filter(paymentMethods, {
+            id_payment_method: valueModalTransaction?.id_payment_method?.toString()
+          })?.[0]?.fee_app ?? '0'
+        )
 
-    const _total_fee_percent = _pg_fee_percent + _app_fee_percent
-    const _total_fee_amount = _pg_fee_amount + _app_fee_amount
-    const _total_fee_temp = _total_amount * _total_fee_percent
-    const _fee = _fee_on_merchant === 0 ? _total_fee_temp + _total_fee_amount : 0
+    const _app_fee_percent = isFree
+      ? 0
+      : parseFloat(
+          filter(paymentMethods, {
+            id_payment_method: valueModalTransaction?.id_payment_method?.toString()
+          })?.[0]?.fee_app_percent ?? '0'
+        )
+
+    // const _total_fee_percent = _pg_fee_percent + _app_fee_percent
+    // const _total_fee_amount = _pg_fee_amount + _app_fee_amount
+    // const _total_fee_temp = (_total_amount * _total_fee_percent).toFixed(2)
+    // const _fee = _fee_on_merchant === 0 ? _total_fee_temp + _total_fee_amount : 0
+
+    const _tax_amount = (_total_amount * taxPercentage) / 100
+    const _fee_percent = _pg_fee_percent + _app_fee_percent
+    const _fee_percent_0 = 100 - _fee_percent
+    const _amount0 = _total_amount + _pg_fee_amount + _app_fee_amount + _tax_amount
+    let _final_amount = Math.round(((_amount0 * 100) / _fee_percent_0).toFixed(2))
+
+    const _pg_fee = Math.round(((_final_amount * _pg_fee_percent) / 100).toFixed(2)) + _pg_fee_amount
+    const _app_fee = Math.round(((_final_amount * _app_fee_percent) / 100).toFixed(2)) + _app_fee_amount
+    const _fee = _pg_fee + _app_fee
+
+    // console.log('_pg_fee_percent: ', _pg_fee_percent)
+    // console.log('_pg_fee: ', _pg_fee)
 
     const _valueModalTransaction = valueModalTransaction
     _valueModalTransaction.fee = _fee
@@ -1206,6 +1237,22 @@ const MUITable = () => {
     // noButtonRef.current?.focus();
   }
 
+  const handleRowSelectionModel = (id_product = false) => {
+    const _rowSelectionModel = rowSelectionModel
+    if (id_product) {
+      if (!includes(_rowSelectionModel, id_product)) {
+        _rowSelectionModel.push(id_product)
+      } else {
+        pull(_rowSelectionModel, id_product)
+      }
+      setRowSelectionModel([..._rowSelectionModel])
+    }
+  }
+
+  useEffect(() => {
+    console.log('rowSelectionModel: ', rowSelectionModel)
+  }, [rowSelectionModel])
+
   const renderConfirmDialog = () => {
     if (!promiseArguments) {
       return null
@@ -1238,7 +1285,9 @@ const MUITable = () => {
           <Link>Pembayaran - Kasir</Link>
         </Typography>
         <Typography variant='body2'>Pembelian produk</Typography>
+
         <Divider />
+
         <Typography variant='body2'>
           <Button
             variant='contained'
@@ -1381,9 +1430,82 @@ const MUITable = () => {
             // error={errorsField?.product_category}
             // helperText={errorsField?.product_category}
           />
-          <Divider sx={{ mb: 1 }} />
 
-          <Grid item xs={12}>
+          <Divider />
+
+          <Box sx={{ width: '100%', overflow: 'auto', m: 0, justifyContent: 'center' }}>
+            <Grid container spacing={2}>
+              {dataSearch?.map((item, index) => (
+                <Grid
+                  key={index}
+                  item
+                  xs={12}
+                  sm={6}
+                  md={4}
+                  lg={3}
+                  sx={{
+                    justifyContent: 'center'
+                  }}
+                >
+                  <Card
+                    sx={{
+                      p: {
+                        xs: 2,
+                        sm: 3
+                      },
+                      maxWidth: 'auto',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center'
+                    }}
+                    className={includes(rowSelectionModel, item?.id_product) ? 'border-selected' : 'border-none'}
+                    onClick={() => handleRowSelectionModel(item?.id_product)}
+                  >
+                    <CardActionArea>
+                      <CardMedia
+                        component='img'
+                        height='140'
+                        image={`${process.env.NEXT_PUBLIC_API}` + item?.product_image_url}
+                        alt={item?.product_name}
+                      />
+                      <CardContent>
+                        <Typography
+                          gutterBottom
+                          variant='h6'
+                          component='div'
+                          sx={{
+                            fontSize: '16px !important',
+                            textAlign: 'center'
+                          }}
+                        >
+                          Rp {format_rupiah(item?.product_price)}
+                        </Typography>
+                        <Typography noWrap gutterBottom variant='body2' component='div' sx={{ textAlign: 'center' }}>
+                          Code : {item?.product_code}
+                        </Typography>
+                        <Typography
+                          noWrap
+                          variant='h6'
+                          sx={{ color: 'text.secondary', fontSize: '16px !important', textAlign: 'center' }}
+                        >
+                          {item?.product_name}
+                        </Typography>
+                      </CardContent>
+                      <CardActions sx={{ justifyContent: 'center', pt: 0, pb: 3, mt: -3 }}>
+                        <Button size='small' color='primary'>
+                          {item?.product_status === '1' ? 'Tersedia' : 'Tidak Tersedia'}
+                        </Button>
+                      </CardActions>
+                    </CardActionArea>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+
+          <Divider sx={{ mb: 1, display: 'none' }} />
+
+          <Grid item xs={12} sx={{ display: 'none' }}>
             <Card>
               <Box sx={{ width: '100%', overflow: 'auto' }}>
                 <DataGrid
@@ -1817,7 +1939,7 @@ const MUITable = () => {
                 startAdornment: <InputAdornment position='start'>IDR</InputAdornment>
               }}
               disabled
-              value={format_rupiah(valueModalTransaction?.fee)}
+              value={format_rupiah(Math.round(valueModalTransaction?.fee))}
             />
           </Box>
           <Box>
@@ -2077,11 +2199,11 @@ const MUITable = () => {
               Transaksi <b>{paymentDetail?.req?.reff_id}</b>
             </Typography>
             <Typography>telah dibayar</Typography>
-            {paymentDetail?.res?.data?.total_bayar ? (
+            {/* {paymentDetail?.res?.data?.total_bayar ? (
               <Typography variant='h5'>IDR {format_rupiah(paymentDetail?.res?.data?.total_bayar)}</Typography>
             ) : (
               <Typography variant='h5'>Dengan uang tunai.</Typography>
-            )}
+            )} */}
           </Box>
         </Box>
       </ModalDialog>
@@ -2102,11 +2224,11 @@ const MUITable = () => {
             <Typography>
               Pastikan informasi pelanggan dengan benar, jika anda memasukkan Nomor Whatsapp dan/atau Email.
             </Typography>
-            {valueModalTransaction?.amount_to_pay ? (
+            {/* {valueModalTransaction?.amount_to_pay ? (
               <Typography variant='h5'>IDR {format_rupiah(valueModalTransaction?.amount_to_pay)}</Typography>
             ) : (
               <Typography variant='h5'>Dengan uang tunai.</Typography>
-            )}
+            )} */}
           </Box>
         </Box>
       </ModalDialog>

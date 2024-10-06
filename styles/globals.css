@@ -80,3 +80,11 @@ a {
   height: 42 !important;
   text-transform: capitalize !important;
 }
+
+.border-selected {
+  border: 2px solid #16b1ff !important;
+}
+
+.border-none {
+  border: none !important;
+}
