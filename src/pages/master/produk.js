@@ -36,6 +36,7 @@ import { DataGrid, GridToolbar } from '@mui/x-data-grid'
 import CustomNoRowsOverlay from '/src/components/no-rows-table'
 
 import CryptoJS from 'crypto-js'
+import { size } from 'lodash'
 import ModalDialog from 'src/components/dialog'
 import * as yup from 'yup'
 import { format_rupiah, generateSignature } from '/helpers/general'
@@ -49,10 +50,12 @@ const MUITable = () => {
   // ** States
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState([])
+  const [dataFiltered, setDataFiltered] = useState([])
   const [triggerUpdateStatus, setTriggerUpdateStatus] = useState(0)
   const [errorsField, setErrorsField] = useState()
   const [isAdd, setIsAdd] = useState(false)
   const [openModal, setOpenModal] = useState(false)
+  const [searchProduct, setSearchProduct] = useState('')
   const [titleModal, setTitleModal] = useState('Tambah Produk')
   const [selectedFile, setSelectedFile] = useState()
   const [widthScreen, setWidthScreen] = useState(1100)
@@ -193,6 +196,7 @@ const MUITable = () => {
           .then(res => {
             // console.log(res?.data)
             setData(res?.data)
+            setDataFiltered(res?.data)
             setLoading(false)
           })
           .catch(() => setLoading(false))
@@ -359,6 +363,23 @@ const MUITable = () => {
     }
   }
 
+  useEffect(() => {
+    if (size(searchProduct) > 0) {
+      const _newData = data?.filter(item => {
+        if (
+          item?.product_name?.toLowerCase().includes(searchProduct?.toLowerCase()) ||
+          item?.product_code?.toLowerCase().includes(searchProduct?.toLowerCase()) ||
+          item?.product_barcode?.toLowerCase().includes(searchProduct?.toLowerCase())
+        ) {
+          return item
+        }
+      })
+      setDataFiltered([..._newData])
+    } else {
+      setDataFiltered([...data])
+    }
+  }, [searchProduct])
+
   return (
     <Grid container spacing={6}>
       <Grid item xs={12}>
@@ -367,18 +388,32 @@ const MUITable = () => {
         </Typography>
         <Typography variant='body2'>Semua produk yang tersedia</Typography>
         <Typography variant='body2'>
-          <Button variant='contained' size='small' sx={{ marginRight: 3.5 }} onClick={() => handleClickButton(true)}>
+          <Button variant='contained' size='small' sx={{ mr: 3.5, mt: 5 }} onClick={() => handleClickButton(true)}>
             Tambah
           </Button>
         </Typography>
+        <Box>
+          <TextField
+            label='Cari Produk di Katalog'
+            variant='outlined'
+            fullWidth
+            size='small'
+            sx={{ mb: 1, mt: 5 }}
+            onChange={e => setSearchProduct(e.target.value)}
+            value={searchProduct}
+
+            // error={errorsField?.product_category}
+            // helperText={errorsField?.product_category}
+          />
+        </Box>
       </Grid>
 
       <Divider sx={{ mb: 3 }} />
 
-      <Box sx={{ width: '100%', overflow: 'auto', m: 10 }}>
+      <Box sx={{ width: '100%', overflow: 'auto', m: 5, mr: '0px' }}>
         <Grid container spacing={2}>
-          {data?.map((item, index) => (
-            <Grid key={index} item xs={12} sm={6} md={4} lg={3}>
+          {dataFiltered?.map((item, index) => (
+            <Grid key={index} item xs={6} sm={6} md={4} lg={3}>
               <Card
                 sx={{
                   maxWidth: 'auto',

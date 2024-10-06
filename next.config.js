@@ -23,7 +23,7 @@ module.exports = {
     // unoptimized: true
   },
   compiler: {
-    // removeConsole: true,
+    removeConsole: true,
     styledComponents: true
 
     // removeConsole: {
