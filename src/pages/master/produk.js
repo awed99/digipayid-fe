@@ -1,5 +1,19 @@
 // ** MUI Imports
-import { Button, Divider, FormControlLabel, IconButton, InputAdornment, Switch, TextField } from '@mui/material'
+import {
+  Backdrop,
+  Button,
+  CardActionArea,
+  CardActions,
+  CardContent,
+  CardMedia,
+  CircularProgress,
+  Divider,
+  FormControlLabel,
+  IconButton,
+  InputAdornment,
+  Switch,
+  TextField
+} from '@mui/material'
 import Card from '@mui/material/Card'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
@@ -33,6 +47,7 @@ const MUITable = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // ** States
+  const [loading, setLoading] = useState(true)
   const [data, setData] = useState([])
   const [triggerUpdateStatus, setTriggerUpdateStatus] = useState(0)
   const [errorsField, setErrorsField] = useState()
@@ -139,6 +154,7 @@ const MUITable = () => {
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
+    setLoading(true)
     fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
       method: 'POST',
       headers: {
@@ -177,10 +193,11 @@ const MUITable = () => {
           .then(res => {
             // console.log(res?.data)
             setData(res?.data)
+            setLoading(false)
           })
-          .catch(() => false)
+          .catch(() => setLoading(false))
       })
-      .catch(() => false)
+      .catch(() => setLoading(false))
   }
 
   useEffect(() => {
@@ -225,10 +242,11 @@ const MUITable = () => {
         product_status: '1'
       })
     } else {
-      setSelectedFile(`${process.env.NEXT_PUBLIC_API}` + _params?.row?.product_image_url)
+      const _img = _params?.row?.product_image_url ?? _params?.product_image_url
+      setSelectedFile(`${process.env.NEXT_PUBLIC_API}` + _img)
       setIsAdd(false)
       setTitleModal('Ubah Produk')
-      setValueModal(_params?.row)
+      setValueModal(_params?.row ?? _params)
     }
 
     setOpenModal(true)
@@ -236,10 +254,11 @@ const MUITable = () => {
 
   const handleClickDelete = async (_params = {}) => {
     setIsAdd(false)
-    const _x = confirm('Anda yakin ingin menghapus Produk ' + _params?.row?.product_name + ' ?')
+    const _row = _params?.row ?? _params
+    const _x = confirm('Anda yakin ingin menghapus Produk ' + _row.product_name + ' ?')
     if (_x) {
-      handleChangeEl('product_name', _params?.row?.product_name, valueModal, setValueModal, schemaData, setErrorsField)
-      handleChangeEl('id_product', _params?.row?.id_product, valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('product_name', _row.product_name, valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('id_product', _row.id_product, valueModal, setValueModal, schemaData, setErrorsField)
 
       handleSubmit(true)
     }
@@ -249,11 +268,13 @@ const MUITable = () => {
     const _uri0 = '/api/check-auth'
     const _secret0 = await generateSignature(_uri0)
 
-    if ((await schemaData.isValid(valueModal)) === false) {
+    if ((await schemaData.isValid(valueModal)) === false && !isDelete) {
       alert('Mohon lengkapi semua data.')
 
       return false
     }
+
+    setLoading(true)
 
     fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
       method: 'POST',
@@ -286,18 +307,20 @@ const MUITable = () => {
         delete valueModal?.selectedFile
 
         const dataX = new FormData()
-        Object.keys(valueModal).forEach(item => {
-          dataX.append(item, valueModal[item])
+        Object.keys(valueModal).forEach(itemX => {
+          dataX.append(itemX, valueModal[itemX])
         })
-        dataX.append('userfile', selectedFile, selectedFile.name)
-
-        // console.log(dataX)
-        // return false
 
         // dataX.append('description', externalURL)
         // dataX.append('height', data?.height)
         // dataX.append('width', data?.width)
+        // console.log('selectedFile: ')
         // dataX.append('userfile', selectedFile, selectedFile.name)
+
+        if (typeof selectedFile === 'object') {
+          dataX.append('userfile', selectedFile, selectedFile.name)
+        }
+
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
@@ -314,6 +337,7 @@ const MUITable = () => {
           .then(res => res.json())
           .then(res => {
             // console.log(res?.data)
+            setLoading(false)
             setData(res?.data)
             setOpenModal(false)
             setIsAdd(false)
@@ -323,9 +347,9 @@ const MUITable = () => {
             handleChangeEl('product_name', '', valueModal, setValueModal, schemaData, setErrorsField)
             handleChangeEl('id_product', null, valueModal, setValueModal, schemaData, setErrorsField)
           })
-          .catch(() => false)
+          .catch(() => setLoading(false))
       })
-      .catch(() => false)
+      .catch(() => setLoading(false))
   }
 
   const handleUploadfile = event => {
@@ -342,14 +366,68 @@ const MUITable = () => {
           <Link>Produk</Link>
         </Typography>
         <Typography variant='body2'>Semua produk yang tersedia</Typography>
-        <Divider />
         <Typography variant='body2'>
           <Button variant='contained' size='small' sx={{ marginRight: 3.5 }} onClick={() => handleClickButton(true)}>
             Tambah
           </Button>
         </Typography>
       </Grid>
-      <Grid item xs={12}>
+
+      <Divider sx={{ mb: 3 }} />
+
+      <Box sx={{ width: '100%', overflow: 'auto', m: 10 }}>
+        <Grid container spacing={2}>
+          {data?.map((item, index) => (
+            <Grid key={index} item xs={12} sm={6} md={4} lg={3}>
+              <Card
+                sx={{
+                  maxWidth: 'auto',
+                  p: {
+                    xs: 2,
+                    sm: 3
+                  },
+                  maxWidth: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center'
+                }}
+              >
+                <CardActionArea onClick={() => handleClickButton(false, item)}>
+                  <CardMedia
+                    component='img'
+                    height='140'
+                    image={`${process.env.NEXT_PUBLIC_API}` + item?.product_image_url}
+                    alt={item?.product_name}
+                  />
+                  <CardContent>
+                    <Typography gutterBottom variant='h6' component='div' sx={{ fontSize: '16px !important' }}>
+                      Rp {format_rupiah(item?.product_price)}
+                    </Typography>
+                    <Typography noWrap gutterBottom variant='body2' component='div'>
+                      Code : {item?.product_code}
+                    </Typography>
+                    <Typography noWrap variant='h6' sx={{ color: 'text.secondary', fontSize: '16px !important' }}>
+                      {item?.product_name}
+                    </Typography>
+                  </CardContent>
+                </CardActionArea>
+                <CardActions sx={{ justifyContent: 'space-between', pt: 0, pb: 3, mt: -3 }}>
+                  <Button size='small' color='primary' onClick={() => handleClickButton(false, item)}>
+                    {item?.product_status === '1' ? 'Tersedia' : 'Tidak Tersedia'}
+                  </Button>
+                  <Button size='small' color='error' onClick={() => handleClickDelete(item)}>
+                    <Delete color='error' /> Hapus
+                  </Button>
+                </CardActions>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
+
+      <Divider sx={{ display: 'none' }} />
+
+      <Grid item xs={12} sx={{ display: 'none' }}>
         <Card>
           <Box sx={{ width: '100%', overflow: 'auto' }}>
             <DataGrid
@@ -502,6 +580,10 @@ const MUITable = () => {
           </Box>
         </Box>
       </ModalDialog>
+
+      <Backdrop sx={{ color: '#fff', zIndex: theme => theme.zIndex.drawer + 999999 }} open={loading}>
+        <CircularProgress size={100} variant='indeterminate' />
+      </Backdrop>
     </Grid>
   )
 }
