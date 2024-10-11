@@ -10,6 +10,7 @@ import Cog from 'mdi-material-ui/Cog'
 import InvoiceTextCheckOutline from 'mdi-material-ui/InvoiceTextCheckOutline'
 import PackageVariant from 'mdi-material-ui/PackageVariant'
 import PackageVariantClosedPlus from 'mdi-material-ui/PackageVariantClosedPlus'
+import PotMix from 'mdi-material-ui/PotMix'
 import Scale from 'mdi-material-ui/Scale'
 import StoreSettingsOutline from 'mdi-material-ui/StoreSettingsOutline'
 import ViewDashboard from 'mdi-material-ui/ViewDashboard'
@@ -88,6 +89,11 @@ const navigation = () => {
       title: 'Master Satuan',
       icon: Scale,
       path: '/master/master-satuan'
+    },
+    {
+      title: 'Ingredient',
+      icon: PotMix,
+      path: '/master/ingredient'
     },
     {
       title: 'Hak Akses',
