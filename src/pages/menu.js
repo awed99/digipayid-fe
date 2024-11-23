@@ -1682,7 +1682,7 @@ const MUITable = () => {
                           noWrap
                           sx={{ color: 'text.secondary', fontSize: '12px !important', textAlign: 'center' }}
                         >
-                          {item?.product_desc}
+                          {item?.product_desc ?? '-'}
                         </Typography>
                       </CardContent>
 

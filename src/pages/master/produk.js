@@ -439,7 +439,7 @@ const MUITable = () => {
                 <CardActionArea onClick={() => handleClickButton(false, item)}>
                   <CardMedia
                     component='img'
-                    height='140'
+                    height='160'
                     image={process.env.NEXT_PUBLIC_API + item?.product_image_url}
                     alt={item?.product_name}
                   />
@@ -452,6 +452,10 @@ const MUITable = () => {
                     </Typography>
                     <Typography noWrap variant='h6' sx={{ color: 'text.secondary', fontSize: '16px !important' }}>
                       {item?.product_name}
+                    </Typography>
+                    <Divider />
+                    <Typography noWrap sx={{ color: 'text.secondary', fontSize: '12px !important' }}>
+                      {item?.product_desc ?? '-'}
                     </Typography>
                   </CardContent>
                 </CardActionArea>
