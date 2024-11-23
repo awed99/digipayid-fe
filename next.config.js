@@ -1,96 +1,124 @@
+const { PHASE_PRODUCTION_BUILD } = require('next/constants')
 const path = require('path')
 
-module.exports = {
-  staticPageGenerationTimeout: 100000,
-  trailingSlash: false,
+// const hostname =
+//   typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : window.location.hostname
+// const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : window.location.origin
+// console.log('hostname: ', hostname)
+// console.log('origin: ', origin)
 
-  // webpack5: true,
-  // ignoreBuildErrors: true,
-  distDir: 'build',
-  output: 'export',
-  eslint: {
-    ignoreDuringBuilds: true
-  },
+module.exports = (phase, { defaultConfig }) => {
+  return {
+    staticPageGenerationTimeout: 100000,
+    trailingSlash: false,
 
-  reactStrictMode: false,
+    // webpack5: true,
+    // ignoreBuildErrors: true,
+    distDir: 'build',
+    output: 'export',
+    eslint: {
+      ignoreDuringBuilds: true
+    },
 
-  // swcMinify: true,
-  // distDir: 'build',
+    reactStrictMode: false,
+    productionBrowserSourceMaps: true,
 
-  images: {
-    unoptimized: false
+    // swcMinify: true,
+    // distDir: 'build',
 
-    // unoptimized: true
-  },
-  compiler: {
-    removeConsole: true,
-    styledComponents: true
+    images: {
+      unoptimized: false
 
-    // removeConsole: {
-    //   exclude: ['info']
-    // }
-  },
+      // unoptimized: true
+    },
+    compiler: {
+      removeConsole: phase === PHASE_PRODUCTION_BUILD ? true : false,
+      styledComponents: true
 
-  // transpilePackages: ['mui-one-time-password-input'],
+      // removeConsole: {
+      //   exclude: ['error', 'warning', 'info']
+      // }
+    },
 
-  // transpilePackages: ['@mui/x-charts', 'react-hook-mousetrap'],
-  // transpilePackages: ['@mui/x-charts'],
-  // eslint: {
-  //   ignoreDuringBuilds: true
-  // },
-  // experimental: {
-  //   transpilePackages: ['@mui/x-charts']
-  // },
-  // modularizeImports: {
-  //   '@mui/material': {
-  //     transform: '@mui/material/{{member}}'
-  //   },
-  //   '@mui/x-charts': {
-  //     transform: '@mui/x-charts/{{member}}'
-  //   }
-  // },
+    // transpilePackages: ['mui-one-time-password-input'],
 
-  webpack: (config, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }) => {
-    if (cfg.cache && !dev) {
-      cfg.cache = Object.freeze({
-        type: 'memory'
-      })
-      cfg.cache.maxMemoryGenerations = 0
+    // transpilePackages: ['@mui/x-charts', 'react-hook-mousetrap'],
+    // transpilePackages: ['@mui/x-charts'],
+    // eslint: {
+    //   ignoreDuringBuilds: true
+    // },
+    // experimental: {
+    //   transpilePackages: ['@mui/x-charts']
+    // },
+    // modularizeImports: {
+    //   '@mui/material': {
+    //     transform: '@mui/material/{{member}}'
+    //   },
+    //   '@mui/x-charts': {
+    //     transform: '@mui/x-charts/{{member}}'
+    //   }
+    // },
+
+    webpack: (config, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }) => {
+      if (cfg.cache && !dev) {
+        cfg.cache = Object.freeze({
+          type: 'memory'
+        })
+        cfg.cache.maxMemoryGenerations = 0
+      }
+
+      // Important: return the modified config
+      return config
+    },
+
+    experimental: {
+      webpackBuildWorker: true
+
+      //   esmExternals: false,
+      //   jsconfigPaths: false, // enables it for both jsconfig.json and tsconfig.json
+      //   optimizePackageImports: [
+      //     'lodash',
+      //     '@mui/material',
+      //     '@mui/icons-material',
+      //     'store',
+      //     'yup',
+      //     'next/router',
+      //     'crypto-js',
+      //     'primereact/datatable',
+      //     'primereact/column',
+      //     'store',
+      //     'react-number-format',
+      //     'moment',
+      //     'libphonenumber-js',
+      //     'react-countdown'
+      //   ]
+    },
+    webpack: config => {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        apexcharts: path.resolve(__dirname, './node_modules/apexcharts-clevision')
+      }
+
+      return config
     }
 
-    // Important: return the modified config
-    return config
-  },
+    // async rewrites() {
+    //   return [
+    //     {
+    //       source: '/:path*',
+    //       destination:
+    //         phase === PHASE_PRODUCTION_BUILD
+    //           ? process.env.NEXT_PUBLIC_API_SERVER + '/:path*'
+    //           : process.env.NEXT_PUBLIC_API + '/:path*'
 
-  experimental: {
-    webpackBuildWorker: true
+    //       // process.env.NEXT_PUBLIC_API == 'https://be.digipayid.com'
+    //       //   ? process.env.NEXT_PUBLIC_API_SERVER + '/:path*'
+    //       //   : process.env.NEXT_PUBLIC_API + '/:path*'
 
-    //   esmExternals: false,
-    //   jsconfigPaths: false, // enables it for both jsconfig.json and tsconfig.json
-    //   optimizePackageImports: [
-    //     'lodash',
-    //     '@mui/material',
-    //     '@mui/icons-material',
-    //     'store',
-    //     'yup',
-    //     'next/router',
-    //     'crypto-js',
-    //     'primereact/datatable',
-    //     'primereact/column',
-    //     'store',
-    //     'react-number-format',
-    //     'moment',
-    //     'libphonenumber-js',
-    //     'react-countdown'
+    //       //      // destination: 'https://43e2-2a09-bac5-55fc-15f-00-23-434.ngrok-free.app/api/:path*'
+    //     }
     //   ]
-  },
-  webpack: config => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      apexcharts: path.resolve(__dirname, './node_modules/apexcharts-clevision')
-    }
-
-    return config
+    // }
   }
 }
 

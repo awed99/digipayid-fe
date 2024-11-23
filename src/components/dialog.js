@@ -24,7 +24,9 @@ export default function CustomizedDialogs({
   handleSubmitFunction = false,
   openModal = false,
   setOpenModal,
-  size = 'md'
+  size = 'md',
+  disableButton = false,
+  fullScreen = false
 }) {
   const [open, setOpen] = React.useState(false)
 
@@ -39,7 +41,7 @@ export default function CustomizedDialogs({
   }
 
   const buttonDialogs = handleSubmitFunction => (
-    <Button variant='contained' size='small' sx={{ m: 3 }} onClick={handleSubmitFunction}>
+    <Button variant='contained' size='small' sx={{ m: 3 }} onClick={handleSubmitFunction} disabled={disableButton}>
       Submit
     </Button>
   )
@@ -54,8 +56,9 @@ export default function CustomizedDialogs({
         onClose={handleClose}
         aria-labelledby='customized-dialog-title'
         open={open}
-        fullWidth={true}
+        fullScreen={fullScreen}
         maxWidth={size}
+        fullWidth
       >
         <DialogTitle sx={{ m: 0, p: 2 }} id='customized-dialog-title'>
           {titleModal}

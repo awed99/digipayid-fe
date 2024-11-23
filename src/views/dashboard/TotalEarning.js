@@ -22,7 +22,7 @@ const TotalEarning = ({ data = [] }) => {
     color: index === 0 ? 'success' : index === 1 ? 'primary' : 'warning',
     amount: item?.qty,
     subtitle: item?.code,
-    imgSrc: `${process.env.NEXT_PUBLIC_API_HOST}${item?.image}`
+    imgSrc: `${item?.image}`
   }))
 
   return (

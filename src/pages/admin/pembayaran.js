@@ -137,14 +137,14 @@ const MUITable = () => {
   const handleCloseSnackbar = () => setSnackbar(null)
 
   const getData = async () => {
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -152,6 +152,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -166,8 +168,8 @@ const MUITable = () => {
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
@@ -199,6 +201,8 @@ const MUITable = () => {
   useLayoutEffect(() => {
     // componentWillMount events
     if (!localStorage.getItem('data-module')) {
+      localStorage.removeItem('data-module')
+      localStorage.removeItem('module')
       router.push('/auth')
     }
   }, [])
@@ -235,7 +239,7 @@ const MUITable = () => {
       field: 'product_image_url',
       headerName: 'Image',
       width: 120,
-      renderCell: params => <img src={`${process.env.NEXT_PUBLIC_API}` + params?.value} width={100} />
+      renderCell: params => <img src={process.env.NEXT_PUBLIC_API + params?.value} width={100} />
     },
     {
       field: 'delete',
@@ -265,7 +269,7 @@ const MUITable = () => {
       field: 'product_image_url',
       headerName: 'Image',
       width: 120,
-      renderCell: params => <img src={`${process.env.NEXT_PUBLIC_API}` + params?.value} width={100} />
+      renderCell: params => <img src={process.env.NEXT_PUBLIC_API + params?.value} width={100} />
     }
   ]
 
@@ -299,13 +303,13 @@ const MUITable = () => {
     setIsAdd(false)
     const _x = confirm('Anda yakin ingin membatalkan produk ' + _params?.row?.product_name + ' ?')
     if (_x) {
-      const _uri0 = '/api/check-auth'
+      const _uri0 = '/auth/check_auth'
       const _secret0 = await generateSignature(_uri0)
-      fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+      fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
         method: 'POST',
         headers: {
-          'x-signature': _secret0?.signature,
-          'x-timestamp': _secret0?.timestamp
+          'X-Signature': _secret0?.signature,
+          'X-Timestamp': _secret0?.timestamp
         },
         body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
       })
@@ -313,6 +317,8 @@ const MUITable = () => {
         .then(async res => {
           if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
             // console.log(res?.auth?.user)
+            localStorage.removeItem('data-module')
+            localStorage.removeItem('module')
             router.push('/auth')
 
             return false
@@ -327,8 +333,8 @@ const MUITable = () => {
           fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
             method: 'POST',
             headers: {
-              'x-signature': _secret?.signature,
-              'x-timestamp': _secret?.timestamp,
+              'X-Signature': _secret?.signature,
+              'X-Timestamp': _secret?.timestamp,
               Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
                 .toString(CryptoJS.enc.Utf8)
                 .replace(/\"/g, '')
@@ -364,14 +370,14 @@ const MUITable = () => {
       return false
     }
 
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -379,6 +385,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -429,8 +437,8 @@ const MUITable = () => {
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
@@ -503,7 +511,7 @@ const MUITable = () => {
   }
 
   const handleCreateTempProducts = async (isDelete = false) => {
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
     if ((await schemaDataProduct.isValid(valueModalProduct)) === false) {
@@ -512,11 +520,11 @@ const MUITable = () => {
       return false
     }
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -524,6 +532,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -545,8 +555,8 @@ const MUITable = () => {
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
@@ -567,14 +577,14 @@ const MUITable = () => {
   }
 
   const handleUpdateTempProducts = async _data => {
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -582,6 +592,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -601,8 +613,8 @@ const MUITable = () => {
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
@@ -624,14 +636,14 @@ const MUITable = () => {
 
   const handleSubmit = async () => {
     if (rowSelectionModel?.length > 0) {
-      const _uri0 = '/api/check-auth'
+      const _uri0 = '/auth/check_auth'
       const _secret0 = await generateSignature(_uri0)
 
-      fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+      fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
         method: 'POST',
         headers: {
-          'x-signature': _secret0?.signature,
-          'x-timestamp': _secret0?.timestamp
+          'X-Signature': _secret0?.signature,
+          'X-Timestamp': _secret0?.timestamp
         },
         body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
       })
@@ -639,6 +651,8 @@ const MUITable = () => {
         .then(async res => {
           if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
             // console.log(res?.auth?.user)
+            localStorage.removeItem('data-module')
+            localStorage.removeItem('module')
             router.push('/auth')
 
             return false
@@ -653,8 +667,8 @@ const MUITable = () => {
           fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
             method: 'POST',
             headers: {
-              'x-signature': _secret?.signature,
-              'x-timestamp': _secret?.timestamp,
+              'X-Signature': _secret?.signature,
+              'X-Timestamp': _secret?.timestamp,
               Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
                 .toString(CryptoJS.enc.Utf8)
                 .replace(/\"/g, '')
@@ -759,14 +773,14 @@ const MUITable = () => {
   }, [countDownSearchProduct])
 
   const getPaymentMethods = async () => {
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -774,6 +788,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -788,8 +804,8 @@ const MUITable = () => {
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
@@ -807,14 +823,14 @@ const MUITable = () => {
   }
 
   const searchProducts = async () => {
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -822,6 +838,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -836,8 +854,8 @@ const MUITable = () => {
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
@@ -1491,7 +1509,7 @@ const MUITable = () => {
                     {parseInt(valueModalTransaction?.id_payment_method) == 18 ||
                     parseInt(valueModalTransaction?.id_payment_method) == 19 ? (
                       <>
-                        <img src={`${process.env.NEXT_PUBLIC_API}/${paymentDetail?.image_src}`} />
+                        <img src={`/${paymentDetail?.image_src}`} />
                       </>
                     ) : (
                       <>

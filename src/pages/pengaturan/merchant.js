@@ -25,6 +25,7 @@ import Box from '@mui/material/Box'
 import * as yup from 'yup'
 
 import CryptoJS from 'crypto-js'
+import { filter } from 'lodash'
 import { generateSignature } from '/helpers/general'
 import { handleChangeEl } from '/hooks/general'
 
@@ -34,6 +35,8 @@ const MUITable = () => {
 
   // ** States
   const [errorsField, setErrorsField] = useState()
+  const [kasir, setKasir] = useState([])
+  const [kasirSelected, setKasirSelected] = useState({})
 
   const [data, setData] = useState({
     id_user: null,
@@ -62,14 +65,14 @@ const MUITable = () => {
 
   const getData = async () => {
     setLoading(true)
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -77,6 +80,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -91,8 +96,8 @@ const MUITable = () => {
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
@@ -104,6 +109,10 @@ const MUITable = () => {
             // console.log(res?.data)
             res.data.tax_percentage = parseFloat(res?.data?.tax_percentage ?? 0)
             setData(res?.data)
+            setKasir(res?.cashier)
+            if (parseInt(res?.data?.id_kasir) > 0) {
+              setKasirSelected(filter(res?.cashier, ['id_user', res?.data?.id_kasir])[0])
+            }
             setLoading(false)
           })
           .catch(() => setLoading(false))
@@ -118,6 +127,8 @@ const MUITable = () => {
   useLayoutEffect(() => {
     // componentWillMount events
     if (!localStorage.getItem('data-module')) {
+      localStorage.removeItem('data-module')
+      localStorage.removeItem('module')
       router.push('/auth')
     }
   }, [])
@@ -130,14 +141,14 @@ const MUITable = () => {
     }
 
     setLoading(true)
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -145,6 +156,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -156,11 +169,15 @@ const MUITable = () => {
         const _uri = '/master/user/update_setting'
         const _secret = await generateSignature(_uri)
 
+        data.id_kasir = kasirSelected?.id_user ?? 0
+        data.username_kasir = kasirSelected?.username ?? ''
+        data.wa_kasir = kasirSelected?.merchant_wa ?? ''
+
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
@@ -256,6 +273,22 @@ const MUITable = () => {
                 <MenuItem value={0}>0%</MenuItem>
                 <MenuItem value={10}>10%</MenuItem>
                 <MenuItem value={11}>11%</MenuItem>
+              </Select>
+            </Box>
+            <Box sx={{ p: 2 }}>
+              <InputLabel id='Kasir'>Kasir</InputLabel>
+              <Select
+                labelId='Kasir'
+                id='kasir'
+                value={kasirSelected}
+                onChange={e => setKasirSelected(e.target.value)}
+                sx={{ width: '350px' }}
+              >
+                {kasir?.map(item => (
+                  <MenuItem key={item?.id_user} value={item}>
+                    {item?.username}
+                  </MenuItem>
+                ))}
               </Select>
             </Box>
             {/* <Box sx={{ p: 2 }}>

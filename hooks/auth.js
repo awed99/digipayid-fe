@@ -15,8 +15,8 @@ export const handleSubmitLoginAdmin = async (e, schemaData, values) => {
       const resX = await fetch(`${process.env.NEXT_PUBLIC_BE_API_DOMAIN}${_uri}`, {
         method: 'POST',
         headers: {
-          'x-signature': _secret?.signature,
-          'x-timestamp': _secret?.timestamp
+          'X-Signature': _secret?.signature,
+          'X-Timestamp': _secret?.timestamp
         },
         body: JSON.stringify(values)
 
@@ -49,11 +49,11 @@ export const handleSubmitLogin = async (e, schemaData, values) => {
 
       // console.log(_secret)
 
-      const resX = await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/${_uri}`, {
+      const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
         method: 'POST',
         headers: {
-          'x-signature': _secret?.signature,
-          'x-timestamp': _secret?.timestamp
+          'X-Signature': _secret?.signature,
+          'X-Timestamp': _secret?.timestamp
         },
         body: JSON.stringify(values)
       })
@@ -85,8 +85,8 @@ export const handleSubmitRegister = async (e, schemaData, values) => {
       const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
         method: 'POST',
         headers: {
-          'x-signature': _secret?.signature,
-          'x-timestamp': _secret?.timestamp
+          'X-Signature': _secret?.signature,
+          'X-Timestamp': _secret?.timestamp
         },
         body: JSON.stringify(values)
 
@@ -120,8 +120,8 @@ export const handleSubmitRegisterAffiliator = async (e, schemaData, values) => {
       const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
         method: 'POST',
         headers: {
-          'x-signature': _secret?.signature,
-          'x-timestamp': _secret?.timestamp
+          'X-Signature': _secret?.signature,
+          'X-Timestamp': _secret?.timestamp
         },
         body: JSON.stringify(values)
 
@@ -155,8 +155,8 @@ export const handleSubmitResetPassword = async (e, schemaData, values) => {
       const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
         method: 'POST',
         headers: {
-          'x-signature': _secret?.signature,
-          'x-timestamp': _secret?.timestamp
+          'X-Signature': _secret?.signature,
+          'X-Timestamp': _secret?.timestamp
         },
         body: JSON.stringify(values)
 
@@ -190,8 +190,8 @@ export const handleSubmitNewPassword = async (e, schemaData, values, token) => {
       const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
         method: 'POST',
         headers: {
-          'x-signature': _secret?.signature,
-          'x-timestamp': _secret?.timestamp
+          'X-Signature': _secret?.signature,
+          'X-Timestamp': _secret?.timestamp
         },
         body: JSON.stringify(values)
 
@@ -217,8 +217,8 @@ export const handleCheckValidOTP = async (values, token) => {
   const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
     method: 'POST',
     headers: {
-      'x-signature': _secret?.signature,
-      'x-timestamp': _secret?.timestamp
+      'X-Signature': _secret?.signature,
+      'X-Timestamp': _secret?.timestamp
     },
     body: JSON.stringify(values)
 
@@ -237,8 +237,8 @@ export const handleResendOTP = async (values, token) => {
   const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
     method: 'POST',
     headers: {
-      'x-signature': _secret?.signature,
-      'x-timestamp': _secret?.timestamp,
+      'X-Signature': _secret?.signature,
+      'X-Timestamp': _secret?.timestamp,
       Authorization: token
     },
     body: JSON.stringify(values)
@@ -258,8 +258,8 @@ export const handleGetForgotPasswordOTP = async (values, token) => {
   const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
     method: 'POST',
     headers: {
-      'x-signature': _secret?.signature,
-      'x-timestamp': _secret?.timestamp,
+      'X-Signature': _secret?.signature,
+      'X-Timestamp': _secret?.timestamp,
       Authorization: token
     },
     body: JSON.stringify(values)
@@ -279,8 +279,8 @@ export const handleCheckValidForgotPasswordOTP = async (values, token) => {
   const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
     method: 'POST',
     headers: {
-      'x-signature': _secret?.signature,
-      'x-timestamp': _secret?.timestamp,
+      'X-Signature': _secret?.signature,
+      'X-Timestamp': _secret?.timestamp,
       Authorization: token
     },
     body: JSON.stringify(values)
@@ -300,8 +300,8 @@ export const handleChange_password = async (values, token) => {
   const resX = await fetch(`${process.env.NEXT_PUBLIC_API}/${_uri}`, {
     method: 'POST',
     headers: {
-      'x-signature': _secret?.signature,
-      'x-timestamp': _secret?.timestamp,
+      'X-Signature': _secret?.signature,
+      'X-Timestamp': _secret?.timestamp,
       Authorization: token
     },
     body: JSON.stringify(values)

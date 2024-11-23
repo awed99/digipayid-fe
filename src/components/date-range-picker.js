@@ -28,7 +28,12 @@ export default function MaterialUIPickers(props) {
           value={startDate}
           onChange={newValue => setStartDate(newValue)}
           maxDate={endDate ?? null}
-          sx={{ m: 3 }}
+          sx={{ width: '150px', m: 0.5, mt: 1.5, mb: 1.5 }}
+          slotProps={{
+            textField: {
+              size: 'small'
+            }
+          }}
         />
         &emsp;
         <DatePicker
@@ -37,7 +42,12 @@ export default function MaterialUIPickers(props) {
           onChange={newValue => setEndDate(newValue)}
           minDate={dayjs(startDate)}
           maxDate={dayjs(startDate).add(3, 'month').endOf('month')}
-          sx={{ m: 3 }}
+          sx={{ width: '150px', m: 0.5, mt: 1.5, mb: 1.5 }}
+          slotProps={{
+            textField: {
+              size: 'small'
+            }
+          }}
         />
       </LocalizationProvider>
     </Box>

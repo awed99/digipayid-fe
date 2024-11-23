@@ -139,11 +139,11 @@ const LoginPage = () => {
     const _uri = '/auth/check_auth'
     const _secret = await generateSignature(_uri)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}${_uri}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret?.signature,
-        'x-timestamp': _secret?.timestamp
+        'X-Signature': _secret?.signature,
+        'X-Timestamp': _secret?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -253,8 +253,8 @@ const LoginPage = () => {
           fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
             method: 'POST',
             headers: {
-              'x-signature': _secret?.signature,
-              'x-timestamp': _secret?.timestamp
+              'X-Signature': _secret?.signature,
+              'X-Timestamp': _secret?.timestamp
             },
             body: JSON.stringify({
               key: res?.data?.email,
