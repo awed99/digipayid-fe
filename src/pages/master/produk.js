@@ -67,6 +67,7 @@ const MUITable = () => {
     id_product: null,
     product_code: '',
     product_name: '',
+    product_desc: '',
     product_qty: 0,
     product_price: 0,
     product_status: 1
@@ -74,8 +75,9 @@ const MUITable = () => {
 
   let schemaData = yup.object().shape({
     product_code: yup.string().required(),
-    product_barcode: yup.string().required(),
+    product_barcode: yup.string(),
     product_name: yup.string().required(),
+    product_desc: yup.string(),
     product_qty: yup.number().min(1).required(),
     product_price: yup.number().min(100).required(),
     product_status: yup.number().required()
@@ -87,6 +89,7 @@ const MUITable = () => {
     { field: 'product_code', headerName: 'Kode Produk', width: 150 },
     { field: 'product_barcode', headerName: 'Barcode Produk', width: 150 },
     { field: 'product_name', headerName: 'Nama Produk', width: 350 },
+    { field: 'product_desc', headerName: 'Keterangan Produk', width: 350 },
     { field: 'product_qty', headerName: 'Stok', width: 100 },
 
     // { field: 'product_image_url', headerName: 'Image', width: 150 },
@@ -535,6 +538,19 @@ const MUITable = () => {
               value={valueModal?.product_name}
               error={errorsField?.product_name}
               helperText={errorsField?.product_name}
+            />
+          </Box>
+          <Box>
+            <TextField
+              label='Keterangan Produk'
+              variant='outlined'
+              fullWidth
+              size='small'
+              sx={{ mt: 5 }}
+              onChange={e => handleChangeEl('product_desc', e, valueModal, setValueModal, schemaData, setErrorsField)}
+              value={valueModal?.product_desc}
+              error={errorsField?.product_desc}
+              helperText={errorsField?.product_desc}
             />
           </Box>
           <Box>

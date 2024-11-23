@@ -1749,6 +1749,13 @@ const MUITable = () => {
                         >
                           {item?.product_name}
                         </Typography>
+                        <Divider />
+                        <Typography
+                          noWrap
+                          sx={{ color: 'text.secondary', fontSize: '12px !important', textAlign: 'center' }}
+                        >
+                          {item?.product_desc}
+                        </Typography>
                       </CardContent>
                       <CardActions sx={{ justifyContent: 'center', pt: 0, pb: 3, mt: -3 }}>
                         <Box>
