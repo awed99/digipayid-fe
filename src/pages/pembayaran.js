@@ -61,7 +61,7 @@ const MUITable = () => {
   })
 
   let schemaData = yup.object().shape({
-    nama: yup.string().min(3).required()
+    nama: yup.string().min(4).required()
   })
 
   const getData = async () => {

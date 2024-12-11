@@ -22,7 +22,7 @@ const DefaultPalette = (mode, themeColor) => {
 
   return {
     customColors: {
-      main: mainColor,
+      main: `rgba(${mainColor}, 0.54)`,
       primaryGradient: primaryGradient(),
       tableHeaderBg: mode === 'light' ? '#F9FAFC' : '#3D3759'
     },

@@ -221,7 +221,8 @@ const PayLater = () => {
                 <TextField
                   autoFocus
                   fullWidth
-                  type='number'
+                  onFocus={e => e.target.select()}
+                  inputProps={{ inputMode: 'numeric' }}
                   id='standard-basic'
                   label={'NIK (KTP)'}
                   variant='outlined'

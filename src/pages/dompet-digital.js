@@ -74,6 +74,11 @@ const MUITable = () => {
   const [valuePM, setValuePM] = useState()
   const [oTPWA, setOTPWA] = useState('')
 
+  const [dateFilter, setDateFilter] = useState({
+    startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
+    endDate: dayjs().endOf('month').format('YYYY-MM-DD')
+  })
+
   const [valueWD, setValueWD] = useState({
     amount: 0,
     bank_account: '',
@@ -217,6 +222,7 @@ const MUITable = () => {
     endDate = dayjs().endOf('month').format('YYYY-MM-DD'),
     _withdrawMethods = withdrawMethods
   ) => {
+    setDateFilter({ startDate: startDate, endDate: endDate })
     setLoading(true)
     const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
@@ -1181,7 +1187,8 @@ const MUITable = () => {
                   <Box sx={{ mt: 2 }}>
                     <TextField
                       fullWidth
-                      type='number'
+                      onFocus={e => e?.target?.select()}
+                      inputProps={{ inputMode: 'numeric' }}
                       size='small'
                       label='Nomor Rekening/E-Wallet'
                       value={valueWD?.bank_account}
@@ -1258,7 +1265,10 @@ const MUITable = () => {
         <Card>
           <Box sx={{ width: '100%', overflow: 'auto' }}>
             <Box>
-              <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} />
+              <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} /> &emsp;
+              <Button onClick={() => getData(dateFilter?.startDate, dateFilter?.endDate)} variant='contained'>
+                Refresh
+              </Button>
             </Box>
 
             <DataGrid

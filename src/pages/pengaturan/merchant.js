@@ -1,5 +1,5 @@
 // ** MUI Imports
-import { Alert, Backdrop, CircularProgress, Snackbar } from '@mui/material'
+import { Alert, Backdrop, CircularProgress, InputAdornment, Snackbar } from '@mui/material'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import Divider from '@mui/material/Divider'
@@ -43,7 +43,10 @@ const MUITable = () => {
     merchant_name: '',
     merchant_address: '',
     merchant_wa: '',
-    tax_percentage: 0
+    discount_all_products: 0,
+    tax_percentage: 0,
+    wifi_name: '',
+    wifi_password: ''
   })
 
   const [alertMessage, setAlertMessage] = useState({
@@ -60,7 +63,10 @@ const MUITable = () => {
     merchant_name: yup.string().required(),
     merchant_address: yup.string().required(),
     merchant_wa: yup.string().required(),
-    tax_percentage: yup.number().required()
+    tax_percentage: yup.number().required(),
+    discount_all_products: yup.number(),
+    wifi_name: yup.string().nullable(),
+    wifi_password: yup.string().nullable()
   })
 
   const getData = async () => {
@@ -169,6 +175,12 @@ const MUITable = () => {
         const _uri = '/master/user/update_setting'
         const _secret = await generateSignature(_uri)
 
+        // console.log('kasirSelected: ', kasirSelected)
+        // console.log('kasir: ', kasir)
+        // setLoading(false)
+
+        // return false
+
         data.id_kasir = kasirSelected?.id_user ?? 0
         data.username_kasir = kasirSelected?.username ?? ''
         data.wa_kasir = kasirSelected?.merchant_wa ?? ''
@@ -263,7 +275,28 @@ const MUITable = () => {
               />
             </Box>
             <Box sx={{ p: 2 }}>
-              <InputLabel id='demo-simple-select-label'>Pajak Penjualan</InputLabel>
+              <TextField
+                id='discount_all_products'
+                name='discount_all_products'
+                label='Diskon Semua Produk'
+                variant='outlined'
+                autoComplete={false}
+                onChange={e => handleChangeEl('discount_all_products', e, data, setData, schemaData, setErrorsField)}
+                value={data?.discount_all_products}
+                InputProps={{
+                  endAdornment: <InputAdornment position='end'>%</InputAdornment>,
+                  inputMode: 'numeric'
+                }}
+                onFocus={e => e.target.select()}
+                error={errorsField?.discount_all_products}
+                helperText={errorsField?.discount_all_products}
+                inputProps={{
+                  autoComplete: 'new-password'
+                }}
+              />
+            </Box>
+            <Box sx={{ p: 2 }}>
+              <InputLabel id='tax'>Pajak Penjualan</InputLabel>
               <Select
                 label='Pajak Penjualan'
                 onChange={e => handleChangeEl('tax_percentage', e, data, setData, schemaData, setErrorsField)}
@@ -290,6 +323,38 @@ const MUITable = () => {
                   </MenuItem>
                 ))}
               </Select>
+            </Box>
+            <Box sx={{ p: 2 }}>
+              <TextField
+                id='wifi_name'
+                name='wifi_name'
+                label='Nama Wifi'
+                variant='outlined'
+                autoComplete={false}
+                onChange={e => handleChangeEl('wifi_name', e, data, setData, schemaData, setErrorsField)}
+                value={data?.wifi_name}
+                error={errorsField?.wifi_name}
+                helperText={errorsField?.wifi_name}
+                inputProps={{
+                  autoComplete: 'new-password'
+                }}
+              />
+            </Box>
+            <Box sx={{ p: 2 }}>
+              <TextField
+                id='wifi_password'
+                name='wifi_password'
+                label='Password Wifi'
+                variant='outlined'
+                autoComplete={false}
+                onChange={e => handleChangeEl('wifi_password', e, data, setData, schemaData, setErrorsField)}
+                value={data?.wifi_password}
+                error={errorsField?.wifi_password}
+                helperText={errorsField?.wifi_password}
+                inputProps={{
+                  autoComplete: 'new-password'
+                }}
+              />
             </Box>
             {/* <Box sx={{ p: 2 }}>
               <TextField

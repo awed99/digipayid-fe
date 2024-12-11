@@ -149,14 +149,11 @@ const MUITable = () => {
       field: 'action',
       headerName: 'Tindakan',
       width: 250,
-      renderCell: params =>
-        parseInt(params?.row?.status) === 0 || parseInt(params?.row?.status) === 1 ? (
-          <Button variant='contained' size='small' onClick={() => handleProcess(params?.row)}>
-            Proses Penarikan
-          </Button>
-        ) : (
-          <></>
-        )
+      renderCell: params => (
+        <Button variant='contained' size='small' onClick={() => handleProcess(params?.row)}>
+          Proses Penarikan
+        </Button>
+      )
     }
 
     // {
@@ -243,10 +240,11 @@ const MUITable = () => {
   }, [])
 
   const handleProcess = (dataRow = {}) => {
-    dataRow['status'] = 1
+    // dataRow['status'] = 1
     setPaymentDetail({ ...dataRow })
     setOpenModalPayment(true)
-    handleUpdateRequestStatus(dataRow)
+
+    // handleUpdateRequestStatus(dataRow)
   }
 
   const handleComplete = () => {
@@ -255,7 +253,7 @@ const MUITable = () => {
     setPaymentDetail({ ...dataRow })
 
     // setOpenModalPayment(true)
-    handleUpdateRequestStatus(dataRow)
+    // handleUpdateRequestStatus(dataRow)
   }
 
   const handleUpdateRequestStatus = async (
@@ -415,7 +413,7 @@ const MUITable = () => {
         openModal={openModalPayment}
         setOpenModal={setOpenModalPayment}
         handleSubmitFunction={() => {
-          setOpenModalConfirm(true)
+          // setOpenModalConfirm(true)
           setOpenModalPayment(false)
         }}
       >
@@ -437,7 +435,14 @@ const MUITable = () => {
                 </Box>
                 <Box>
                   <Typography>
-                    Status : <b>Dalam Proses</b>
+                    Status :{' '}
+                    <b>
+                      {paymentDetail?.status === '2'
+                        ? 'Sudah Ditransfer'
+                        : paymentDetail?.status === '9'
+                        ? 'Gagal'
+                        : 'Belum Ditransfer'}
+                    </b>
                   </Typography>
                 </Box>
                 <Divider />

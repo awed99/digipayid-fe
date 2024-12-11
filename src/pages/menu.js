@@ -1,4 +1,5 @@
 // ** MUI Imports
+import { HighlightOff } from '@mui/icons-material'
 import {
   Alert,
   Autocomplete,
@@ -8,19 +9,15 @@ import {
   CardActions,
   CardContent,
   CardMedia,
+  Checkbox,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
-  IconButton,
   InputAdornment,
   Snackbar,
   TextField
 } from '@mui/material'
 import Card from '@mui/material/Card'
-import Grid from '@mui/material/Grid'
+import Grid from '@mui/material/Grid2'
 import Link from '@mui/material/Link'
 import { styled } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
@@ -28,10 +25,8 @@ import Typography from '@mui/material/Typography'
 // ** Layout Import
 import BlankLayout from 'src/@core/layouts/BlankLayout'
 
-import { Close, Delete, PhotoCamera } from '@mui/icons-material'
-
 // ** React Imports
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 // ** Next Import
 import { useRouter } from 'next/router'
@@ -40,18 +35,14 @@ import { useRouter } from 'next/router'
 import Box from '@mui/material/Box'
 
 // ** Demo Components Imports
-import { DataGrid, GridToolbar } from '@mui/x-data-grid'
-import CustomNoRowsOverlay from '/src/components/no-rows-table'
 
 import * as yup from 'yup'
 
 import CryptoJS from 'crypto-js'
-import { filter, includes, pull, size } from 'lodash'
-import ModalImage from 'react-modal-image'
+import { filter, includes, map, pull, size } from 'lodash'
 import ModalDialog from 'src/components/dialog'
 import { format_rupiah, generateSignature, spacing4Char } from '/helpers/general'
 import { handleChangeEl } from '/hooks/general'
-import TablePagination from '/src/components/table-pagination'
 
 const MUITable = () => {
   // ** States
@@ -60,7 +51,7 @@ const MUITable = () => {
 
   // ** States
   const [isWaitingForPayment, setIsWaitingForPayment] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [errorsField, setErrorsField] = useState()
   const [nama, setNama] = useState('')
   const [isAdd, setIsAdd] = useState(true)
@@ -74,6 +65,7 @@ const MUITable = () => {
   const [openModalSuccessPayment, setOpenModalSuccessPayment] = useState(false)
   const [openModalSuccessConfirmation, setOpenModalSuccessConfirmation] = useState(false)
   const [searchProduct, setSearchProduct] = useState('')
+  const [searchProduct2, setSearchProduct2] = useState('')
   const [countDownSearchProduct, setCountDownSearchProduct] = useState(4)
   const [titleModal, setTitleModal] = useState('Ambil produk dari katalog')
   const [titleModal2, setTitleModal2] = useState('Tambahkan produk baru secara manual')
@@ -84,13 +76,21 @@ const MUITable = () => {
   const [paymentMethodsFiltered, setPaymentMethodsFiltered] = useState([])
   const [paymentDetail, setPaymentDetail] = useState([])
   const [reffID, setReffID] = useState(null)
+  const [loopCheckStatus, setLoopCheckStatus] = useState(0)
 
   // const [valueModal, setValueModal] = useState({ id_product_category: null, product_category: '' })
   const [saldo, setSaldo] = useState(0)
   const [taxPercentage, setTaxPercentage] = useState(0)
+  const [discountAllProducts, setDiscountAllProducts] = useState(0)
   const [data, setData] = useState([])
   const [dataFinal, setDataFinal] = useState([])
   const [dataSearch, setDataSearch] = useState([])
+  const [pageDataSearch, setPageDataSearch] = useState(1)
+  const [perPageDataSearch, setPerPageDataSearch] = useState(5)
+  const [totalDataSearch, setTotalDataSearch] = useState(0)
+  const [dataSearchMaster, setDataSearchMaster] = useState([])
+  const [productCategories, setProductCategories] = useState([])
+  const [searchCategory, setSearchCategory] = useState([])
   const [selectedFile, setSelectedFile] = useState()
   const [widthScreen, setWidthScreen] = useState(1100)
   const [uniqueCode, setUniqueCode] = useState(Math.floor(Math.random() * 900) + 100)
@@ -105,7 +105,7 @@ const MUITable = () => {
   })
 
   let schemaData = yup.object().shape({
-    nama: yup.string().min(3).required()
+    nama: yup.string().min(4).required()
   })
 
   const [valueModalProduct, setValueModalProduct] = useState({
@@ -144,37 +144,6 @@ const MUITable = () => {
     // position: 'absolute'
   })
 
-  const useFakeMutation = () => {
-    return useCallback(
-      row =>
-        new Promise((resolve, reject) => {
-          setTimeout(() => {
-            if (row.product_qty?.toString().trim() === '' || row.product_price?.toString().trim() === '') {
-              reject()
-            } else {
-              resolve(row)
-            }
-          }, 200)
-        }),
-      []
-    )
-  }
-
-  function computeMutation(newRow, oldRow) {
-    if (newRow.product_qty !== oldRow.product_qty) {
-      return `Jumlah '${oldRow.product_qty}' menjadi '${newRow.product_qty}'`
-    }
-    if (newRow.product_price !== oldRow.product_price) {
-      return `Harga '${oldRow.product_price || ''}' Menjadi '${newRow.product_price || ''}'`
-    }
-
-    return null
-  }
-
-  const mutateRow = useFakeMutation()
-  const noButtonRef = useRef(null)
-  const [promiseArguments, setPromiseArguments] = useState(null)
-
   const [snackbar, setSnackbar] = useState(null)
 
   const handleCloseSnackbar = () => setSnackbar(null)
@@ -198,6 +167,7 @@ const MUITable = () => {
         setData(res?.data)
         setSaldo(res?.saldo)
         setTaxPercentage(parseInt(res?.tax_percentage))
+        setDiscountAllProducts(parseInt(res?.discount_all_products))
         if (res?.saldo < 10000) {
           setOpenModalWarning(true)
         }
@@ -212,8 +182,10 @@ const MUITable = () => {
       // router.push('/')
       // getData()
       setOpenModalNama(true)
-      setLoading(true)
-      getPaymentMethods()
+
+      // setLoading(true)
+
+      // getPaymentMethods()
 
       // function handleResize() {
       //   setWidthScreen(window.innerWidth)
@@ -226,96 +198,33 @@ const MUITable = () => {
   useEffect(() => {
     if (nama?.length > 3) {
       getData()
-    } else {
-      setData([])
-      setLoading(false)
+      searchProducts()
     }
   }, [nama])
 
   useEffect(() => {
     const _rowSelectionQty = []
     rowSelectionModel?.map((item, index) => {
-      const _qty = filter(dataSearch, ['id_product', item])[0].qty
+      const _qty = filter(dataSearchMaster, ['id_product', item?.toString()])[0]?.qty ?? 1
+      const _req0 = filter(dataSearchMaster, ['id_product', item?.toString()])[0]?.product_custom_request
+      const _req = _req0 === null ? '' : _req0
       _rowSelectionQty.push({
         id_product: item,
-        qty: _qty
+        qty: _qty,
+        product_custom_request: _req
       })
     })
-    setRowSelectionQty(_rowSelectionQty)
-  }, [rowSelectionModel])
 
-  useEffect(() => {
-    return () => {
-      // window.removeEventListener('resize', handleResize)
-      setIsWaitingForPayment(false)
-    }
-  }, [])
+    // console.log('_rowSelectionQty: ', _rowSelectionQty)
+    setRowSelectionQty([..._rowSelectionQty])
+  }, [rowSelectionModel, dataSearch])
 
-  let _loopNumber = 1
-
-  const columns = [
-    // { field: 'product_code', headerName: 'Kode', width: 100 },
-    { field: 'product_name', headerName: 'Nama Produk', width: 100 },
-
-    // { field: 'product_image_url', headerName: 'Image', width: 150 },
-    {
-      field: 'product_qty',
-      headerName: 'Jml',
-      width: 100,
-      type: 'number',
-      editable: true
-    },
-    {
-      field: 'product_price',
-      headerName: 'Harga',
-      width: 110,
-      type: 'number',
-      editable: true,
-      renderCell: params => format_rupiah(params?.value?.toString())
-    },
-    {
-      field: 'total_price',
-      headerName: 'Total Harga',
-      width: 120,
-      renderCell: params => format_rupiah((params?.row?.product_qty * params?.row?.product_price)?.toString())
-    },
-    {
-      field: 'product_image_url',
-      headerName: 'Image',
-      width: 120,
-      renderCell: params => <img src={process.env.NEXT_PUBLIC_API + params?.value} width={100} />
-    },
-    {
-      field: 'delete',
-      headerName: 'Delete',
-      width: 100,
-      renderCell: params => (
-        <IconButton aria-label='delete' onClick={() => handleClickDelete(params)}>
-          <Delete color='error' />
-        </IconButton>
-      )
-    }
-  ]
-
-  const columnsSearch = [
-    { field: 'product_code', headerName: 'Kode', width: 70 },
-    { field: 'product_name', headerName: 'Nama Produk', width: 160 },
-    { field: 'product_qty', headerName: 'Stok', width: 100 },
-
-    // { field: 'product_image_url', headerName: 'Image', width: 150 },
-    {
-      field: 'product_price',
-      headerName: 'Harga',
-      width: 120,
-      renderCell: params => format_rupiah(params?.value)
-    },
-    {
-      field: 'product_image_url',
-      headerName: 'Image',
-      width: 120,
-      renderCell: params => <img src={process.env.NEXT_PUBLIC_API + params?.value} width={100} />
-    }
-  ]
+  // useEffect(() => {
+  //   return () => {
+  //     // window.removeEventListener('resize', handleResize)
+  //     setIsWaitingForPayment(false)
+  //   }
+  // }, [])
 
   const handleClickButton = async () => {
     // if (_isAdd === true) {
@@ -323,24 +232,10 @@ const MUITable = () => {
     //   handleChangeEl('product_category', '', valueModal, setValueModal, schemaData, setErrorsField)
     //   handleChangeEl('id_product_category', null, valueModal, setValueModal, schemaData, setErrorsField)
     // }
+    searchProducts()
     setSearchProduct('')
     setTitleModal('Ambil produk dari katalog')
     setOpenModal(true)
-    searchProducts()
-  }
-
-  const handleClickButtonNew = async () => {
-    setTitleModal2('Tambahkan produk baru secara manual')
-    setSelectedFile(null)
-    setValueModalProduct({
-      id_product: null,
-      product_code: '',
-      product_name: '',
-      product_qty: 0,
-      product_price: 0,
-      product_status: '1'
-    })
-    setOpenModal2(true)
   }
 
   const handleClickDelete = async (_params = {}) => {
@@ -519,9 +414,11 @@ const MUITable = () => {
         // }
 
         const _tax_amount = (_total_amount * taxPercentage) / 100
+        const _disc = _total_amount - (_total_amount * discountAllProducts) / 100
+        const _discount_all_products = discountAllProducts > 0 ? _disc : 0
         const _fee_percent = _pg_fee_percent + _app_fee_percent
         const _fee_percent_0 = 100 - _fee_percent
-        const _amount0 = _total_amount + _pg_fee_amount + _app_fee_amount + _tax_amount
+        const _amount0 = _total_amount + _pg_fee_amount + _app_fee_amount + _tax_amount - _discount_all_products
         let _final_amount = Math.round(((_amount0 * 100) / _fee_percent_0).toFixed(2))
 
         const _pg_fee = Math.round(((_final_amount * _pg_fee_percent) / 100).toFixed(2)) + _pg_fee_amount
@@ -546,7 +443,7 @@ const MUITable = () => {
 
         const _uniqueCode = isQrisPaylater ? uniqueCode : 0
         const _fee = _pg_fee + _app_fee + _uniqueCode
-        const __final_amount = _total_amount + _fee + _tax_amount
+        const __final_amount = _total_amount + _fee + _tax_amount - _discount_all_products
 
         // console.log(
         //   'payment_method_code: ',
@@ -639,12 +536,14 @@ const MUITable = () => {
             wa_customer: valueModalTransaction?.wa_customer,
             total_product: dataFinal?.length,
             tax_percentage: taxPercentage,
-            amount: _fee_on_merchant === 0 ? __final_amount : _total_amount + _tax_amount,
+            discount: discountAllProducts,
+            discount_amount: _discount_all_products,
+            amount: _fee_on_merchant === 0 ? __final_amount : _total_amount + _tax_amount - _discount_all_products,
             amount_tax: _tax_amount,
             amount_to_pay: !isCash
               ? _fee_on_merchant === 0
                 ? __final_amount
-                : _total_amount + _tax_amount
+                : _total_amount + _tax_amount - _discount_all_products
               : parseInt(valueModalTransaction?.amount_to_pay?.toString().replace(/\./g, '')),
 
             pg_fee: _pg_fee,
@@ -686,6 +585,8 @@ const MUITable = () => {
             }
 
             setIsWaitingForPayment(true)
+            setData([])
+            getData()
 
             if (res?.code === 1) {
               setPaymentDetail(res?.payment)
@@ -702,8 +603,7 @@ const MUITable = () => {
             }
 
             // setReffID(null)
-            setData(res?.data)
-            getPaymentMethods()
+            // getPaymentMethods()
             setOpenModal3(false)
             setOpenModalSuccessConfirmation(false)
 
@@ -715,7 +615,27 @@ const MUITable = () => {
       .catch(() => setLoading(false))
   }
 
-  const handleCheckStatus = async (_reffID, _loop = 10) => {
+  useEffect(() => {
+    return () => {
+      setLoopCheckStatus(-1)
+      setIsWaitingForPayment(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    // console.log('isWaitingForPayment', isWaitingForPayment)
+    // console.log('reffID', reffID)
+    // console.log('loopCheckStatus', loopCheckStatus)
+
+    if (isWaitingForPayment === true && reffID && loopCheckStatus === 0) {
+      setTimeout(() => setLoopCheckStatus(1), 1000)
+    }
+    if (isWaitingForPayment === true && reffID && loopCheckStatus > 0) {
+      setTimeout(() => handleCheckStatus(reffID), 5000)
+    }
+  }, [isWaitingForPayment, reffID, loopCheckStatus])
+
+  const handleCheckStatus = async (_reffID, _loop = 0) => {
     const _isWaitingForPayment = isWaitingForPayment
     const _paymentDetail = paymentDetail
 
@@ -786,14 +706,17 @@ const MUITable = () => {
             } else {
               // console.log('_isWaitingForPayment: ', _isWaitingForPayment)
               // console.log('reff_id: ', _paymentDetail?.req?.reff_id)
-              _loop = _loop + 1
-              if (_isWaitingForPayment === true && _paymentDetail?.req?.reff_id && _loop < 10) {
-                setTimeout(() => handleCheckStatus(_reffID, _loop), 5000)
+              if (_isWaitingForPayment === true && _paymentDetail?.req?.reff_id && _loop < 1000) {
+                _loop = loopCheckStatus + 1
+
+                // setTimeout(() => handleCheckStatus(_reffID, _loop), 5000)
+                setTimeout(() => setLoopCheckStatus(_loop), 5000)
               } else {
                 setIsWaitingForPayment(false)
               }
             }
-            setLoading(false)
+
+            // setLoading(false)
           })
           .catch(() => setLoading(false))
       })
@@ -842,6 +765,7 @@ const MUITable = () => {
 
           body: JSON.stringify({
             invoice_number: _reffID,
+            nama: nama,
             email_customer:
               size(_valueModalTransaction?.email_customer) < 5 ? undefined : _valueModalTransaction?.email_customer,
             wa_customer: size(_valueModalTransaction?.wa_customer) < 5 ? undefined : _valueModalTransaction?.wa_customer
@@ -872,142 +796,40 @@ const MUITable = () => {
       .catch(() => setLoading(false))
   }
 
-  const handleCreateTempProducts = async (isDelete = false) => {
-    const _uri0 = '/auth/check_auth'
-    const _secret0 = await generateSignature(_uri0)
-
-    if ((await schemaDataProduct.isValid(valueModalProduct)) === false) {
-      // alert('Mohon lengkapi semua data.')
-      setAlertMessage({
-        open: true,
-        type: 'error',
-        message: 'Mohon lengkapi semua data.'
-      })
-
-      return false
-    }
-    if (!selectedFile) {
-      setAlertMessage({
-        open: true,
-        type: 'error',
-        message: 'Foto produk wajib ada!'
-      })
-
-      return false
-    }
-
-    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
-      method: 'POST',
-      headers: {
-        'X-Signature': _secret0?.signature,
-        'X-Timestamp': _secret0?.timestamp
-      },
-      body: JSON.stringify({ email: router?.query?.email })
-    })
-      .then(res => res.json())
-      .then(async res => {
-        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
-          // console.log(res?.auth?.user)
-          localStorage.removeItem('data-module')
-          localStorage.removeItem('module')
-          router.push('/auth')
-
-          return false
-        } else {
-          return res
-        }
-      })
-      .then(async res => {
-        const _uri = '/transactions/orders/create_temp_products'
-        const _secret = await generateSignature(_uri)
-
-        delete valueModalProduct?.selectedFile
-        const dataX = new FormData()
-        Object.keys(valueModalProduct).forEach(item => {
-          dataX.append(item, valueModalProduct[item])
-        })
-        dataX.append('userfile', selectedFile, selectedFile.name)
-        dataX.append('nama', router?.query?.email)
-
-        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
-          method: 'POST',
-          headers: {
-            'X-Signature': _secret?.signature,
-            'X-Timestamp': _secret?.timestamp,
-            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
-              .toString(CryptoJS.enc.Utf8)
-              .replace(/\"/g, '')
-          },
-
-          // body: JSON.stringify(valueModalProduct)
-          body: dataX
-        })
-          .then(res => res.json())
-          .then(res => {
-            // console.log(res?.data)
-            setData(res?.data)
-            setOpenModal2(false)
-          })
-          .catch(() => false)
-      })
-      .catch(() => false)
-  }
-
   const handleUpdateTempProducts = async _data => {
-    const _uri0 = '/auth/check_auth'
-    const _secret0 = await generateSignature(_uri0)
+    const _uri = '/transactions/orders/update_temp_products'
+    const _secret = await generateSignature(_uri)
 
-    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
+    // const dataX = new FormData()
+    // dataX.append('id', _data?.id)
+    // dataX.append('product_qty', _data?.product_qty)
+    // dataX.append('product_price', _data?.product_price)
+    // dataX.append('nama', nama)
+    // dataX.append('email', router?.query?.email)
+    const dataX = {
+      id: _data?.id,
+      product_qty: _data?.product_qty,
+      product_price: _data?.product_price,
+      product_custom_request: _data?.product_custom_request,
+      email: router?.query?.email,
+      nama: nama
+    }
+
+    fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
       method: 'POST',
       headers: {
-        'X-Signature': _secret0?.signature,
-        'X-Timestamp': _secret0?.timestamp
+        'X-Signature': _secret?.signature,
+        'X-Timestamp': _secret?.timestamp
       },
-      body: JSON.stringify({ email: router?.query?.email })
+
+      // body: JSON.stringify({ id: _data?.id, product_qty: _data?.product_qty, product_price: _data?.product_price })
+      body: JSON.stringify(dataX)
     })
       .then(res => res.json())
-      .then(async res => {
-        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
-          // console.log(res?.auth?.user)
-          localStorage.removeItem('data-module')
-          localStorage.removeItem('module')
-          router.push('/auth')
-
-          return false
-        } else {
-          return res
-        }
-      })
-      .then(async res => {
-        const _uri = '/transactions/orders/update_temp_products'
-        const _secret = await generateSignature(_uri)
-
-        const dataX = new FormData()
-        dataX.append('id', _data?.id)
-        dataX.append('product_qty', _data?.product_qty)
-        dataX.append('product_price', _data?.product_price)
-        dataX.append('nama', router?.query?.email)
-
-        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
-          method: 'POST',
-          headers: {
-            'X-Signature': _secret?.signature,
-            'X-Timestamp': _secret?.timestamp,
-            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
-              .toString(CryptoJS.enc.Utf8)
-              .replace(/\"/g, '')
-          },
-
-          // body: JSON.stringify({ id: _data?.id, product_qty: _data?.product_qty, product_price: _data?.product_price })
-          body: dataX
-        })
-          .then(res => res.json())
-          .then(res => {
-            // console.log(res?.data)
-            setData(res?.data)
-            setOpenModal2(false)
-          })
-          .catch(() => false)
+      .then(res => {
+        // console.log(res?.data)
+        setData(res?.data)
+        setOpenModal2(false)
       })
       .catch(() => false)
   }
@@ -1067,25 +889,149 @@ const MUITable = () => {
     }
   }
 
-  useEffect(() => {
-    // console.log('isWaitingForPayment', isWaitingForPayment)
-    if (isWaitingForPayment === true && reffID) {
-      setTimeout(() => handleCheckStatus(reffID, 0), 5000)
-    }
-  }, [isWaitingForPayment, reffID])
+  // useEffect(() => {
+  //   console.log('rowSelectionModel', rowSelectionModel)
+  //   console.log('rowSelectionQty', rowSelectionQty)
+  // }, [rowSelectionModel, rowSelectionQty])
 
   useEffect(() => {
-    // if (searchProduct.length > 0) {
-    //   setCountDownSearchProduct(1)
+    handleSearchProduct()
+  }, [searchCategory])
+
+  useEffect(() => {
+    // if (size(searchProduct) < 1) {
+    handleSearchProduct()
+
     // }
-    setCountDownSearchProduct(1)
   }, [searchProduct])
+
+  // useEffect(() => {
+  //   console.log('dataSearch', dataSearch)
+  // }, [dataSearch])
+
+  // useEffect(() => {
+  //   if (size(searchProduct) > 0) {
+  //     setDataSearch([])
+  //   } else {
+  //     const _dataSearch = dataSearchMaster?.slice(0 * perPageDataSearch, 0 * perPageDataSearch + perPageDataSearch)
+  //     setDataSearch([..._dataSearch])
+  //   }
+
+  //   // setPageDataSearch(1)
+  // }, [searchProduct])
+
+  // useEffect(() => {
+  //   if (size(dataSearchMaster) > 0) {
+  //     setLoading(true)
+  //     setTimeout(() => {
+  //       let _newData = dataSearchMaster
+  //       if (size(searchProduct) > 0) {
+  //         _newData = dataSearchMaster?.filter(item => {
+  //           if (
+  //             item?.product_name?.toLowerCase().includes(searchProduct?.toLowerCase()) ||
+  //             item?.product_desc?.toLowerCase().includes(searchProduct?.toLowerCase())
+  //           ) {
+  //             if (size(searchCategory) > 0) {
+  //               return map(searchCategory, item2 => {
+  //                 if (item?.product_categories?.toLowerCase().includes(item2?.product_category?.toLowerCase())) {
+  //                   return item
+  //                 }
+  //               })
+  //             } else {
+  //               return item
+  //             }
+  //           }
+  //         })
+  //       }
+
+  //       const _newData2 = []
+  //       map(_newData, item => {
+  //         if (size(searchCategory) > 0) {
+  //           map(searchCategory, item2 => {
+  //             if (item?.product_categories?.toLowerCase().includes(item2?.product_category?.toLowerCase())) {
+  //               _newData2.push(item)
+  //             }
+  //           })
+  //         } else {
+  //           _newData2.push(item)
+  //         }
+  //       })
+
+  //       setTotalDataSearch(_newData2?.length)
+
+  //       // const _dataSearch = _newData2?.slice(
+  //       //   (pageDataSearch - 1) * perPageDataSearch,
+  //       //   (pageDataSearch - 1) * perPageDataSearch + perPageDataSearch
+  //       // )
+  //       // setDataSearch([..._dataSearch])
+  //       setDataSearch([..._newData2])
+
+  //       // setPageDataSearch(1)
+  //       setLoading(false)
+  //     }, 350)
+  //   }
+  // }, [pageDataSearch])
+
+  const handleSearchProduct = e => {
+    if (size(dataSearchMaster) > 0) {
+      // setLoading(true)
+      setTimeout(() => {
+        let _newData = dataSearchMaster
+        if (size(searchProduct) > 0) {
+          _newData = dataSearchMaster?.filter(item => {
+            if (
+              item?.product_name?.toLowerCase().includes(searchProduct?.toLowerCase()) ||
+              item?.product_desc?.toLowerCase().includes(searchProduct?.toLowerCase())
+            ) {
+              if (size(searchCategory) > 0) {
+                return map(searchCategory, item2 => {
+                  if (item?.product_categories?.toLowerCase().includes(item2?.product_category?.toLowerCase())) {
+                    return item
+                  }
+                })
+              } else {
+                return item
+              }
+            }
+          })
+        }
+
+        const _newData2 = []
+        map(_newData, item => {
+          if (size(searchCategory) > 0) {
+            map(searchCategory, item2 => {
+              if (item?.product_categories?.toLowerCase().includes(item2?.product_category?.toLowerCase())) {
+                _newData2.push(item)
+              }
+            })
+          } else {
+            _newData2.push(item)
+          }
+        })
+
+        // console.log('_newData2', _newData2)
+
+        setTotalDataSearch(_newData2?.length)
+
+        // const _dataSearch = _newData2?.slice(0 * perPageDataSearch, 0 * perPageDataSearch + perPageDataSearch)
+        // setDataSearch([..._dataSearch])
+        setDataSearch([..._newData2])
+
+        // setDataSearch([..._newData2])
+        setPageDataSearch(1)
+
+        // setLoading(false)
+      }, 1)
+    }
+  }
 
   useEffect(() => {
     // console.log('openModal4', openModal4)
     if (!openModal4 || !openModal3 || !openModal) {
-      setReffID(null)
+      // setReffID(null)
       setAmountToPay(0)
+      setSearchCategory([])
+      setSearchProduct('')
 
       // setValueModalTransaction({
       //   email_customer: '',
@@ -1100,6 +1046,9 @@ const MUITable = () => {
     }
 
     if (!openModal4) {
+      if (valueModalTransaction?.amount_to_pay > 0) {
+        router.reload()
+      }
       setValueModalTransaction({
         email_customer: '',
         wa_customer: '',
@@ -1251,45 +1200,8 @@ const MUITable = () => {
     setValueModalTransaction({ ..._valueModalTransaction })
   }, [paymentMethods, valueModalTransaction?.id_payment_method, valueModalTransaction?.amount_to_pay, openModal3])
 
-  useEffect(() => {
-    if (countDownSearchProduct > 0 && countDownSearchProduct < 3) {
-      setTimeout(() => {
-        if (countDownSearchProduct > 0 && countDownSearchProduct < 3) {
-          setCountDownSearchProduct(countDownSearchProduct - 1)
-        }
-      }, 1000)
-
-      // console.log('countDownSearchProduct: ', countDownSearchProduct)
-    } else if (countDownSearchProduct < 1) {
-      // console.log('countDownSearchProduct: ', countDownSearchProduct)
-      setCountDownSearchProduct(4)
-      searchProducts()
-    }
-  }, [countDownSearchProduct])
-
-  const getPaymentMethods = async () => {
-    const _uri = '/master/payment_method/list0'
-    const _secret = await generateSignature(_uri)
-
-    fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
-      method: 'POST',
-      headers: {
-        'X-Signature': _secret?.signature,
-        'X-Timestamp': _secret?.timestamp
-      },
-      body: JSON.stringify({ email: router?.query?.email })
-    })
-      .then(res => res.json())
-      .then(res => {
-        // console.log(res?.data)
-        setPaymentMethods(res?.data)
-
-        // getData()
-      })
-      .catch(() => setLoading(false))
-  }
-
   const searchProducts = async () => {
+    setLoading(true)
     const _uri = '/master/product/list0'
     const _secret = await generateSignature(_uri)
 
@@ -1306,127 +1218,140 @@ const MUITable = () => {
         // console.log(res?.data)
         // setDataSearch(res?.data)
         const _qty = []
-        res?.data?.map(item => {
-          _qty.push({
-            // id_product: item?.id_product,
-            // product_code: item?.product_code,
-            // product_name: item?.product_name,
-            // product_price: item?.product_price,
-            // product_status: item?.product_status,
-            // product_qty: item?.product_qty,
-            ...item,
-            qty: 1
-          })
-        })
-        setDataSearch(_qty)
+
+        const _data = map(res?.data, item => ({ ...item, qty: 1, product_custom_request: '' }))
+
+        // map(res?.data, item => {
+        //   _qty.push({
+        //     // id_product: item?.id_product,
+        //     // product_code: item?.product_code,
+        //     // product_name: item?.product_name,
+        //     // product_price: item?.product_price,
+        //     // product_status: item?.product_status,
+        //     // product_qty: item?.product_qty,
+        //     ...item,
+        //     qty: 1
+        //   })
+        // })
+        setDataSearchMaster([..._data])
+        setTotalDataSearch(size(_data))
+
+        // const _dataSearch = _data?.slice(0 * perPageDataSearch, 0 * perPageDataSearch + perPageDataSearch)
+        // setDataSearch([..._dataSearch])
+        setDataSearch([..._data])
+
+        // console.log('_data: ', _data)
+        setProductCategories([...res?.categories])
+        setPaymentMethods([...res?.payment_channels])
         setLoading(false)
       })
       .catch(() => false)
   }
 
-  const handleUploadfile = event => {
-    if (event?.target?.files[0]) {
-      setSelectedFile(event?.target?.files[0])
-      handleChangeEl(
-        'selectedFile',
-        event?.target?.files[0],
-        valueModalProduct,
-        setValueModalProduct,
-        schemaDataProduct,
-        setErrorsField
-      )
-    }
-  }
-
-  const processRowUpdate = useCallback(
-    (newRow, oldRow) =>
-      new Promise((resolve, reject) => {
-        const mutation = computeMutation(newRow, oldRow)
-        if (mutation) {
-          // Save the arguments to resolve or reject the promise later
-          setPromiseArguments({ resolve, reject, newRow, oldRow })
-        } else {
-          resolve(oldRow) // Nothing was changed
-        }
-      }),
-    []
-  )
-
-  const handleNo = () => {
-    const { oldRow, resolve } = promiseArguments
-    resolve(oldRow) // Resolve with the old row to not update the internal state
-    setPromiseArguments(null)
-  }
-
-  const handleYes = async () => {
-    const { newRow, oldRow, reject, resolve } = promiseArguments
-
-    try {
-      // Make the HTTP request to save in the backend
-      const response = await mutateRow(newRow)
-
-      // console.log(response)
-      const _newData = dataFinal?.map(item => ({
-        ...item,
-        product_qty: item?.id === response?.id ? response.product_qty : item?.product_qty,
-        product_price: item?.id === response?.id ? response.product_price : item?.product_price
-      }))
-
-      // console.log(_newData)
-      setDataFinal([..._newData])
-
-      handleUpdateTempProducts(response)
-
-      setSnackbar({ children: 'Data sudah di perbaharui.', severity: 'success' })
-      resolve(response)
-      setPromiseArguments(null)
-    } catch (error) {
-      setSnackbar({ children: 'Data tidak boleh kosong!', severity: 'error' })
-      reject(oldRow)
-      setPromiseArguments(null)
-    }
-  }
-
-  const handleEntered = () => {
-    // The `autoFocus` is not used because, if used, the same Enter that saves
-    // the cell triggers "No". Instead, we manually focus the "No" button once
-    // the dialog is fully open.
-    // noButtonRef.current?.focus();
-  }
-
   const handleRowSelectionModel = (id_product = false) => {
-    const _rowSelectionModel = rowSelectionModel
-    if (id_product) {
-      if (!includes(_rowSelectionModel, id_product)) {
-        _rowSelectionModel.push(id_product)
-      } else {
-        pull(_rowSelectionModel, id_product)
+    setLoading(true)
+    setTimeout(() => {
+      const _rowSelectionModel = rowSelectionModel
+      if (id_product) {
+        if (!_rowSelectionModel.includes(parseInt(id_product))) {
+          _rowSelectionModel.push(parseInt(id_product))
+        } else {
+          pull(_rowSelectionModel, parseInt(id_product))
+        }
+        setRowSelectionModel([..._rowSelectionModel])
+
+        // const rowDataSearch = filter(dataSearch, ['id_product', id_product])
+        // handleQty(id_product, rowDataSearch[0]?.qty)
       }
-      setRowSelectionModel([..._rowSelectionModel])
-    }
+      setLoading(false)
+    }, 500)
   }
 
-  const handleQty = (id_product, qty) => {
-    const _data = dataSearch?.map(item => ({
-      ...item,
-      qty: item?.id_product === id_product ? qty : item?.qty
-    }))
+  const handleQty = (id_product, qty, customReq = '') => {
+    const _dataSearchMaster = dataSearchMaster
 
-    // console.log(rowSelectionModel)
+    const _data = _dataSearchMaster?.map(item => ({
+      ...item,
+      qty: item?.id_product === id_product ? qty : item?.qty,
+      product_custom_request: item?.id_product === id_product ? customReq : item?.product_custom_request
+    }))
+    setDataSearchMaster([..._data])
 
     // return false
 
     const _rowSelectionQty = []
     rowSelectionModel?.map((item, index) => {
-      const _qty = filter(_data, ['id_product', item])[0].qty
+      const _qty = filter(_data, ['id_product', item?.toString()])[0]?.qty
       _rowSelectionQty.push({
         id_product: item,
-        qty: _qty
+        qty: _qty,
+        product_custom_request: customReq
       })
     })
 
-    setDataSearch([..._data])
+    // setDataSearch([..._data])
+
+    // const _dataSearch = _data?.slice(
+    //   (pageDataSearch - 1) * perPageDataSearch,
+    //   (pageDataSearch - 1) * perPageDataSearch + perPageDataSearch
+    // )
+
     setRowSelectionQty(_rowSelectionQty)
+
+    let _newData = _data
+    if (size(searchProduct) > 0) {
+      _newData = _data?.filter(item => {
+        if (
+          item?.product_name?.toLowerCase().includes(searchProduct?.toLowerCase()) ||
+          item?.product_desc?.toLowerCase().includes(searchProduct?.toLowerCase())
+        ) {
+          if (size(searchCategory) > 0) {
+            return map(searchCategory, item2 => {
+              if (item?.product_categories?.toLowerCase().includes(item2?.product_category?.toLowerCase())) {
+                return {
+                  ...item,
+                  qty: item?.id_product === id_product ? qty : item?.qty,
+                  product_custom_request: item?.id_product === id_product ? customReq : item?.product_custom_request
+                }
+              }
+            })
+          } else {
+            return {
+              ...item,
+              qty: item?.id_product === id_product ? qty : item?.qty,
+              product_custom_request: item?.id_product === id_product ? customReq : item?.product_custom_request
+            }
+          }
+        }
+      })
+    }
+
+    const _newData2 = []
+    map(_newData, item => {
+      if (size(searchCategory) > 0) {
+        map(searchCategory, item2 => {
+          if (item?.product_categories?.toLowerCase().includes(item2?.product_category?.toLowerCase())) {
+            _newData2.push({
+              ...item,
+              qty: item?.id_product === id_product ? qty : item?.qty,
+              product_custom_request: item?.id_product === id_product ? customReq : item?.product_custom_request
+            })
+          }
+        })
+      } else {
+        _newData2.push({
+          ...item,
+          qty: item?.id_product === id_product ? qty : item?.qty,
+          product_custom_request: item?.id_product === id_product ? customReq : item?.product_custom_request
+        })
+      }
+    })
+
+    // setTotalDataSearch(_newData2?.length)
+
+    const _dataSearch = _newData2
+
+    setDataSearch([..._dataSearch])
   }
 
   // useEffect(() => {
@@ -1438,38 +1363,132 @@ const MUITable = () => {
   //   console.log(filter(paymentMethods, ['id_payment_method', valueModalTransaction?.id_payment_method?.toString()])[0])
   // }, [valueModalTransaction])
 
-  const renderConfirmDialog = () => {
-    if (!promiseArguments) {
-      return null
-    }
+  const showProducts = (item, index) => (
+    <Grid
+      key={index}
+      size={{ xs: 12, sm: 12, md: 6, lg: 6 }}
+      sx={{
+        justifyContent: 'center'
+      }}
+    >
+      <Card
+        sx={{
+          p: {
+            xs: 2,
+            sm: 3
+          },
+          maxWidth: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center'
+        }}
+        className={includes(rowSelectionModel, parseInt(item?.id_product)) ? 'border-selected' : 'border-gray'}
+      >
+        <CardActionArea>
+          <Checkbox
+            checked={includes(rowSelectionModel, parseInt(item?.id_product))}
+            onClick={() => handleRowSelectionModel(item?.id_product)}
+            sx={{
+              '& .MuiSvgIcon-root': { fontSize: 28 },
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              p: 2,
+              backgroundColor: 'grey'
+            }}
+          />
+          <CardMedia
+            component='img'
+            height='250'
+            image={process.env.NEXT_PUBLIC_API + item?.product_image_url}
+            alt={item?.product_name}
+          />
+          <CardContent>
+            <Typography
+              gutterBottom
+              variant='h6'
+              component='div'
+              sx={{
+                fontSize: '16px !important',
+                textAlign: 'center'
+              }}
+            >
+              Rp {format_rupiah(item?.product_price)}
+            </Typography>
+            <Typography
+              noWrap
+              variant='h6'
+              sx={{ color: 'text.secondary', fontSize: '16px !important', textAlign: 'center' }}
+            >
+              {item?.product_name}
+            </Typography>
+            <Divider />
+            <Typography noWrap sx={{ color: 'text.secondary', fontSize: '12px !important', textAlign: 'center' }}>
+              {item?.product_desc ?? '-'}
+            </Typography>
+          </CardContent>
 
-    const { newRow, oldRow } = promiseArguments
-    const mutation = computeMutation(newRow, oldRow)
+          <CardActions sx={{ justifyContent: 'center', pt: 0, pb: 3, mt: -3 }}>
+            {includes(rowSelectionModel, parseInt(item?.id_product)) && (
+              <Box>
+                <TextField
+                  label='Jumlah Pembelian'
+                  variant='outlined'
+                  size='small'
+                  sx={{ mt: 4 }}
+                  InputProps={{
+                    endAdornment: <InputAdornment position='start'>pcs</InputAdornment>,
+                    inputMode: 'numeric'
+                  }}
+                  onFocus={e => e.target.select()}
+                  value={item?.qty}
+                  onChange={e => handleQty(item?.id_product, e?.target?.value, item?.product_custom_request ?? '')}
+                />
+              </Box>
+            )}
+          </CardActions>
 
-    return (
-      <Dialog maxWidth='xs' TransitionProps={{ onEntered: handleEntered }} open={!!promiseArguments}>
-        <DialogTitle>Apakah anda yakin?</DialogTitle>
-        <DialogContent dividers>
-          <Typography>Klik 'Ya' untuk merubah</Typography>
-          <Typography>{mutation}</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button ref={noButtonRef} onClick={handleNo}>
-            Tidak
-          </Button>
-          <Button onClick={handleYes}>Ya</Button>
-        </DialogActions>
-      </Dialog>
-    )
-  }
+          <CardActions sx={{ justifyContent: 'center', pt: 0, pb: 3, mt: -3 }}>
+            {includes(rowSelectionModel, parseInt(item?.id_product)) && (
+              <Box sx={{ width: '100%' }}>
+                <TextField
+                  fullWidth
+                  label='Permintaan (cth: Pedas & banyak kuah)'
+                  variant='outlined'
+                  size='small'
+                  sx={{ mt: 4 }}
+                  onFocus={e => e.target.select()}
+                  value={item?.product_custom_request}
+                  onChange={e => handleQty(item?.id_product, item?.qty, e?.target?.value)}
+                />
+              </Box>
+            )}
+          </CardActions>
+
+          <CardActions sx={{ justifyContent: 'center', pt: 0, pb: 3, mt: 2 }}>
+            <Box>
+              <Button
+                size='small'
+                color={includes(rowSelectionModel, parseInt(item?.id_product)) ? 'error' : 'success'}
+                variant='contained'
+                onClick={() => handleRowSelectionModel(parseInt(item?.id_product))}
+              >
+                {includes(rowSelectionModel, parseInt(item?.id_product)) ? 'Batal' : 'Pilih'}
+              </Button>
+            </Box>
+          </CardActions>
+        </CardActionArea>
+      </Card>
+    </Grid>
+  )
 
   return (
     <Grid container spacing={6} sx={{ p: 5 }}>
-      <Grid item xs={12}>
+      <Grid size={12}>
         <Typography variant='h5'>
-          <Link>Pembayaran Pelanggan {nama}</Link>
+          <Link>Pesanan Pelanggan {nama}</Link>
         </Typography>
-        <Typography variant='body2'>Pembelian produk</Typography>
+        <Typography variant='body2'>Halaman pemesanan produk</Typography>
 
         <Divider />
 
@@ -1479,9 +1498,9 @@ const MUITable = () => {
             size='small'
             sx={{ mr: 3.5, mb: 5 }}
             onClick={() => handleClickButton()}
-            disabled={saldo < 10000}
+            disabled={saldo < 10000 ? true : false}
           >
-            Katalog Produk
+            Pilih Produk
           </Button>
           &emsp; &emsp;
           <Button
@@ -1491,7 +1510,7 @@ const MUITable = () => {
             onClick={() => router.reload()}
             color='error'
           >
-            Ulang
+            Ulangi
           </Button>
           {data?.length > 0 && (
             <>
@@ -1502,7 +1521,7 @@ const MUITable = () => {
                 size='small'
                 sx={{ mr: 3.5, mb: 5 }}
                 onClick={() => setOpenModal3(true)}
-                disabled={saldo < 10000}
+                disabled={saldo < 10000 ? true : false}
               >
                 ($) Proses Pembayaran
               </Button>
@@ -1510,87 +1529,145 @@ const MUITable = () => {
           )}
         </Typography>
       </Grid>
-      <Grid item xs={12}>
+      <Grid size={12}>
         <Card>
           <Box sx={{ width: '100%', overflow: 'auto' }}>
-            {renderConfirmDialog()}
-            <DataGrid
-              density={'compact'}
-              autoHeight
-              rows={data}
-              columns={columns}
-              getRowId={row => row.id}
-              initialState={{
-                ...data.initialState,
-                pagination: { paginationModel: { pageSize: 25 } }
-              }}
-              editMode='row'
-              slots={{
-                toolbar: GridToolbar,
-                noRowsOverlay: CustomNoRowsOverlay,
-                footer: () => (
-                  <Box sx={{ p: 3 }}>
-                    <Divider />
-                    <Box>
-                      <TablePagination />
-                    </Box>
-                    <Divider />
-                    <Typography>
-                      <b>{data?.length} Produk</b>
-                    </Typography>
-                    <Typography>
-                      <b>
-                        Jumlah Item :{' '}
-                        {format_rupiah(
-                          dataFinal
-                            ?.reduce((total, item) => parseInt(total) + parseInt(item?.product_qty), 0)
-                            ?.toString()
-                        )}
-                      </b>
-                    </Typography>
-                    <Typography>
-                      <b>
-                        Total :{' '}
-                        {format_rupiah(
-                          dataFinal
-                            ?.reduce(
-                              (total, item) =>
-                                parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
-                              0
-                            )
-                            ?.toString()
-                        )}
-                      </b>
-                    </Typography>
-                  </Box>
-                )
-              }}
-              slotProps={{
-                toolbar: {
-                  showQuickFilter: true
-                }
-              }}
-              sx={{ pt: 2, minHeight: '350px', '--DataGrid-overlayHeight': '300px' }}
-              processRowUpdate={processRowUpdate}
-
-              // onCellEditStop={async (params, e, details) => {
-              //   if (params.reason === GridCellEditStopReasons.cellFocusOut) {
-              //     setTimeout(() => {
-              //       console.log(params)
-              //       console.log(details)
-              //     }, 1000)
-
-              //     // event.defaultMuiPrevented = true
-              //   }
-              // }}
-
-              // disableRowSelectionOnClick
-            />
             {!!snackbar && (
               <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
                 <Alert {...snackbar} onClose={handleCloseSnackbar} />
               </Snackbar>
             )}
+
+            <Box sx={{ width: '100%', overflow: 'hidden', m: 0, justifyContent: 'center' }}>
+              {size(data) === 0 && <Box sx={{ m: 10, mt: 7 }}>Silakan pilih produk terlebih dahulu.</Box>}
+              <Grid container spacing={2} sx={{ justifyContent: 'center' }}>
+                {data?.map((item, index) => (
+                  <Grid
+                    key={index}
+                    size={{
+                      sx: 12,
+                      sm: 12,
+                      md: 6,
+                      lg: 6
+                    }}
+                    sx={{
+                      justifyContent: 'center',
+                      width: '97%'
+                    }}
+                  >
+                    <Card
+                      sx={{
+                        p: {
+                          xs: 2,
+                          sm: 3
+                        },
+                        maxWidth: 'auto',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center'
+                      }}
+                      className={includes(rowSelectionModel, item?.id_product) ? 'border-selected' : 'border-gray'}
+                    >
+                      <CardActionArea>
+                        <CardMedia
+                          component='img'
+                          height='250'
+                          image={process.env.NEXT_PUBLIC_API + item?.product_image_url}
+                          alt={item?.product_name}
+                        />
+                        <CardContent>
+                          <Typography
+                            gutterBottom
+                            variant='h6'
+                            component='div'
+                            sx={{
+                              fontSize: '16px !important',
+                              textAlign: 'center'
+                            }}
+                          >
+                            Rp {format_rupiah(item?.product_price)}
+                          </Typography>
+                          <Typography
+                            noWrap
+                            variant='h6'
+                            sx={{ color: 'text.secondary', fontSize: '16px !important', textAlign: 'center' }}
+                          >
+                            {item?.product_name}
+                          </Typography>
+                          <Divider />
+                          <Typography
+                            noWrap
+                            sx={{ color: 'text.secondary', fontSize: '12px !important', textAlign: 'center' }}
+                          >
+                            {item?.product_desc ?? '-'}
+                          </Typography>
+                        </CardContent>
+
+                        <CardActions sx={{ justifyContent: 'center', pt: 0, pb: 3, mt: -3 }}>
+                          <Box>
+                            <TextField
+                              label='Jumlah Pembelian'
+                              variant='outlined'
+                              size='small'
+                              sx={{ mt: 4 }}
+                              InputProps={{
+                                endAdornment: <InputAdornment position='end'>pcs</InputAdornment>,
+                                inputMode: 'numeric'
+                              }}
+                              onFocus={e => e.target.select()}
+                              value={item?.product_qty}
+                              onChange={e =>
+                                handleUpdateTempProducts({
+                                  ...item,
+                                  product_qty: e?.target?.value,
+                                  product_custom_request: item?.product_custom_request
+                                })
+                              }
+
+                              // onChange={e => handleQty(item?.id_product, e?.target?.value)}
+                            />
+                          </Box>
+                        </CardActions>
+
+                        <CardActions sx={{ justifyContent: 'center', pt: 0, pb: 3, mt: -3 }}>
+                          <Box sx={{ width: '100%' }}>
+                            <TextField
+                              fullWidth
+                              label='Permintaan (cth: Pedas & banyak kuah)'
+                              variant='outlined'
+                              size='small'
+                              sx={{ mt: 4 }}
+                              onFocus={e => e.target.select()}
+                              value={item?.product_custom_request}
+                              onChange={e =>
+                                handleUpdateTempProducts({
+                                  ...item,
+                                  product_qty: item?.product_qty,
+                                  product_custom_request: e?.target?.value
+                                })
+                              }
+                            />
+                          </Box>
+                        </CardActions>
+
+                        <CardActions sx={{ justifyContent: 'center', pt: 0, pb: 3, mt: 2 }}>
+                          <Box>
+                            <Button
+                              size='small'
+                              color={'error'}
+                              variant='contained'
+                              onClick={() => handleClickDelete(item)}
+                            >
+                              Batal Pilih
+                            </Button>
+                          </Box>
+                        </CardActions>
+                      </CardActionArea>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
           </Box>
         </Card>
       </Grid>
@@ -1601,18 +1678,70 @@ const MUITable = () => {
         titleModal={
           <>
             <Typography variant='h5'>{titleModal}</Typography>
-            <TextField
-              label='Cari Produk di Katalog'
-              variant='outlined'
-              fullWidth
-              size='small'
-              sx={{ mb: 1, mt: 3 }}
-              onChange={e => setSearchProduct(e.target.value)}
-              value={searchProduct}
 
-              // error={errorsField?.product_category}
-              // helperText={errorsField?.product_category}
-            />
+            <Box display={'block'} justifyContent={'space-between'}>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 12, md: 6, lg: 6 }}>
+                  <Box sx={{ width: '100%' }}>
+                    <TextField
+                      label='Cari Produk di Katalog'
+                      variant='outlined'
+                      fullWidth
+                      size='small'
+                      sx={{ mb: 1, mt: 5 }}
+                      onChange={e => setSearchProduct(e.target.value)}
+                      value={searchProduct}
+                      InputProps={{
+                        endAdornment: (
+                          <>
+                            <InputAdornment position='end'>
+                              <Button color='warning' size='small' variant='contained' onClick={handleSearchProduct}>
+                                Cari
+                              </Button>
+                            </InputAdornment>
+                            {size(searchProduct) > 0 && (
+                              <>
+                                &nbsp; &nbsp;
+                                <HighlightOff onClick={() => setSearchProduct('')} sx={{ cursor: 'pointer' }} />
+                              </>
+                            )}
+                          </>
+                        )
+                      }}
+                    />
+                  </Box>
+                </Grid>
+                <Grid xs={12} sm={12} md={6} lg={6} size={{ xs: 12, sm: 12, md: 6, lg: 6 }}>
+                  <Box sx={{ width: '100%' }}>
+                    <Autocomplete
+                      multiple
+                      variant='outlined'
+                      id='categories'
+                      sx={{
+                        mt: {
+                          xs: 0,
+                          md: 5
+                        },
+                        textTransform: 'capitalize'
+                      }}
+                      options={productCategories}
+                      getOptionLabel={option => option?.product_category}
+                      onChange={(e, v) => setSearchCategory(v)}
+                      value={searchCategory}
+                      renderInput={params => (
+                        <TextField
+                          {...params}
+                          variant='outlined'
+                          label='Kategori Produk'
+                          placeholder='Kategori Produk'
+                          size='small'
+                        />
+                      )}
+                    />
+                  </Box>
+                </Grid>
+              </Grid>
+            </Box>
           </>
         }
         openModal={openModal}
@@ -1620,266 +1749,19 @@ const MUITable = () => {
         handleSubmitFunction={() => handleSubmit()}
       >
         <Box sx={{ width: '100%' }}>
-          <Box sx={{ width: '100%', overflow: 'auto', m: 0, justifyContent: 'center' }}>
-            <Grid container spacing={2}>
-              {dataSearch?.map((item, index) => (
-                <Grid
-                  key={index}
-                  item
-                  xs={12}
-                  sm={12}
-                  md={6}
-                  lg={6}
-                  sx={{
-                    justifyContent: 'center'
-                  }}
-                >
-                  <Card
-                    sx={{
-                      p: {
-                        xs: 2,
-                        sm: 3
-                      },
-                      maxWidth: 'auto',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center'
-                    }}
-                    className={includes(rowSelectionModel, item?.id_product) ? 'border-selected' : 'border-gray'}
-                    onClick={() => handleRowSelectionModel(item?.id_product)}
-                  >
-                    <CardActionArea>
-                      <CardMedia
-                        component='img'
-                        height='140'
-                        image={process.env.NEXT_PUBLIC_API + item?.product_image_url}
-                        alt={item?.product_name}
-                      />
-                      <CardContent>
-                        <Typography
-                          gutterBottom
-                          variant='h6'
-                          component='div'
-                          sx={{
-                            fontSize: '16px !important',
-                            textAlign: 'center'
-                          }}
-                        >
-                          Rp {format_rupiah(item?.product_price)}
-                        </Typography>
-                        <Typography noWrap gutterBottom variant='body2' component='div' sx={{ textAlign: 'center' }}>
-                          Code : {item?.product_code}
-                        </Typography>
-                        <Typography
-                          noWrap
-                          variant='h6'
-                          sx={{ color: 'text.secondary', fontSize: '16px !important', textAlign: 'center' }}
-                        >
-                          {item?.product_name}
-                        </Typography>
-                        <Divider />
-                        <Typography
-                          noWrap
-                          sx={{ color: 'text.secondary', fontSize: '12px !important', textAlign: 'center' }}
-                        >
-                          {item?.product_desc ?? '-'}
-                        </Typography>
-                      </CardContent>
-
-                      <CardActions sx={{ justifyContent: 'center', pt: 0, pb: 3, mt: -3 }}>
-                        <Box>
-                          <TextField
-                            type='number'
-                            label='Jumlah Pembelian'
-                            variant='outlined'
-                            size='small'
-                            sx={{ mt: 4 }}
-                            InputProps={{
-                              endAdornment: <InputAdornment position='start'>pcs</InputAdornment>
-                            }}
-                            onFocus={e => e.target.select()}
-                            value={item?.qty}
-                            onChange={e => handleQty(item?.id_product, e?.target?.value)}
-                          />
-                        </Box>
-                        {/* <br />
-                        <Box>
-                          <Button size='small' color='primary'>
-                            {item?.product_status === '1' ? 'Tersedia' : 'Tidak Tersedia'}
-                          </Button>
-                        </Box> */}
-                      </CardActions>
-                    </CardActionArea>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-
           <Divider sx={{ mb: 1, display: 'none' }} />
 
-          <Grid item xs={12} sx={{ display: 'none' }}>
+          <Grid size={12}>
             <Card>
               <Box sx={{ width: '100%', overflow: 'auto' }}>
-                <DataGrid
-                  density={'compact'}
-                  autoHeight
-                  rows={dataSearch}
-                  columns={columnsSearch}
-                  getRowId={row => row.id_product}
-                  initialState={{
-                    ...data.initialState,
-                    pagination: { paginationModel: { pageSize: 25 } }
-                  }}
-                  slots={{ toolbar: GridToolbar, noRowsOverlay: CustomNoRowsOverlay, pagination: TablePagination }}
-                  slotProps={{
-                    toolbar: {
-                      showQuickFilter: true
-                    }
-                  }}
-                  sx={{ pt: 2, minHeight: '350px', '--DataGrid-overlayHeight': '300px' }}
-                  isRowSelectable={params => params.row.product_qty > 0}
-                  checkboxSelection
-                  onRowSelectionModelChange={newRowSelectionModel => {
-                    setRowSelectionModel(newRowSelectionModel)
-                  }}
-                  rowSelectionModel={rowSelectionModel}
-
-                  // disableRowSelectionOnClick
-                />
+                <Box sx={{ width: '100%', overflow: 'auto', m: 0, justifyContent: 'center' }}>
+                  <Grid container spacing={2}>
+                    {dataSearch?.map((item, index) => showProducts(item, index))}
+                  </Grid>
+                </Box>
               </Box>
             </Card>
           </Grid>
-        </Box>
-      </ModalDialog>
-
-      <ModalDialog
-        titleModal={titleModal2}
-        openModal={openModal2}
-        setOpenModal={setOpenModal2}
-        handleSubmitFunction={() => handleCreateTempProducts()}
-      >
-        <Box>
-          <Box>
-            <TextField
-              label='Kode Produk'
-              variant='outlined'
-              fullWidth
-              size='small'
-              onChange={e =>
-                handleChangeEl(
-                  'product_code',
-                  e,
-                  valueModalProduct,
-                  setValueModalProduct,
-                  schemaDataProduct,
-                  setErrorsField
-                )
-              }
-              value={valueModalProduct?.product_code}
-              error={errorsField?.product_code}
-              helperText={errorsField?.product_code}
-            />
-          </Box>
-          <Box>
-            <TextField
-              label='Nama Produk'
-              variant='outlined'
-              fullWidth
-              size='small'
-              sx={{ mt: 5 }}
-              onFocus={e => e.target.select()}
-              onChange={e =>
-                handleChangeEl(
-                  'product_name',
-                  e,
-                  valueModalProduct,
-                  setValueModalProduct,
-                  schemaDataProduct,
-                  setErrorsField
-                )
-              }
-              value={valueModalProduct?.product_name}
-              error={errorsField?.product_name}
-              helperText={errorsField?.product_name}
-            />
-          </Box>
-          <Box>
-            <TextField
-              label='Harga Produk'
-              variant='outlined'
-              size='small'
-              sx={{ mt: 5 }}
-              InputProps={{
-                startAdornment: <InputAdornment position='start'>IDR</InputAdornment>
-              }}
-              onFocus={e => e.target.select()}
-              onChange={e =>
-                handleChangeEl(
-                  'product_price',
-                  e,
-                  valueModalProduct,
-                  setValueModalProduct,
-                  schemaDataProduct,
-                  setErrorsField
-                )
-              }
-              value={format_rupiah(valueModalProduct?.product_price?.toString())}
-              error={errorsField?.product_price}
-              helperText={errorsField?.product_price}
-            />
-          </Box>
-          <Box>
-            <TextField
-              label='Jumlah Produk'
-              variant='outlined'
-              size='small'
-              sx={{ mt: 5 }}
-              InputProps={{
-                endAdornment: <InputAdornment position='end'>Qty</InputAdornment>
-              }}
-              onChange={e =>
-                handleChangeEl(
-                  'product_qty',
-                  e,
-                  valueModalProduct,
-                  setValueModalProduct,
-                  schemaDataProduct,
-                  setErrorsField
-                )
-              }
-              value={valueModalProduct?.product_qty}
-              error={errorsField?.product_qty}
-              helperText={errorsField?.product_qty}
-            />
-          </Box>
-          <Box sx={{ mt: 5 }}>
-            {!selectedFile && (
-              <IconButton color='primary' aria-label='upload picture' component='label'>
-                <input hidden accept='image/*' type='file' onChange={e => handleUploadfile(e)} />
-                <PhotoCamera />
-              </IconButton>
-            )}
-            {selectedFile && (
-              <>
-                <ModalImage
-                  small={typeof selectedFile === 'object' ? window?.URL?.createObjectURL(selectedFile) : selectedFile}
-                  large={typeof selectedFile === 'object' ? window?.URL?.createObjectURL(selectedFile) : selectedFile}
-                  alt='Tuntaz'
-                  className='image-thumbnail2'
-                  style={{ width: '50px' }}
-                />{' '}
-                &emsp;
-                <IconButton
-                  sx={{ color: 'rgba(255, 255, 255, 0.54)' }}
-                  aria-label={`Delete`}
-                  onClick={() => setSelectedFile()}
-                >
-                  <Close style={{ color: 'red' }} />
-                </IconButton>
-              </>
-            )}
-          </Box>
         </Box>
       </ModalDialog>
 
@@ -1896,8 +1778,9 @@ const MUITable = () => {
 
           <Box sx={{ mt: -6 }}>
             <TextField
-              type='number'
+              inputProps={{ inputMode: 'numeric' }}
               autoFocus={true}
+              onFocus={e => e?.target?.select()}
               label='No Whatsapp'
               variant='outlined'
               fullWidth
@@ -1940,6 +1823,9 @@ const MUITable = () => {
           <Divider />
 
           <h5>Metode Pembayaran</h5>
+          <p style={{ fontSize: '12px', fontStyle: 'italic', color: 'orange' }}>
+            *Metode Pembayaran Cash (Tunai) harap langsung menuju kasir dan sebutkan a/n pesanan kamu
+          </p>
 
           <Box sx={{ mt: 0 }}>
             <Autocomplete
@@ -2020,18 +1906,20 @@ const MUITable = () => {
 
           <Box sx={{ mt: 1 }}>
             <TextField
-              type='number'
               label='Jumlah Pembayaran'
               variant='outlined'
               size='small'
               sx={{ mt: 4 }}
               InputProps={{
-                startAdornment: <InputAdornment position='start'>IDR</InputAdornment>
+                startAdornment: <InputAdornment position='start'>IDR</InputAdornment>,
+                inputMode: 'numeric'
               }}
               disabled={
                 filter(paymentMethods, {
                   id_payment_method: valueModalTransaction?.id_payment_method?.toString()
                 })[0]?.payment_method_code !== 'CASH'
+                  ? true
+                  : false
               }
               onFocus={e => e.target.select()}
               onChange={e =>
@@ -2053,7 +1941,14 @@ const MUITable = () => {
                         (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                         0
                       ) +
-                        parseInt(valueModalTransaction?.fee) +
+                        parseInt(valueModalTransaction?.fee) -
+                        (dataFinal?.reduce(
+                          (total, item) =>
+                            parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                          0
+                        ) *
+                          discountAllProducts) /
+                          100 +
                         (dataFinal?.reduce(
                           (total, item) =>
                             parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
@@ -2104,6 +1999,20 @@ const MUITable = () => {
               )}
             </p>
             <p>
+              Diskon : IDR {discountAllProducts == 0 ? '' : '-'}
+              {format_rupiah(
+                parseInt(
+                  (dataFinal?.reduce(
+                    (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                    0
+                  ) *
+                    discountAllProducts) /
+                    100
+                )?.toString()
+              )}{' '}
+              ({discountAllProducts}%)
+            </p>
+            <p>
               Pembayaran : IDR{' '}
               {filter(paymentMethods, {
                 id_payment_method: valueModalTransaction?.id_payment_method?.toString()
@@ -2113,7 +2022,13 @@ const MUITable = () => {
                       (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                       0
                     ) +
-                      parseInt(valueModalTransaction?.fee) +
+                      parseInt(valueModalTransaction?.fee) -
+                      (dataFinal?.reduce(
+                        (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                        0
+                      ) *
+                        discountAllProducts) /
+                        100 +
                       (dataFinal?.reduce(
                         (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                         0
@@ -2140,7 +2055,14 @@ const MUITable = () => {
                               parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                             0
                           ) +
-                            parseInt(valueModalTransaction?.fee) +
+                            parseInt(valueModalTransaction?.fee) -
+                            (dataFinal?.reduce(
+                              (total, item) =>
+                                parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                              0
+                            ) *
+                              discountAllProducts) /
+                              100 +
                             (dataFinal?.reduce(
                               (total, item) =>
                                 parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
@@ -2191,6 +2113,33 @@ const MUITable = () => {
           </Box>
           <Box>
             <TextField
+              label='Diskon Pembelian'
+              variant='outlined'
+              size='small'
+              sx={{ mt: 4 }}
+              InputProps={{
+                startAdornment: <InputAdornment position='start'>IDR</InputAdornment>
+              }}
+              disabled
+              value={
+                format_rupiah(
+                  parseInt(
+                    (dataFinal?.reduce(
+                      (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                      0
+                    ) *
+                      discountAllProducts) /
+                      100
+                  )?.toString()
+                ) +
+                ' (' +
+                discountAllProducts +
+                '%)'
+              }
+            />
+          </Box>
+          <Box>
+            <TextField
               label='Biaya Layanan'
               variant='outlined'
               size='small'
@@ -2237,7 +2186,13 @@ const MUITable = () => {
                   (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                   0
                 ) +
-                  parseInt(valueModalTransaction?.fee) +
+                  parseInt(valueModalTransaction?.fee) -
+                  (dataFinal?.reduce(
+                    (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
+                    0
+                  ) *
+                    discountAllProducts) /
+                    100 +
                   (dataFinal?.reduce(
                     (total2, item2) => parseInt(total2) + parseInt(item2?.product_price) * parseInt(item2?.product_qty),
                     0
@@ -2418,7 +2373,8 @@ const MUITable = () => {
           <h5>Data Pelanggan (Struk Digital - Go Green)</h5>
           <Box sx={{ mt: 0 }}>
             <TextField
-              type='number'
+              onFocus={e => e?.target?.select()}
+              inputProps={{ inputMode: 'numeric' }}
               autoFocus={true}
               label='No Whatsapp'
               variant='outlined'
@@ -2475,7 +2431,7 @@ const MUITable = () => {
             <Typography>
               Transaksi <b>{paymentDetail?.req?.reff_id}</b>
             </Typography>
-            <Typography>Dibayar Cash (Tunai) di Kasir</Typography>
+            <Typography>Telah berhasil terbayar.</Typography>
             {/* {paymentDetail?.req?.reff_id ? (
               <Typography variant='h5'>IDR {format_rupiah(paymentDetail?.req?.reff_id)}</Typography>
             ) : (
@@ -2511,14 +2467,14 @@ const MUITable = () => {
       </ModalDialog>
 
       <ModalDialog
-        titleModal={'Tambah Pesanan Baru'}
+        titleModal={'Nama Pelanggan (Pesanan Baru)'}
         openModal={openModalNama}
         setOpenModal={setOpenModalNama}
         handleSubmitFunction={() => {
           setNama(valueModal?.nama.toUpperCase())
           setOpenModalNama(false)
         }}
-        disableButton={errorsField?.nama || valueModal?.nama.length < 3}
+        disableButton={errorsField?.nama || valueModal?.nama.length < 3 ? true : false}
       >
         <Box>
           <Box>
@@ -2531,7 +2487,7 @@ const MUITable = () => {
               sx={{ mt: 5, mb: 5, textTransform: 'uppercase' }}
               onChange={e => handleChangeEl('nama', e, valueModal, setValueModal, schemaData, setErrorsField)}
               value={valueModal?.nama}
-              error={errorsField?.nama}
+              error={errorsField?.nama ? true : false}
               helperText={errorsField?.nama}
               inputProps={{ style: { textTransform: 'uppercase' } }}
             />

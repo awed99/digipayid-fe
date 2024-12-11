@@ -47,6 +47,12 @@ const MUITable = () => {
   const [openModalConfirmationDelete, setOpenModalConfirmationDelete] = useState(false)
   const [openModalPayment, setOpenModalPayment] = useState(false)
   const [dataSelected, setDataSelected] = useState({})
+  const [loopCheckStatus, setLoopCheckStatus] = useState(0)
+
+  const [dateFilter, setDateFilter] = useState({
+    startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
+    endDate: dayjs().endOf('month').format('YYYY-MM-DD')
+  })
   const [reffID, setReffID] = useState(null)
   let _loopNumber = 1
 
@@ -83,7 +89,7 @@ const MUITable = () => {
     {
       field: 'status_transaction',
       headerName: 'Status',
-      width: 200,
+      width: 120,
       renderCell: params =>
         parseInt(params?.value) === 2 ? (
           <Chip
@@ -142,6 +148,14 @@ const MUITable = () => {
             }}
           />
         )
+    },
+    {
+      field: 'nama',
+      headerName: 'Nama Pelanggan',
+      type: 'number',
+      width: 150
+
+      // renderCell: params => format_rupiah((params?.value).toString())
     },
     {
       field: 'payment_method_name',
@@ -221,7 +235,9 @@ const MUITable = () => {
 
   const columnsProducts = [
     { field: 'product_code', headerName: 'Kode', width: 125 },
-    { field: 'product_name', headerName: 'Nama Produk', width: 200 },
+    { field: 'product_name', headerName: 'Nama Produk', width: 350 },
+    { field: 'product_desc', headerName: 'Ket. Produk', width: 350 },
+    { field: 'product_custom_request', headerName: 'Custom Request', width: 250 },
     { field: 'product_qty', headerName: 'Jumlah', type: 'number', width: 80 },
 
     // { field: 'product_image_url', headerName: 'Image', width: 150 },
@@ -244,6 +260,7 @@ const MUITable = () => {
     startDate = dayjs().startOf('month').format('YYYY-MM-DD'),
     endDate = dayjs().endOf('month').format('YYYY-MM-DD')
   ) => {
+    setDateFilter({ startDate: startDate, endDate: endDate })
     setLoading(true)
     const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
@@ -339,7 +356,9 @@ const MUITable = () => {
             invoice_number: _reffID,
             email_customer:
               size(_valueModalTransaction?.email_customer) < 5 ? undefined : _valueModalTransaction?.email_customer,
-            wa_customer: size(_valueModalTransaction?.wa_customer) < 5 ? undefined : _valueModalTransaction?.wa_customer
+            wa_customer:
+              size(_valueModalTransaction?.wa_customer) < 5 ? undefined : _valueModalTransaction?.wa_customer,
+            nama: dataSelected?.nama
           })
 
           // body: dataX
@@ -476,99 +495,107 @@ const MUITable = () => {
 
   useEffect(() => {
     return () => {
-      // window.removeEventListener('resize', handleResize)
+      setLoopCheckStatus(-1)
       setIsWaitingForPayment(false)
     }
   }, [])
 
   useEffect(() => {
-    // console.log('isWaitingForPayment', isWaitingForPayment)
-    if (isWaitingForPayment === true && reffID) {
-      setTimeout(() => handleCheckStatus(reffID, 0), 5000)
+    if (isWaitingForPayment === true && reffID && loopCheckStatus === 0) {
+      setTimeout(() => setLoopCheckStatus(1), 1000)
     }
-  }, [isWaitingForPayment, reffID])
+    if (isWaitingForPayment === true && reffID && loopCheckStatus > 0) {
+      setTimeout(() => handleCheckStatus(reffID), 5000)
+    }
+  }, [isWaitingForPayment, reffID, loopCheckStatus])
 
-  const handleCheckStatus = async (_reffID, _loop = 10) => {
+  const handleCheckStatus = async (_reffID, _loop = 100) => {
     const _isWaitingForPayment = isWaitingForPayment
     const _paymentDetail = paymentDetail
 
-    if (!_isWaitingForPayment) {
-      return false
-    }
+    if (isWaitingForPayment === true && reffID) {
+      if (!_isWaitingForPayment) {
+        return false
+      }
 
-    // setLoading(true)
-    const _uri0 = '/auth/check_auth'
-    const _secret0 = await generateSignature(_uri0)
+      // setLoading(true)
+      const _uri0 = '/auth/check_auth'
+      const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
-      method: 'POST',
-      headers: {
-        'X-Signature': _secret0?.signature,
-        'X-Timestamp': _secret0?.timestamp
-      },
-      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
-    })
-      .then(res => res.json())
-      .then(async res => {
-        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
-          // console.log(res?.auth?.user)
-          localStorage.removeItem('data-module')
-          localStorage.removeItem('module')
-          router.push('/auth')
-
-          return false
-        } else {
-          return res
-        }
+      fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
+        method: 'POST',
+        headers: {
+          'X-Signature': _secret0?.signature,
+          'X-Timestamp': _secret0?.timestamp
+        },
+        body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
       })
-      .then(async res => {
-        const _uri = '/transactions/orders/check_status'
-        const _secret = await generateSignature(_uri)
+        .then(res => res.json())
+        .then(async res => {
+          if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+            // console.log(res?.auth?.user)
+            localStorage.removeItem('data-module')
+            localStorage.removeItem('module')
+            router.push('/auth')
 
-        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
-          method: 'POST',
-          headers: {
-            'X-Signature': _secret?.signature,
-            'X-Timestamp': _secret?.timestamp,
-            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
-              .toString(CryptoJS.enc.Utf8)
-              .replace(/\"/g, '')
-          },
-
-          body: JSON.stringify({ invoice_number: _reffID })
-
-          // body: dataX
+            return false
+          } else {
+            return res
+          }
         })
-          .then(res => res.json())
-          .then(res => {
-            // console.log('res: ', parseInt(res?.status))
-            if (parseInt(res?.status) > 0) {
-              setAlertMessage({
-                open: true,
-                type: 'success',
-                message: 'Pembayaran Berhasil.'
-              })
-              setOpenModalPayment(false)
-              setOpenModal(false)
-              setOpenModalSuccessPayment(true)
-              setIsWaitingForPayment(false)
-              setReffID(null)
-              getData()
-            } else {
-              // console.log('_isWaitingForPayment: ', _isWaitingForPayment)
-              // console.log('reff_id: ', _paymentDetail?.req?.reff_id)
-              _loop = _loop + 1
-              if (_isWaitingForPayment === true && _paymentDetail?.req?.reff_id && _loop < 10) {
-                setTimeout(() => handleCheckStatus(_reffID, _loop), 5000)
-              } else {
-                setIsWaitingForPayment(false)
-              }
-            }
-            setLoading(false)
+        .then(async res => {
+          const _uri = '/transactions/orders/check_status'
+          const _secret = await generateSignature(_uri)
+
+          fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
+            method: 'POST',
+            headers: {
+              'X-Signature': _secret?.signature,
+              'X-Timestamp': _secret?.timestamp,
+              Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+                .toString(CryptoJS.enc.Utf8)
+                .replace(/\"/g, '')
+            },
+
+            body: JSON.stringify({ invoice_number: _reffID })
+
+            // body: dataX
           })
-          .catch(() => setLoading(false))
-      })
-      .catch(() => setLoading(false))
+            .then(res => res.json())
+            .then(res => {
+              // console.log('res: ', parseInt(res?.status))
+              if (parseInt(res?.status) > 0) {
+                setAlertMessage({
+                  open: true,
+                  type: 'success',
+                  message: 'Pembayaran Berhasil.'
+                })
+                setOpenModalPayment(false)
+                setOpenModal(false)
+                setOpenModalSuccessPayment(true)
+                setIsWaitingForPayment(false)
+                setReffID(null)
+                getData()
+              } else {
+                // console.log('_isWaitingForPayment: ', _isWaitingForPayment)
+                // console.log('reff_id: ', _paymentDetail?.req?.reff_id)
+                if (_isWaitingForPayment === true && _paymentDetail?.req?.reff_id && _loop < 1000) {
+                  _loop = loopCheckStatus + 1
+
+                  // setTimeout(() => handleCheckStatus(_reffID, _loop), 5000)
+                  setTimeout(() => setLoopCheckStatus(_loop), 5000)
+                } else {
+                  setIsWaitingForPayment(false)
+                }
+              }
+              setLoading(false)
+            })
+            .catch(() => setLoading(false))
+        })
+        .catch(() => setLoading(false))
+    } else {
+      setTimeout(() => handleCheckStatus(_reffID, _loop), 5000)
+    }
   }
 
   const getDetailPayment = async (_dataSelected = dataSelected) => {
@@ -641,6 +668,7 @@ const MUITable = () => {
   useLayoutEffect(() => {
     if (openModalPayment === false) {
       setReffID(null)
+      setLoopCheckStatus(0)
       setIsWaitingForPayment(false)
     }
   }, [openModalPayment])
@@ -658,7 +686,7 @@ const MUITable = () => {
           <Box sx={{ width: '100%', overflow: 'auto' }}>
             <Box>
               <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} /> &emsp;
-              <Button onClick={() => getData()} variant='contained'>
+              <Button onClick={() => getData(dateFilter?.startDate, dateFilter?.endDate)} variant='contained'>
                 Refresh
               </Button>
             </Box>
@@ -685,9 +713,23 @@ const MUITable = () => {
                     <Divider />
                     <Typography>
                       <b>
-                        Jumlah Produk :
+                        Qty Terjual :
                         {format_rupiah(
-                          data?.reduce((total, item) => parseInt(total) + parseInt(item?.total_product), 0)?.toString()
+                          filter(
+                            data,
+                            item => item?.status_transaction === '2' || item?.status_transaction === '1'
+                          )?.reduce((total, item) => parseInt(total) + parseInt(item?.total_qty) * 1, 0)
+                        )}
+                      </b>
+                    </Typography>
+                    <Typography>
+                      <b>
+                        Produk Terjual :
+                        {format_rupiah(
+                          filter(
+                            data,
+                            item => item?.status_transaction === '2' || item?.status_transaction === '1'
+                          )?.reduce((total, item) => parseInt(total) + parseInt(item?.total_product), 0)
                         )}
                       </b>
                     </Typography>
@@ -695,7 +737,7 @@ const MUITable = () => {
                       <b>Transaksi Kliring :{format_rupiah(filter(data, ['status_transaction', '1'])?.length)}</b>
                     </Typography>
                     <Typography>
-                      <b>Transaksi Sukses :{format_rupiah(filter(data, ['status_transaction', '2'])?.length)}</b>
+                      <b>Transaksi Selesai :{format_rupiah(filter(data, ['status_transaction', '2'])?.length)}</b>
                     </Typography>
                     <Typography>
                       <b>
@@ -716,6 +758,17 @@ const MUITable = () => {
                         )}
                       </b>
                     </Typography>
+                    <Typography>
+                      <b>
+                        Total Diterima : IDR{' '}
+                        {format_rupiah(
+                          filter(
+                            data,
+                            item => item?.status_transaction === '2' || item?.status_transaction === '1'
+                          )?.reduce((total1, item) => parseInt(total1) + parseInt(item?.amount_to_receive), 0)
+                        )}
+                      </b>
+                    </Typography>
                   </Box>
                 )
               }}
@@ -732,9 +785,10 @@ const MUITable = () => {
       </Grid>
 
       <ModalDialog
-        titleModal={'List Produk Transaksi ' + dataSelected?.invoice_number}
+        titleModal={'List Produk Transaksi: ' + dataSelected?.nama + ' || ' + dataSelected?.invoice_number}
         openModal={openModal}
         setOpenModal={setOpenModal}
+        size='xl'
         ButtonDialogs={
           <Box sx={{ display: 'block', width: '100%' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -881,7 +935,7 @@ const MUITable = () => {
             <Box>
               {dataSelected?.payment_method_code === 'QRIS' || dataSelected?.payment_method_code === 'QRIS_PAYLATER' ? (
                 <>
-                  <img src={`/${paymentDetail?.image_src}`} width={320} />
+                  <img src={`${paymentDetail?.res?.data?.qr_link}`} width={320} />
                 </>
               ) : paymentDetail?.res?.data?.paylater_url ||
                 paymentDetail?.res?.data?.ovo_push ||

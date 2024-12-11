@@ -195,7 +195,8 @@ const PayLaterProcess = () => {
   useEffect(() => {
     // console.log(router?.query?.reff_code)
     if (router?.query?.data && size(router?.query?.data) > 0) {
-      getData(router?.query?.data, router?.query?.uri)
+      console.log('router?.query?.data: ', router?.query?.data)
+      getData(decodeURI(router?.query?.data.replace(/\ /g, '+')), decodeURI(router?.query?.uri.replace(/\ /g, '+')))
     }
   }, [router?.query?.data])
 
@@ -269,7 +270,8 @@ const PayLaterProcess = () => {
                 <TextField
                   autoFocus
                   fullWidth
-                  type='number'
+                  onFocus={e => e.target.select()}
+                  inputProps={{ inputMode: 'numeric' }}
                   id='standard-basic'
                   label={'NIK (KTP)'}
                   variant='outlined'
@@ -325,7 +327,8 @@ const PayLaterProcess = () => {
 
                 <TextField
                   fullWidth
-                  type='number'
+                  onFocus={e => e.target.select()}
+                  inputProps={{ inputMode: 'numeric' }}
                   id='standard-basic'
                   label='No Hp Terdaftar Paylater 0812xxxxxxx'
                   variant='outlined'

@@ -2,19 +2,19 @@
 import { forwardRef, useState } from 'react'
 
 // ** MUI Imports
-import Grid from '@mui/material/Grid'
-import Radio from '@mui/material/Radio'
-import Select from '@mui/material/Select'
 import Button from '@mui/material/Button'
-import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
-import FormLabel from '@mui/material/FormLabel'
-import InputLabel from '@mui/material/InputLabel'
-import RadioGroup from '@mui/material/RadioGroup'
 import CardContent from '@mui/material/CardContent'
 import FormControl from '@mui/material/FormControl'
-import OutlinedInput from '@mui/material/OutlinedInput'
 import FormControlLabel from '@mui/material/FormControlLabel'
+import FormLabel from '@mui/material/FormLabel'
+import Grid from '@mui/material/Grid'
+import InputLabel from '@mui/material/InputLabel'
+import MenuItem from '@mui/material/MenuItem'
+import OutlinedInput from '@mui/material/OutlinedInput'
+import Radio from '@mui/material/Radio'
+import RadioGroup from '@mui/material/RadioGroup'
+import Select from '@mui/material/Select'
+import TextField from '@mui/material/TextField'
 
 // ** Third Party Imports
 import DatePicker from 'react-datepicker'
@@ -58,7 +58,13 @@ const TabInfo = () => {
             </DatePickerWrapper>
           </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField fullWidth type='number' label='Phone' placeholder='(123) 456-7890' />
+            <TextField
+              fullWidth
+              onFocus={e => e?.target?.select()}
+              inputProps={{ inputMode: 'numeric' }}
+              label='Phone'
+              placeholder='(123) 456-7890'
+            />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField

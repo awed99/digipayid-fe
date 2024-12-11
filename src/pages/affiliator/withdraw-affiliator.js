@@ -854,7 +854,8 @@ const MUITable = () => {
                   <Box sx={{ mt: 2 }}>
                     <TextField
                       fullWidth
-                      type='number'
+                      onFocus={e => e?.target?.select()}
+                      inputProps={{ inputMode: 'numeric' }}
                       size='small'
                       label='Nomor Rekening/E-Wallet'
                       value={valueWD?.bank_account}

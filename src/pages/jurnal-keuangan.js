@@ -33,6 +33,12 @@ const MUITable = () => {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [dateRange, setDateRange] = useState([])
+
+  const [dateFilter, setDateFilter] = useState({
+    startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
+    endDate: dayjs().endOf('month').format('YYYY-MM-DD')
+  })
+
   let _loopNumber = 1
 
   // ** Hooks
@@ -152,6 +158,7 @@ const MUITable = () => {
     startDate = dayjs().startOf('month').format('YYYY-MM-DD'),
     endDate = dayjs().endOf('month').format('YYYY-MM-DD')
   ) => {
+    setDateFilter({ startDate: startDate, endDate: endDate })
     setLoading(true)
     const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
@@ -229,7 +236,7 @@ const MUITable = () => {
           <Box sx={{ width: '100%', overflow: 'auto' }}>
             <Box>
               <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} /> &emsp;
-              <Button onClick={() => getData()} variant='contained'>
+              <Button onClick={() => getData(dateFilter?.startDate, dateFilter?.endDate)} variant='contained'>
                 Refresh
               </Button>
             </Box>
