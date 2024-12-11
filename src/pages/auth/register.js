@@ -129,14 +129,14 @@ const RegisterPage = () => {
   const router = useRouter()
 
   const checkSession = async () => {
-    const _uri = '/api/check-auth'
+    const _uri = '/auth/check_auth'
     const _secret = await generateSignature(_uri)
 
-    await fetch(`${_uri}`, {
+    await fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret?.signature,
-        'x-timestamp': _secret?.timestamp
+        'X-Signature': _secret?.signature,
+        'X-Timestamp': _secret?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -231,19 +231,19 @@ const RegisterPage = () => {
         // if (res?.code < 1) {
         //   const _uri = '/api/set-storage'
         //   const _secret = await generateSignature(_uri)
-        //   fetch(`${_uri}`, {
+        //   fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
         //     method: 'POST',
         //     headers: {
-        //       'x-signature': _secret?.signature,
-        //       'x-timestamp': _secret?.timestamp
+        //       'X-Signature': _secret?.signature,
+        //       'X-Timestamp': _secret?.timestamp
         //     },
         //     body: JSON.stringify({
         //       key: 'auth',
         //       val: {
-        //         user: CryptoJS.AES.encrypt(`${JSON.stringify(res?.data)}`, `${process.env.NEXT_PUBLIC_API}`).toString(),
+        //         user: CryptoJS.AES.encrypt(`${JSON.stringify(res?.data)}`, ``).toString(),
         //         token: CryptoJS.AES.encrypt(
         //           `${JSON.stringify(res?.data?.token_login)}`,
-        //           `${process.env.NEXT_PUBLIC_API}`
+        //           ``
         //         ).toString()
         //       }
         //     })
@@ -257,13 +257,13 @@ const RegisterPage = () => {
 
         //   // Store.set(
         //   //   'user',
-        //   //   CryptoJS.AES.encrypt(`${JSON.stringify(res?.data)}`, `${process.env.NEXT_PUBLIC_API}`).toString()
+        //   //   CryptoJS.AES.encrypt(`${JSON.stringify(res?.data)}`, ``).toString()
         //   // )
         //   // Store.set(
         //   //   'token',
         //   //   CryptoJS.AES.encrypt(
         //   //     `${JSON.stringify(res?.data?.token_login)}`,
-        //   //     `${process.env.NEXT_PUBLIC_API}`
+        //   //     ``
         //   //   ).toString()
         //   // )
         //   // setTimeout(() => (window.location = '/'), 2500)
@@ -308,6 +308,8 @@ const RegisterPage = () => {
         setOpenModalOTPWA(false)
         setOpenModalSuccess(true)
         setTimeout(() => {
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
         }, 10000)
       }
@@ -617,7 +619,11 @@ const RegisterPage = () => {
         titleModal='Registrasi Sukses'
         openModal={openModalSuccess}
         setOpenModal={setOpenModalSuccess}
-        handleSubmitFunction={() => router.push('/auth')}
+        handleSubmitFunction={() => {
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
+          router.push('/auth')
+        }}
       >
         <Typography>Akun anda berhasil terdaftar.</Typography>
         <Typography>Silahkan login untuk melanjutkan.</Typography>

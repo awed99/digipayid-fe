@@ -85,6 +85,11 @@ a {
   border: 2px solid #16b1ff !important;
 }
 
+.border-gray,
+.border-grey {
+  border: 1px solid #dbdbdb !important;
+}
+
 .border-none {
   border: none !important;
 }

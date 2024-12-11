@@ -74,6 +74,11 @@ const MUITable = () => {
   const [valuePM, setValuePM] = useState()
   const [oTPWA, setOTPWA] = useState('')
 
+  const [dateFilter, setDateFilter] = useState({
+    startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
+    endDate: dayjs().endOf('month').format('YYYY-MM-DD')
+  })
+
   const [valueWD, setValueWD] = useState({
     amount: 0,
     bank_account: '',
@@ -121,17 +126,17 @@ const MUITable = () => {
                 ? 'warning'
                 : 'secondary'
             }
-            onClick={() => {
-              ;(parseInt(params?.row?.accounting_type) === 1 || parseInt(params?.row?.accounting_type) === 2) &&
-                handleCheckDeposit(
-                  params?.row?.amount_credit,
-                  params?.row?.invoice_number,
-                  filter(paymentMethods, [
-                    'payment_method_name',
-                    params?.row?.description?.split('(')[1].replace(')', '')
-                  ])[0]?.payment_method_code
-                )
-            }}
+            // onClick={() => {
+            //   ;(parseInt(params?.row?.accounting_type) === 1 || parseInt(params?.row?.accounting_type) === 2) &&
+            //     handleCheckDeposit(
+            //       params?.row?.amount_credit,
+            //       params?.row?.invoice_number,
+            //       filter(paymentMethods, [
+            //         'payment_method_name',
+            //         params?.row?.description?.split('(')[1]?.replace(')', '')
+            //       ])[0]?.payment_method_code
+            //     )
+            // }}
             deleteIcon={<AccessTime />}
             size='small'
             sx={{
@@ -190,7 +195,7 @@ const MUITable = () => {
     {
       field: 'description',
       headerName: 'Keterangan',
-      width: 350
+      width: 500
     }
 
     // {
@@ -217,15 +222,16 @@ const MUITable = () => {
     endDate = dayjs().endOf('month').format('YYYY-MM-DD'),
     _withdrawMethods = withdrawMethods
   ) => {
+    setDateFilter({ startDate: startDate, endDate: endDate })
     setLoading(true)
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -233,6 +239,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -247,8 +255,8 @@ const MUITable = () => {
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
@@ -267,7 +275,6 @@ const MUITable = () => {
               bank_account_name: res?.data_bank?.bank_account_name,
               data_bank: {
                 id: 0,
-                label: '',
                 bank_short_name: res?.data_bank?.bank_short_name,
                 bank_name: res?.data_bank?.bank_name
               }
@@ -319,7 +326,10 @@ const MUITable = () => {
                 bank_account: res?.data_bank?.bank_account,
                 bank_account_name: res?.data_bank?.bank_account_name,
                 data_bank: filter(withdrawMethods, {
-                  bank_short_name: res?.data_bank?.bank_short_name
+                  payment_method_code: res?.data_bank?.payment_method_code,
+                  payment_method_name: res?.data_bank?.payment_method_name,
+                  bank_short_name: res?.data_bank?.bank_short_name,
+                  bank_name: res?.data_bank?.bank_name
                 })[0]
               })
             }
@@ -331,14 +341,14 @@ const MUITable = () => {
   }
 
   const getPaymentMethods = async () => {
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    await fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -346,6 +356,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -354,14 +366,14 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/master/payment_method/lists'
+        const _uri = '/master/withdraw_method/list'
         const _secret = await generateSignature(_uri)
 
         await fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
@@ -371,31 +383,41 @@ const MUITable = () => {
           .then(async res => await res.json())
           .then(async res => {
             // console.log(res?.data)
+            // await setPaymentMethods(res?.data?.payment_methods)
             const _data = []
             const __data = []
+            const ___data = []
 
             // const _dataMain = (res?.data).filter(({ id_payment_method }) =>
             //   console.log('id_payment_method: ', id_payment_method)
             // )
-            const _dataMain = (res?.data).filter(({ id_payment_method }) => parseInt(id_payment_method) > 0)
+            const _dataMain = (res?.data?.payment_methods).filter(
+              ({ payment_method_code }) => payment_method_code === 'QRIS' || payment_method_code === 'QRIS_PAYLATER'
+            )
 
             // console.log('_dataMain: ', _dataMain)
             forEach(_dataMain, (item, index) => {
               const ___data = {
                 id: item?.id_payment_method,
-                label: item?.payment_method_name + ' (Proses ' + item?.settlement_day + ' hari)',
+                label:
+                  parseInt(item?.settlement_day) === 0
+                    ? item?.payment_method_name
+                    : item?.payment_method_name + ' (Proses ' + item?.settlement_day + ' hari)',
                 ...item
               }
               _data.push(___data)
               if (item?.can_withdraw === '1') {
-                const ____data = { id: item?.id_payment_method, label: item?.bank_short_name, ...item }
-                __data.push(____data)
               }
             })
 
-            // console.log({ _data, __data })
+            forEach(res?.data?.withdraw_methods, (item, index) => {
+              const ____data = { code: item?.payment_method_code, label: item?.bank_name, ...item }
+              ___data.push(____data)
+            })
+
+            console.log({ _data, ___data })
             await setPaymentMethods(_data)
-            await setWithdrawMethods(__data)
+            await setWithdrawMethods(___data)
 
             return __data
           })
@@ -456,14 +478,14 @@ const MUITable = () => {
       return false
     }
     setLoading(true)
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -471,6 +493,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -491,22 +515,29 @@ const MUITable = () => {
         const _pg_fee_percent =
           parseFloat(filter(paymentMethods, { id_payment_method: valuePM?.id })[0]?.fee_original_percent ?? '0') / 100
 
+        const isQrisPaylater =
+          filter(paymentMethods, { id_payment_method: valuePM?.id })[0]?.payment_method_code === 'QRIS_PAYLATER'
+            ? true
+            : false
+
+        const uniqueCode = Math.floor(Math.random() * 900) + 100
+        const _uniqueCode = isQrisPaylater ? uniqueCode : 0
         const _pg_fee = _total_amount * _pg_fee_percent + _pg_fee_amount
         const _app_fee = 2000
-        const _fee = _pg_fee + _app_fee
+        const _fee = _pg_fee + _app_fee + _uniqueCode
         const _amount_deposit = _total_amount + _fee
 
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
           },
           body: JSON.stringify({
-            payment_method: valuePM?.payment_method_code,
+            payment_method_code: valuePM?.payment_method_code,
             payment_method_name: valuePM?.payment_method_name,
             amount: _amount_deposit,
             fee: _fee,
@@ -537,6 +568,8 @@ const MUITable = () => {
               data_bank: {
                 id: 0,
                 label: '',
+                payment_method_code: res?.data_bank?.payment_method_code,
+                payment_method_name: res?.data_bank?.payment_method_name,
                 bank_short_name: res?.data_bank?.bank_short_name,
                 bank_name: res?.data_bank?.bank_name
               }
@@ -549,17 +582,17 @@ const MUITable = () => {
   const handleCheckDeposit = async (_amount, _inv_no, _pg_method) => {
     setOpenModalPaymentInfo(false)
     setLoading(true)
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
     setDataPM(filter(paymentMethods, ['payment_method_code', _pg_method])[0])
     setValuePM(filter(paymentMethods, ['payment_method_code', _pg_method])[0])
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -567,6 +600,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -581,8 +616,8 @@ const MUITable = () => {
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
@@ -609,6 +644,8 @@ const MUITable = () => {
               data_bank: {
                 id: 0,
                 label: '',
+                payment_method_code: res?.data_bank?.payment_method_code,
+                payment_method_name: res?.data_bank?.payment_method_name,
                 bank_short_name: res?.data_bank?.bank_short_name,
                 bank_name: res?.data_bank?.bank_name
               }
@@ -625,14 +662,14 @@ const MUITable = () => {
 
   const handleWithdraw = async () => {
     setLoading(true)
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -640,6 +677,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -658,24 +697,40 @@ const MUITable = () => {
         const _fee = _pg_fee + _app_fee
         const _amount_withdraw = _total_amount - _fee
 
+        // console.log({
+        //   payment_method: valueWD?.data_bank?.bank_short_name,
+        //   payment_method_code: valueWD?.data_bank?.bank_short_name,
+        //   payment_method_name: valueWD?.data_bank?.bank_name,
+        //   amount: _amount_withdraw,
+        //   data_bank: valueWD?.data_bank,
+        //   bank_account: valueWD?.bank_account ?? dataBank?.bank_account,
+        //   bank_account_name: valueWD?.bank_account_name ?? dataBank?.bank_account_name,
+        //   fee: _fee,
+        //   app_fee: _app_fee,
+        //   pg_fee: _pg_fee
+        // })
+
+        // setLoading(false)
+
+        // return false
+
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
           },
           body: JSON.stringify({
             payment_method: valueWD?.data_bank?.bank_short_name,
-            payment_method_name:
-              filter(withdrawMethods, ['bank_short_name', valueWD?.data_bank?.bank_short_name])[0]
-                ?.payment_method_name ?? valueWD?.data_bank?.bank_short_name,
+            payment_method_code: valueWD?.data_bank?.bank_short_name,
+            payment_method_name: valueWD?.data_bank?.bank_name,
             amount: _amount_withdraw,
-            data_bank: filter(withdrawMethods, ['bank_short_name', valueWD?.data_bank?.bank_short_name])[0],
-            bank_account: valueWD?.data_bank?.bank_account ?? dataBank?.bank_account,
-            bank_account_name: valueWD?.data_bank?.bank_account_name ?? dataBank?.bank_account_name,
+            data_bank: valueWD?.data_bank,
+            bank_account: valueWD?.bank_account ?? dataBank?.bank_account,
+            bank_account_name: valueWD?.bank_account_name ?? dataBank?.bank_account_name,
             fee: _fee,
             app_fee: _app_fee,
             pg_fee: _pg_fee
@@ -688,7 +743,9 @@ const MUITable = () => {
               type: res?.code == 1 ? 'error' : 'success',
               message: res?.message
             })
-            setData([...res?.data])
+            if (res?.code == 0) {
+              setData([...res?.data])
+            }
             getPaymentMethods()
             setOpenModal(false)
             setLoading(false)
@@ -709,20 +766,22 @@ const MUITable = () => {
   useLayoutEffect(() => {
     // componentWillMount events
     if (!localStorage.getItem('data-module')) {
+      localStorage.removeItem('data-module')
+      localStorage.removeItem('module')
       router.push('/auth')
     }
   }, [])
 
   const handleBeforeSubmit = async () => {
     setLoading(true)
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -730,6 +789,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -745,8 +806,8 @@ const MUITable = () => {
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
@@ -788,14 +849,14 @@ const MUITable = () => {
       }
     }
     setLoading(true)
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -803,6 +864,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -818,8 +881,8 @@ const MUITable = () => {
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
@@ -844,20 +907,22 @@ const MUITable = () => {
   const _handleCheckValidOTP = async _type => {
     setLoading(true)
 
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
       .then(res => res.json())
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -873,8 +938,8 @@ const MUITable = () => {
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
@@ -925,7 +990,7 @@ const MUITable = () => {
               <div>
                 <Paper sx={{ padding: '20px', paddingTop: '5px', paddingBottom: '30px' }}>
                   <h5>Deposit Uang ke Dompet Digital Kamu.</h5>
-                  <Typography sx={{ fontSize: '12px' }}>Minimal deposit IDR 50.000.</Typography>
+                  <Typography sx={{ fontSize: '12px' }}>Minimal deposit IDR 10.000.</Typography>
                   <Typography sx={{ fontSize: '10px' }}>Biaya admin penarikan bersifat variatif.</Typography>
                   <Typography sx={{ fontSize: '10px' }}>Uang yang anda terima akan dikurangi biaya admin.</Typography>
                   <br />
@@ -1070,7 +1135,7 @@ const MUITable = () => {
                       id='combo-box-demo'
                       size='small'
                       autoSelect={true}
-                      options={filter(withdrawMethods, ['can_withdraw', '1'])}
+                      options={withdrawMethods}
                       renderInput={params => (
                         <TextField
                           size='small'
@@ -1085,7 +1150,7 @@ const MUITable = () => {
                     <TextField
                       fullWidth
                       size='small'
-                      value={valueWD?.data_bank?.bank_short_name}
+                      value={valueWD?.data_bank?.bank_name}
                       label='Metode Penarikan Uang'
                       error={errorsField?.data_bank}
                       helperText={errorsField?.data_bank}
@@ -1122,7 +1187,8 @@ const MUITable = () => {
                   <Box sx={{ mt: 2 }}>
                     <TextField
                       fullWidth
-                      type='number'
+                      onFocus={e => e?.target?.select()}
+                      inputProps={{ inputMode: 'numeric' }}
                       size='small'
                       label='Nomor Rekening/E-Wallet'
                       value={valueWD?.bank_account}
@@ -1170,6 +1236,7 @@ const MUITable = () => {
                     variant='contained'
                     color='error'
                     onClick={() => setOpenModal(true)}
+                    // onClick={() => handleWithdraw()}
                     style={{ marginTop: '-30px', float: 'right' }}
                     disabled={
                       parseInt(saldo) < 50000 || Object.keys(errorsField)?.length > 0 || valueWD?.amount < 50000
@@ -1198,7 +1265,10 @@ const MUITable = () => {
         <Card>
           <Box sx={{ width: '100%', overflow: 'auto' }}>
             <Box>
-              <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} />
+              <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} /> &emsp;
+              <Button onClick={() => getData(dateFilter?.startDate, dateFilter?.endDate)} variant='contained'>
+                Refresh
+              </Button>
             </Box>
 
             <DataGrid
@@ -1322,6 +1392,12 @@ const MUITable = () => {
                 </Box>
                 <Box>
                   <Typography>Berlaku dalam 10 Menit</Typography>
+                  {filter(paymentMethods, ['id_payment_method', valuePM?.id])[0]?.payment_method_code ===
+                    'QRIS_PAYLATER' && (
+                    <Typography sx={{ fontSize: 14, fontWeight: 'bold' }}>
+                      BAYAR SESUAI NOMINAL, AGAR PEMBAYARANMU BERHASIL.
+                    </Typography>
+                  )}
                 </Box>
                 <Box>
                   <Typography>
@@ -1330,9 +1406,11 @@ const MUITable = () => {
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'center', mb: 7 }}>
-                  {parseInt(valuePM?.id) == 18 || parseInt(valuePM?.id) == 19 ? (
+                  {filter(paymentMethods, ['id_payment_method', valuePM?.id])[0]?.payment_method_code === 'QRIS' ||
+                  filter(paymentMethods, ['id_payment_method', valuePM?.id])[0]?.payment_method_code ===
+                    'QRIS_PAYLATER' ? (
                     <>
-                      <img src={`${process.env.NEXT_PUBLIC_API}/${paymentDetail?.image_src}`} />
+                      <img src={`${paymentDetail?.res?.data?.qr_link}`} height={250} />
                     </>
                   ) : parseInt(valuePM?.id) >= 1 && parseInt(valuePM?.id) <= 10 ? (
                     <>
@@ -1401,13 +1479,17 @@ const MUITable = () => {
                 </Box>
                 <Box>
                   <Typography>Berlaku dalam 10 Menit</Typography>
+                  {filter(paymentMethods, ['id_payment_method', valuePM?.id])[0]?.payment_method_code ===
+                    'QRIS_PAYLATER' && (
+                    <Typography sx={{ fontSize: 14, fontWeight: 'bold' }}>
+                      BAYAR SESUAI NOMINAL, AGAR PEMBAYARANMU BERHASIL.
+                    </Typography>
+                  )}
                 </Box>
                 <Box>
                   <Typography>
                     Metode Pembayaran :{' '}
-                    <b>
-                      {filter(paymentMethods, ['id_payment_method', dataPM?.id_payment_method])[0]?.payment_method_name}
-                    </b>
+                    <b>{filter(paymentMethods, ['id_payment_method', valuePM?.id])[0]?.payment_method_name}</b>
                   </Typography>
                 </Box>
                 <Box>
@@ -1420,9 +1502,11 @@ const MUITable = () => {
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'center', mb: 7 }}>
-                  {parseInt(valuePM?.id) == 18 || parseInt(valuePM?.id) == 19 ? (
+                  {filter(paymentMethods, ['id_payment_method', valuePM?.id])[0]?.payment_method_code === 'QRIS' ||
+                  filter(paymentMethods, ['id_payment_method', valuePM?.id])[0]?.payment_method_code ===
+                    'QRIS_PAYLATER' ? (
                     <>
-                      <img src={`${process.env.NEXT_PUBLIC_API}/${paymentDetail?.image_src}`} />
+                      <img src={`${paymentDetail?.res?.data?.qr_link}`} height={250} />
                     </>
                   ) : parseInt(valuePM?.id) >= 1 && parseInt(valuePM?.id) <= 10 ? (
                     <>

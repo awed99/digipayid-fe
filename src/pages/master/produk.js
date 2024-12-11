@@ -1,11 +1,13 @@
 // ** MUI Imports
 import {
+  Autocomplete,
   Backdrop,
   Button,
   CardActionArea,
   CardActions,
   CardContent,
   CardMedia,
+  Checkbox,
   CircularProgress,
   Divider,
   FormControlLabel,
@@ -36,7 +38,7 @@ import { DataGrid, GridToolbar } from '@mui/x-data-grid'
 import CustomNoRowsOverlay from '/src/components/no-rows-table'
 
 import CryptoJS from 'crypto-js'
-import { size } from 'lodash'
+import { filter, size } from 'lodash'
 import ModalDialog from 'src/components/dialog'
 import * as yup from 'yup'
 import { format_rupiah, generateSignature } from '/helpers/general'
@@ -51,14 +53,16 @@ const MUITable = () => {
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState([])
   const [dataFiltered, setDataFiltered] = useState([])
+  const [productCategories, setProductCategories] = useState([])
+  const [productCategoriesSelected, setProductCategoriesSelected] = useState([])
   const [triggerUpdateStatus, setTriggerUpdateStatus] = useState(0)
   const [errorsField, setErrorsField] = useState()
   const [isAdd, setIsAdd] = useState(false)
   const [openModal, setOpenModal] = useState(false)
   const [searchProduct, setSearchProduct] = useState('')
+  const [searchCategory, setSearchCategory] = useState([])
   const [titleModal, setTitleModal] = useState('Tambah Produk')
   const [selectedFile, setSelectedFile] = useState()
-  const [widthScreen, setWidthScreen] = useState(1100)
 
   // ** Hooks
   const router = useRouter()
@@ -67,18 +71,27 @@ const MUITable = () => {
     id_product: null,
     product_code: '',
     product_name: '',
+    product_desc: '',
+    product_categories: '',
     product_qty: 0,
     product_price: 0,
-    product_status: 1
+    product_hpp: 0,
+    product_discount: 0,
+    product_status: 1,
+    product_is_racikan: false
   })
 
   let schemaData = yup.object().shape({
-    product_code: yup.string().required(),
-    product_barcode: yup.string().required(),
+    product_code: yup.string(),
+    product_barcode: yup.string(),
     product_name: yup.string().required(),
-    product_qty: yup.number().min(1).required(),
-    product_price: yup.number().min(100).required(),
-    product_status: yup.number().required()
+    product_desc: yup.string().max(255),
+    product_qty: yup.string().min(1),
+    product_price: yup.string().required(),
+    product_hpp: yup.string(),
+    product_discount: yup.string().max(2).required(),
+    product_status: yup.number().required(),
+    product_is_racikan: yup.boolean()
   })
 
   let _loopNumber = 1
@@ -87,20 +100,33 @@ const MUITable = () => {
     { field: 'product_code', headerName: 'Kode Produk', width: 150 },
     { field: 'product_barcode', headerName: 'Barcode Produk', width: 150 },
     { field: 'product_name', headerName: 'Nama Produk', width: 350 },
+    { field: 'product_desc', headerName: 'Keterangan Produk', width: 350 },
     { field: 'product_qty', headerName: 'Stok', width: 100 },
 
     // { field: 'product_image_url', headerName: 'Image', width: 150 },
     {
       field: 'product_price',
-      headerName: 'Harga',
-      width: 120,
+      headerName: 'Harga Jual',
+      width: 150,
       renderCell: params => format_rupiah(params?.value)
+    },
+    {
+      field: 'product_price',
+      headerName: 'Harga Beli',
+      width: 150,
+      renderCell: params => format_rupiah(params?.value)
+    },
+    {
+      field: 'product_discount',
+      headerName: 'Harga Beli',
+      width: 110,
+      renderCell: params => params?.value + '%'
     },
     {
       field: 'product_image_url',
       headerName: 'Image',
       width: 120,
-      renderCell: params => <img src={`${process.env.NEXT_PUBLIC_API}` + params?.value} width={100} />
+      renderCell: params => <img src={process.env.NEXT_PUBLIC_API + params?.value} width={100} />
     },
     {
       field: 'product_status',
@@ -154,15 +180,15 @@ const MUITable = () => {
   ]
 
   const getData = async () => {
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
     setLoading(true)
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -170,6 +196,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -184,8 +212,8 @@ const MUITable = () => {
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
@@ -195,8 +223,9 @@ const MUITable = () => {
           .then(res => res.json())
           .then(res => {
             // console.log(res?.data)
-            setData(res?.data)
-            setDataFiltered(res?.data)
+            setData([...res?.data])
+            setDataFiltered([...res?.data])
+            setProductCategories([...res?.categories])
             setLoading(false)
           })
           .catch(() => setLoading(false))
@@ -211,6 +240,8 @@ const MUITable = () => {
   useLayoutEffect(() => {
     // componentWillMount events
     if (!localStorage.getItem('data-module')) {
+      localStorage.removeItem('data-module')
+      localStorage.removeItem('module')
       router.push('/auth')
     }
   }, [])
@@ -221,17 +252,8 @@ const MUITable = () => {
     }
   }, [triggerUpdateStatus])
 
-  useEffect(() => {
-    function handleResize() {
-      setWidthScreen(window.innerWidth)
-    }
-    window.addEventListener('resize', handleResize)
-    handleResize()
-
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
   const handleClickButton = async (_isAdd = false, _params = {}) => {
+    setLoading(true)
     if (_isAdd === true) {
       setSelectedFile(null)
       setIsAdd(true)
@@ -241,19 +263,34 @@ const MUITable = () => {
         product_code: '',
         product_barcode: '',
         product_name: '',
+        product_desc: '',
+        product_categories: '',
         product_qty: 0,
         product_price: 0,
         product_status: '1'
       })
+      setProductCategoriesSelected([])
     } else {
       const _img = _params?.row?.product_image_url ?? _params?.product_image_url
-      setSelectedFile(`${process.env.NEXT_PUBLIC_API}` + _img)
+      setSelectedFile(`` + _img)
       setIsAdd(false)
       setTitleModal('Ubah Produk')
       setValueModal(_params?.row ?? _params)
+
+      const _cats = []
+
+      const _selected = _params?.row?.product_categories ?? _params?.product_categories
+
+      _selected?.split(',')?.forEach(item => {
+        _cats.push(filter(productCategories, { product_category: item })[0])
+      })
+      setProductCategoriesSelected([..._cats])
     }
 
-    setOpenModal(true)
+    setTimeout(() => {
+      setOpenModal(true)
+      setLoading(false)
+    }, 500)
   }
 
   const handleClickDelete = async (_params = {}) => {
@@ -269,7 +306,7 @@ const MUITable = () => {
   }
 
   const handleSubmit = async (isDelete = false) => {
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
     if ((await schemaData.isValid(valueModal)) === false && !isDelete) {
@@ -280,11 +317,11 @@ const MUITable = () => {
 
     setLoading(true)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -292,6 +329,8 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
 
           return false
@@ -312,24 +351,28 @@ const MUITable = () => {
 
         const dataX = new FormData()
         Object.keys(valueModal).forEach(itemX => {
-          dataX.append(itemX, valueModal[itemX])
+          if (itemX === 'product_price' || itemX === 'product_qty') {
+            dataX.append(itemX, valueModal[itemX]?.replace(/\,|\./g, ''))
+          } else {
+            dataX.append(itemX, valueModal[itemX])
+          }
         })
 
         // dataX.append('description', externalURL)
         // dataX.append('height', data?.height)
         // dataX.append('width', data?.width)
         // console.log('selectedFile: ')
-        // dataX.append('userfile', selectedFile, selectedFile.name)
+        dataX.append('product_categories', productCategoriesSelected?.map(item => item?.product_category).join(','))
 
-        if (typeof selectedFile === 'object') {
+        if (typeof selectedFile === 'object' && !isDelete) {
           dataX.append('userfile', selectedFile, selectedFile.name)
         }
 
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
           headers: {
-            'x-signature': _secret?.signature,
-            'x-timestamp': _secret?.timestamp,
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
             Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
@@ -342,14 +385,20 @@ const MUITable = () => {
           .then(res => {
             // console.log(res?.data)
             setLoading(false)
-            setData(res?.data)
+            setData([...res?.data])
+            setDataFiltered([...res?.data])
             setOpenModal(false)
             setIsAdd(false)
             setTitleModal('Tambah Produk')
             handleChangeEl('product_code', '', valueModal, setValueModal, schemaData, setErrorsField)
+            handleChangeEl('product_price', '0', valueModal, setValueModal, schemaData, setErrorsField)
             handleChangeEl('product_barcode', '', valueModal, setValueModal, schemaData, setErrorsField)
             handleChangeEl('product_name', '', valueModal, setValueModal, schemaData, setErrorsField)
+            handleChangeEl('product_desc', '', valueModal, setValueModal, schemaData, setErrorsField)
+            handleChangeEl('product_categories', '', valueModal, setValueModal, schemaData, setErrorsField)
             handleChangeEl('id_product', null, valueModal, setValueModal, schemaData, setErrorsField)
+            setProductCategoriesSelected([])
+            setSearchProduct('')
           })
           .catch(() => setLoading(false))
       })
@@ -363,22 +412,67 @@ const MUITable = () => {
     }
   }
 
+  // useEffect(() => {
+  //   if (size(searchProduct) > 0) {
+  //     const _newData = data?.filter(item => {
+  //       if (
+  //         item?.product_name?.toLowerCase().includes(searchProduct?.toLowerCase()) ||
+  //         item?.product_code?.toLowerCase().includes(searchProduct?.toLowerCase()) ||
+  //         item?.product_barcode?.toLowerCase().includes(searchProduct?.toLowerCase())
+  //       ) {
+  //         return item
+  //       }
+  //     })
+  //     setDataFiltered([..._newData])
+  //   } else {
+  //     setDataFiltered([...data])
+  //   }
+  // }, [searchProduct])
+
   useEffect(() => {
+    let _newData = data
     if (size(searchProduct) > 0) {
-      const _newData = data?.filter(item => {
+      _newData = data?.filter(item => {
         if (
           item?.product_name?.toLowerCase().includes(searchProduct?.toLowerCase()) ||
+          item?.product_desc?.toLowerCase().includes(searchProduct?.toLowerCase()) ||
           item?.product_code?.toLowerCase().includes(searchProduct?.toLowerCase()) ||
           item?.product_barcode?.toLowerCase().includes(searchProduct?.toLowerCase())
         ) {
-          return item
+          if (size(searchCategory) > 0) {
+            return searchCategory?.map(item2 => {
+              if (item?.product_categories?.toLowerCase().includes(item2?.product_category?.toLowerCase())) {
+                return item
+              }
+            })
+          } else {
+            return item
+          }
         }
       })
-      setDataFiltered([..._newData])
-    } else {
-      setDataFiltered([...data])
     }
-  }, [searchProduct])
+
+    const _newData2 = []
+    _newData?.map(item => {
+      if (size(searchCategory) > 0) {
+        searchCategory?.map(item2 => {
+          if (item?.product_categories?.toLowerCase().includes(item2?.product_category?.toLowerCase())) {
+            _newData2.push(item)
+          }
+        })
+      } else {
+        _newData2.push(item)
+      }
+    })
+
+    setDataFiltered([..._newData2])
+  }, [searchProduct, searchCategory])
+
+  // useEffect(() => {
+  //   if (!openModal) {
+  //     setIsRacikan(false)
+  //   }
+  // }, [openModal])
 
   return (
     <Grid container spacing={6}>
@@ -392,19 +486,42 @@ const MUITable = () => {
             Tambah
           </Button>
         </Typography>
-        <Box>
-          <TextField
-            label='Cari Produk di Katalog'
-            variant='outlined'
-            fullWidth
-            size='small'
-            sx={{ mb: 1, mt: 5 }}
-            onChange={e => setSearchProduct(e.target.value)}
-            value={searchProduct}
+        <Box display={'flex'} justifyContent={'space-between'}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={12} md={6} lg={6}>
+              <Box sx={{ width: '100%' }}>
+                <TextField
+                  label='Cari Produk di Katalog'
+                  variant='outlined'
+                  fullWidth
+                  // size='small'
+                  sx={{ mb: 1, mt: 5 }}
+                  onChange={e => setSearchProduct(e.target.value)}
+                  value={searchProduct}
 
-            // error={errorsField?.product_category}
-            // helperText={errorsField?.product_category}
-          />
+                  // error={errorsField?.product_category}
+                  // helperText={errorsField?.product_category}
+                />
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={12} md={6} lg={6}>
+              <Box sx={{ width: '100%' }}>
+                <Autocomplete
+                  multiple
+                  variant='outlined'
+                  id='categories'
+                  sx={{ mt: 5, textTransform: 'capitalize' }}
+                  options={productCategories}
+                  getOptionLabel={option => option?.product_category}
+                  onChange={(e, v) => setSearchCategory(v)}
+                  value={searchCategory}
+                  renderInput={params => (
+                    <TextField {...params} variant='outlined' label='Kategori Produk' placeholder='Kategori Produk' />
+                  )}
+                />
+              </Box>
+            </Grid>
+          </Grid>
         </Box>
       </Grid>
 
@@ -430,8 +547,8 @@ const MUITable = () => {
                 <CardActionArea onClick={() => handleClickButton(false, item)}>
                   <CardMedia
                     component='img'
-                    height='140'
-                    image={`${process.env.NEXT_PUBLIC_API}` + item?.product_image_url}
+                    height='250'
+                    image={process.env.NEXT_PUBLIC_API + item?.product_image_url}
                     alt={item?.product_name}
                   />
                   <CardContent>
@@ -439,10 +556,14 @@ const MUITable = () => {
                       Rp {format_rupiah(item?.product_price)}
                     </Typography>
                     <Typography noWrap gutterBottom variant='body2' component='div'>
-                      Code : {item?.product_code}
+                      Code : {item?.product_code} - Disc : {item?.product_discount}%
                     </Typography>
                     <Typography noWrap variant='h6' sx={{ color: 'text.secondary', fontSize: '16px !important' }}>
                       {item?.product_name}
+                    </Typography>
+                    <Divider />
+                    <Typography noWrap sx={{ color: 'text.secondary', fontSize: '12px !important' }}>
+                      {item?.product_desc ?? '-'}
                     </Typography>
                   </CardContent>
                 </CardActionArea>
@@ -498,6 +619,7 @@ const MUITable = () => {
               fullWidth
               size='small'
               onChange={e => handleChangeEl('product_code', e, valueModal, setValueModal, schemaData, setErrorsField)}
+              inputProps={{ style: { textTransform: 'uppercase' } }}
               value={valueModal?.product_code}
               error={errorsField?.product_code}
               helperText={errorsField?.product_code}
@@ -524,8 +646,9 @@ const MUITable = () => {
               variant='outlined'
               fullWidth
               size='small'
-              sx={{ mt: 5 }}
+              sx={{ mt: 5, textTransform: 'capitalize' }}
               onChange={e => handleChangeEl('product_name', e, valueModal, setValueModal, schemaData, setErrorsField)}
+              inputProps={{ style: { textTransform: 'capitalize' } }}
               value={valueModal?.product_name}
               error={errorsField?.product_name}
               helperText={errorsField?.product_name}
@@ -533,18 +656,76 @@ const MUITable = () => {
           </Box>
           <Box>
             <TextField
-              label='Harga Produk'
+              label='Keterangan Produk'
+              variant='outlined'
+              fullWidth
+              size='small'
+              sx={{ mt: 5 }}
+              onChange={e => handleChangeEl('product_desc', e, valueModal, setValueModal, schemaData, setErrorsField)}
+              value={valueModal?.product_desc}
+              error={errorsField?.product_desc}
+              helperText={errorsField?.product_desc}
+              filterSelectedOptions
+              multiline
+              maxRows={4}
+              rows={3}
+            />
+          </Box>
+          <Box>
+            <Autocomplete
+              multiple
+              variant='outlined'
+              id='categories'
+              sx={{ mt: 5, textTransform: 'capitalize' }}
+              options={productCategories}
+              getOptionLabel={option => option?.product_category}
+              onChange={(e, v) => setProductCategoriesSelected(v)}
+              value={productCategoriesSelected}
+              renderInput={params => (
+                <TextField {...params} variant='outlined' label='Kategori Produk' placeholder='Kategori Produk' />
+              )}
+            />
+          </Box>
+          <Box>
+            <TextField
+              label='Harga Jual Produk'
               variant='outlined'
               size='small'
               sx={{ mt: 5 }}
               InputProps={{
-                startAdornment: <InputAdornment position='start'>IDR</InputAdornment>
+                startAdornment: <InputAdornment position='start'>IDR</InputAdornment>,
+                inputMode: 'numeric'
               }}
               onFocus={e => e.target.select()}
               onChange={e => handleChangeEl('product_price', e, valueModal, setValueModal, schemaData, setErrorsField)}
-              value={valueModal?.product_price}
+              value={format_rupiah(valueModal?.product_price)}
               error={errorsField?.product_price}
               helperText={errorsField?.product_price}
+            />
+          </Box>
+          <Box>
+            <TextField
+              size='small'
+              sx={{ mt: 5 }}
+              id='product_discount'
+              name='product_discount'
+              label='Diskon Produk'
+              variant='outlined'
+              autoComplete={false}
+              onChange={e =>
+                handleChangeEl('product_discount', e, valueModal, setValueModal, schemaData, setErrorsField)
+              }
+              value={format_rupiah(valueModal?.product_discount)}
+              InputProps={{
+                endAdornment: <InputAdornment position='end'>%</InputAdornment>,
+                inputMode: 'numeric'
+              }}
+              onFocus={e => e?.target?.select()}
+              error={errorsField?.product_discount}
+              helperText={errorsField?.product_discount}
+              inputProps={{
+                autoComplete: 'new-password'
+              }}
             />
           </Box>
           <Box>
@@ -558,9 +739,55 @@ const MUITable = () => {
               }}
               onFocus={e => e.target.select()}
               onChange={e => handleChangeEl('product_qty', e, valueModal, setValueModal, schemaData, setErrorsField)}
-              value={valueModal?.product_qty}
+              value={format_rupiah(valueModal?.product_qty)}
               error={errorsField?.product_qty}
               helperText={errorsField?.product_qty}
+            />
+          </Box>
+          <Box>
+            <FormControlLabel
+              sx={{ mt: 5 }}
+              control={
+                <Checkbox
+                  checked={valueModal?.product_is_racikan}
+                  onChange={e =>
+                    handleChangeEl(
+                      'product_is_racikan',
+                      e?.target?.checked,
+                      valueModal,
+                      setValueModal,
+                      schemaData,
+                      setErrorsField
+                    )
+                  }
+                />
+              }
+              label='Gunakan Racikan ?'
+            />
+          </Box>
+          {valueModal?.product_is_racikan && (
+            <Box>
+              <Button variant='contained' color={'warning'} sx={{ mt: 5 }} onClick={() => setOpenModalRacikan(true)}>
+                Buka Racikan {valueModal?.product_name}
+              </Button>
+            </Box>
+          )}
+          <Box>
+            <TextField
+              label='Harga Beli Produk'
+              variant='outlined'
+              size='small'
+              sx={{ mt: 5 }}
+              InputProps={{
+                startAdornment: <InputAdornment position='start'>IDR</InputAdornment>,
+                inputMode: 'numeric'
+              }}
+              disabled={valueModal?.product_is_racikan}
+              onFocus={e => e.target.select()}
+              onChange={e => handleChangeEl('product_hpp', e, valueModal, setValueModal, schemaData, setErrorsField)}
+              value={format_rupiah(valueModal?.product_hpp ?? 0)}
+              error={errorsField?.product_hpp}
+              helperText={errorsField?.product_hpp}
             />
           </Box>
           <FormControlLabel
@@ -589,15 +816,28 @@ const MUITable = () => {
           <Box sx={{ mt: 5 }}>
             {!selectedFile && (
               <IconButton color='primary' aria-label='upload picture' component='label'>
-                <input hidden accept='image/*' type='file' onChange={e => handleUploadfile(e)} />
+                <input
+                  hidden
+                  accept='image/jpeg, image/jpg, image/png, image/svg+xml'
+                  type='file'
+                  onChange={e => handleUploadfile(e)}
+                />
                 <PhotoCamera />
               </IconButton>
             )}
             {selectedFile && (
               <>
                 <ModalImage
-                  small={typeof selectedFile === 'object' ? window?.URL?.createObjectURL(selectedFile) : selectedFile}
-                  large={typeof selectedFile === 'object' ? window?.URL?.createObjectURL(selectedFile) : selectedFile}
+                  small={
+                    typeof selectedFile === 'object'
+                      ? window?.URL?.createObjectURL(selectedFile)
+                      : process.env.NEXT_PUBLIC_API + selectedFile
+                  }
+                  large={
+                    typeof selectedFile === 'object'
+                      ? window?.URL?.createObjectURL(selectedFile)
+                      : process.env.NEXT_PUBLIC_API + selectedFile
+                  }
                   alt='Tuntaz'
                   className='image-thumbnail2'
                   style={{ width: '50px' }}

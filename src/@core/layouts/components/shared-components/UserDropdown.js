@@ -50,7 +50,7 @@ const UserDropdown = () => {
     if (url) {
       const _uri = '/auth/remove_storage'
 
-      fetch(`${process.env.NEXT_PUBLIC_API_HOST}${_uri}`, {
+      fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
         method: 'POST',
         body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
       })

@@ -31,7 +31,7 @@ const MUITable = () => {
     {
       field: 'type_satuan',
       headerName: 'Type Satuan',
-      width: 350,
+      width: 150,
       renderCell: params => {
         if (params.value == 1) {
           return 'Uang'
@@ -51,15 +51,16 @@ const MUITable = () => {
       headerName: 'Satuan'
     }
   ]
+
   const getData = async () => {
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret0?.signature,
-        'x-timestamp': _secret0?.timestamp
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -67,14 +68,17 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
+
           return false
         } else {
           return res
         }
       })
       .then(async res => {
-        const _uri = '/master/user/master_satuan'
+        const _uri = '/master/satuan/list'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {

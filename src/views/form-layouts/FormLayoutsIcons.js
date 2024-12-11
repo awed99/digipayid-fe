@@ -1,17 +1,16 @@
 // ** MUI Imports
 import Card from '@mui/material/Card'
-import Grid from '@mui/material/Grid'
-import Button from '@mui/material/Button'
-import TextField from '@mui/material/TextField'
-import CardHeader from '@mui/material/CardHeader'
 import CardContent from '@mui/material/CardContent'
+import CardHeader from '@mui/material/CardHeader'
+import Grid from '@mui/material/Grid'
 import InputAdornment from '@mui/material/InputAdornment'
+import TextField from '@mui/material/TextField'
 
 // ** Icons Imports
-import Phone from 'mdi-material-ui/Phone'
-import EmailOutline from 'mdi-material-ui/EmailOutline'
 import AccountOutline from 'mdi-material-ui/AccountOutline'
+import EmailOutline from 'mdi-material-ui/EmailOutline'
 import MessageOutline from 'mdi-material-ui/MessageOutline'
+import Phone from 'mdi-material-ui/Phone'
 
 const FormLayoutsIcons = () => {
   return (
@@ -53,15 +52,16 @@ const FormLayoutsIcons = () => {
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                type='number'
                 label='Phone No.'
                 placeholder='+1-123-456-8790'
+                onFocus={e => e.target.select()}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position='start'>
                       <Phone />
                     </InputAdornment>
-                  )
+                  ),
+                  inputMode: 'numeric'
                 }}
               />
             </Grid>

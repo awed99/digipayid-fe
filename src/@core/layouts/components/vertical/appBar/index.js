@@ -40,14 +40,14 @@ const LayoutAppBar = props => {
   const router = useRouter()
 
   const checkSession = async () => {
-    const _uri = '/api/check-auth'
+    const _uri = '/auth/check_auth'
     const _secret = await generateSignature(_uri)
 
-    fetch(`${_uri}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
       method: 'POST',
       headers: {
-        'x-signature': _secret?.signature,
-        'x-timestamp': _secret?.timestamp
+        'X-Signature': _secret?.signature,
+        'X-Timestamp': _secret?.timestamp
       },
       body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
     })
@@ -56,6 +56,8 @@ const LayoutAppBar = props => {
         // console.log(res)
 
         if (!res?.auth?.user || !res?.auth?.token) {
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
           router.push('/auth')
         }
       })

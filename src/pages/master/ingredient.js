@@ -19,12 +19,13 @@ import Box from '@mui/material/Box'
 // ** Demo Components Imports
 import { DataGrid, GridToolbar } from '@mui/x-data-grid'
 import CustomNoRowsOverlay from '/src/components/no-rows-table'
+import TablePagination from '/src/components/table-pagination'
 
 import * as yup from 'yup'
 
 import CryptoJS from 'crypto-js'
 import ModalDialog from 'src/components/dialog'
-import { generateSignature } from '/helpers/general'
+import { format_rupiah, generateSignature } from '/helpers/general'
 import { handleChangeEl } from '/hooks/general'
 
 const MUITable = () => {
@@ -36,13 +37,14 @@ const MUITable = () => {
   const [errorsField, setErrorsField] = useState()
   const [isAdd, setIsAdd] = useState(true)
   const [openModal, setOpenModal] = useState(false)
-  const [titleModal, setTitleModal] = useState('Tambah Ingridient')
+  const [titleModal, setTitleModal] = useState('Tambah Ingredient')
+
   const [valueModal, setValueModal] = useState({
+    id_satuan: '0',
+    code_bahan: '',
     nama_bahan: '',
-    harga: '',
-    stok: '',
-    satuan: '',
-    code_bahan: ''
+    harga: '0',
+    stok: 0
   })
   const [data, setData] = useState([])
   const [dataSatuan, setDataSatuan] = useState([])
@@ -53,18 +55,17 @@ const MUITable = () => {
   let _loopNumber = 1
 
   let schemaData = yup.object().shape({
+    code_bahan: yup.string().nullable(),
     nama_bahan: yup.string().required('Nama Bahan harus diisi'),
-    harga: yup.number().required('Harga harus diisi').typeError('Harga harus diisi'),
-    satuan: yup.string().required(),
-    stok: yup.number().required('Stok harus diisi').typeError('Stok harus diisi'),
-    code_bahan: yup.string().nullable()
+    harga: yup.string().required('Harga harus diisi').typeError('Harga harus diisi'),
+    stok: yup.number().required('Stok harus diisi').typeError('Stok harus diisi')
   })
 
   const getData = async () => {
-    const _uri0 = '/api/check-auth'
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    fetch(`${process.env.NEXT_PUBLIC_API}${_uri0}`, {
       method: 'POST',
       headers: {
         'x-signature': _secret0?.signature,
@@ -76,13 +77,14 @@ const MUITable = () => {
       .then(async res => {
         if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
           router.push('/auth')
+
           return false
         } else {
           return res
         }
       })
       .then(async res => {
-        const _uriIngredient = '/master/product/ingredient'
+        const _uriIngredient = '/master/ingredient/list'
         const _secretIngredient = await generateSignature(_uriIngredient)
 
         // Fetch data dari endpoint /master/product/ingredient
@@ -100,27 +102,7 @@ const MUITable = () => {
           .then(res => res.json())
           .then(async res => {
             setData(res?.data)
-
-            // Setelah berhasil mendapatkan data ingredient, ambil data dari /master/user/master_satuan
-            const _uriSatuan = '/master/user/master_satuan'
-            const _secretSatuan = await generateSignature(_uriSatuan)
-
-            fetch(`${process.env.NEXT_PUBLIC_API}${_uriSatuan}`, {
-              method: 'POST',
-              headers: {
-                'x-signature': _secretSatuan?.signature,
-                'x-timestamp': _secretSatuan?.timestamp,
-                Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
-                  .toString(CryptoJS.enc.Utf8)
-                  .replace(/\"/g, '')
-              },
-              body: JSON.stringify({ id: 0 })
-            })
-              .then(res => res.json())
-              .then(res => {
-                setDataSatuan(res?.data) // Simpan data satuan
-              })
-              .catch(() => false)
+            setDataSatuan(res?.satuan)
           })
           .catch(() => false)
       })
@@ -139,15 +121,10 @@ const MUITable = () => {
   }, [])
 
   const columns = [
+    { field: 'code_bahan', headerName: 'Kode Bahan', width: 110 },
     { field: 'nama_bahan', headerName: 'Nama Bahan', width: 350 },
-    { field: 'harga', headerName: 'Harga', width: 350 },
-    { field: 'stok', headerName: 'Stok', width: 350 },
-    {
-      field: 'status',
-      headerName: 'Status',
-      width: 100,
-      renderCell: params => <Chip label={'Aktif'} color='primary' />
-    },
+    { field: 'harga', headerName: 'Harga', width: 150, renderCell: params => format_rupiah(params.value) },
+    { field: 'stok', headerName: 'Stok', width: 150, renderCell: params => format_rupiah(params.value) },
     {
       field: 'update',
       headerName: 'Update',
@@ -173,27 +150,18 @@ const MUITable = () => {
   const handleClickButton = async (_isAdd = false, _params = {}) => {
     if (_isAdd === true) {
       setIsAdd(true)
-      setTitleModal('Tambah Ingridient')
-      handleChangeEl('satuan_bahan', '', valueModal, setValueModal, schemaData, setErrorsField)
+      setTitleModal('Tambah Ingredient')
+      setValueModal({
+        id_satuan: '0',
+        code_bahan: '',
+        nama_bahan: '',
+        harga: '0',
+        stok: 0
+      })
     } else {
       setIsAdd(false)
-      setTitleModal('Ubah Kategori')
-      handleChangeEl(
-        'product_category',
-        _params?.row?.product_category,
-        valueModal,
-        setValueModal,
-        schemaData,
-        setErrorsField
-      )
-      handleChangeEl(
-        'id_product_category',
-        _params?.row?.id_product_category,
-        valueModal,
-        setValueModal,
-        schemaData,
-        setErrorsField
-      )
+      setTitleModal('Ubah Ingredient')
+      setValueModal(_params?.row)
     }
 
     setOpenModal(true)
@@ -201,34 +169,33 @@ const MUITable = () => {
 
   const handleClickDelete = async (_params = {}) => {
     setIsAdd(false)
-    const _x = confirm('Anda yakin ingin menghapus Kategori ' + _params?.row?.product_category + ' ?')
+    const _x = confirm('Anda yakin ingin menghapus Ingredient ' + _params?.row?.nama_bahan + ' ?')
     if (_x) {
-      handleChangeEl(
-        'product_category',
-        _params?.row?.product_category,
-        valueModal,
-        setValueModal,
-        schemaData,
-        setErrorsField
-      )
-      handleChangeEl(
-        'id_product_category',
-        _params?.row?.id_product_category,
-        valueModal,
-        setValueModal,
-        schemaData,
-        setErrorsField
-      )
-
-      handleSubmit(true)
+      handleSubmit(true, _params?.row)
     }
   }
 
-  const handleSubmit = async (isDelete = false) => {
-    const _uri0 = '/api/check-auth'
+  const handleSubmit = async (isDelete = false, _rows = {}) => {
+    const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/auth/check_auth`, {
+    const _data = isDelete === true ? _rows : valueModal
+    if (_data['harga_tambahan']) {
+      _data['harga'] =
+        parseInt(_data['harga'].toString().replace(/\,|\./g, '')) +
+        parseInt(_data['harga_tambahan'].toString().replace(/\,|\./g, ''))
+      delete _data['harga_tambahan']
+    }
+    if (_data['stok_tambahan']) {
+      _data['stok'] =
+        parseInt(_data['stok'].toString().replace(/\,|\./g, '')) +
+        parseInt(_data['stok_tambahan'].toString().replace(/\,|\./g, ''))
+      delete _data['stok_tambahan']
+    }
+    _data['harga'] = _data['harga'].toString().replace(/\,|\./g, '')
+    _data['stok'] = _data['stok'].toString().replace(/\,|\./g, '')
+
+    fetch(`${process.env.NEXT_PUBLIC_API}${_uri0}`, {
       method: 'POST',
       headers: {
         'x-signature': _secret0?.signature,
@@ -250,10 +217,10 @@ const MUITable = () => {
       .then(async res => {
         const _uri =
           isAdd === true && isDelete === false
-            ? '/master/product/ingredient_create'
+            ? '/master/ingredient/create'
             : isDelete === true
-            ? '/master/product/ingredient_delete'
-            : '/master/product/ingredient_update'
+            ? '/master/ingredient/delete'
+            : '/master/ingredient/update'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
@@ -265,7 +232,7 @@ const MUITable = () => {
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
           },
-          body: JSON.stringify(valueModal)
+          body: JSON.stringify(_data)
         })
           .then(res => res.json())
           .then(res => {
@@ -273,9 +240,14 @@ const MUITable = () => {
             setData(res?.data)
             setOpenModal(false)
             setIsAdd(true)
-            setTitleModal('Tambah Ingridient')
-            handleChangeEl('product_category', '', valueModal, setValueModal, schemaData, setErrorsField)
-            handleChangeEl('id_product_category', null, valueModal, setValueModal, schemaData, setErrorsField)
+            setTitleModal('Tambah Ingredient')
+            setValueModal({
+              id_satuan: '0',
+              code_bahan: '',
+              nama_bahan: '',
+              harga: '0',
+              stok: 0
+            })
           })
           .catch(() => false)
       })
@@ -304,8 +276,31 @@ const MUITable = () => {
               autoHeight
               rows={data}
               columns={columns}
-              getRowId={row => row.id_product_category}
-              slots={{ toolbar: GridToolbar, noRowsOverlay: CustomNoRowsOverlay }}
+              getRowId={row => row.id_bahan}
+              slots={{
+                toolbar: GridToolbar,
+                noRowsOverlay: CustomNoRowsOverlay,
+                footer: () => (
+                  <Box sx={{ p: 3 }}>
+                    <Divider />
+                    <Box>
+                      <TablePagination />
+                    </Box>
+                    <Divider />
+                    <Typography>
+                      <b>
+                        Total Modal : IDR &nbsp;
+                        {format_rupiah(
+                          data?.reduce(
+                            (total, item) => parseInt(total) + parseInt(item?.harga) * parseInt(item?.stok),
+                            0
+                          )
+                        )}
+                      </b>
+                    </Typography>
+                  </Box>
+                )
+              }}
               slotProps={{
                 toolbar: {
                   showQuickFilter: true
@@ -326,27 +321,13 @@ const MUITable = () => {
       >
         <Box>
           <TextField
-            label='Nama Bahan'
-            variant='outlined'
-            sx={{ mt: 5 }}
-            fullWidth
-            onChange={e => handleChangeEl('nama_bahan', e, valueModal, setValueModal, schemaData, setErrorsField)}
-            value={valueModal?.nama_bahan}
-            error={errorsField?.nama_bahan}
-            helperText={errorsField?.nama_bahan}
-            inputProps={{
-              maxLength: 50 // misalnya, batas maksimal 50 karakter
-            }}
-          />
-        </Box>
-        <Box>
-          <TextField
             label='Kode Bahan'
             variant='outlined'
-            sx={{ mt: 5 }}
+            sx={{ mt: 5, textTransform: 'uppercase' }}
+            inputProps={{ style: { textTransform: 'uppercase' }, maxLength: 15 }}
             fullWidth
             onChange={e => handleChangeEl('code_bahan', e, valueModal, setValueModal, schemaData, setErrorsField)}
-            value={valueModal?.code_bahan}
+            value={valueModal?.code_bahan.toUpperCase()}
             error={errorsField?.code_bahan}
             helperText={errorsField?.code_bahan}
             placeholder='Optional'
@@ -354,45 +335,136 @@ const MUITable = () => {
         </Box>
         <Box>
           <TextField
-            label='Harga'
+            label='Nama Bahan'
             variant='outlined'
-            sx={{ mt: 5 }}
+            sx={{ mt: 5, textTransform: 'capitalize' }}
+            inputProps={{ style: { textTransform: 'capitalize' }, maxLength: 50 }}
             fullWidth
-            onChange={e => handleChangeEl('harga', e, valueModal, setValueModal, schemaData, setErrorsField)}
-            value={valueModal?.harga}
-            error={errorsField?.harga}
-            helperText={errorsField?.harga}
-            type='number'
-            InputProps={{
-              startAdornment: <InputAdornment position='start'>Rp</InputAdornment>
-            }}
+            onChange={e => handleChangeEl('nama_bahan', e, valueModal, setValueModal, schemaData, setErrorsField)}
+            value={valueModal?.nama_bahan?.charAt(0)?.toUpperCase() + valueModal?.nama_bahan?.slice(1)}
+            error={errorsField?.nama_bahan}
+            helperText={errorsField?.nama_bahan}
           />
         </Box>
+        {!valueModal?.id_bahan && (
+          <>
+            <Box>
+              <TextField
+                onFocus={e => e?.target?.select()}
+                label='Harga Modal'
+                variant='outlined'
+                sx={{ mt: 5 }}
+                onChange={e => handleChangeEl('harga', e, valueModal, setValueModal, schemaData, setErrorsField)}
+                value={format_rupiah(valueModal?.harga)}
+                error={errorsField?.harga}
+                helperText={errorsField?.harga}
+                InputProps={{
+                  startAdornment: <InputAdornment position='start'>Rp</InputAdornment>,
+                  inputMode: 'numeric'
+                }}
+              />
+            </Box>
+            <Box>
+              <TextField
+                onFocus={e => e?.target?.select()}
+                label='Stok'
+                variant='outlined'
+                sx={{ mt: 5 }}
+                // fullWidth
+                onChange={e => handleChangeEl('stok', e, valueModal, setValueModal, schemaData, setErrorsField)}
+                value={format_rupiah(valueModal?.stok ?? '0')}
+                error={errorsField?.stok}
+                helperText={errorsField?.stok}
+                InputProps={{
+                  endAdornment: <InputAdornment position='end'>Qty</InputAdornment>,
+                  inputMode: 'numeric'
+                }}
+              />
+            </Box>
+          </>
+        )}
+        {valueModal?.id_bahan?.length > 0 && (
+          <>
+            <Box>
+              <TextField
+                onFocus={e => e?.target?.select()}
+                label='Modal Saat Ini'
+                variant='outlined'
+                sx={{ mt: 5 }}
+                disabled
+                // onChange={e => handleChangeEl('harga', e, valueModal, setValueModal, schemaData, setErrorsField)}
+                value={format_rupiah(valueModal?.harga)}
+                error={errorsField?.harga}
+                helperText={errorsField?.harga}
+                InputProps={{
+                  startAdornment: <InputAdornment position='start'>Rp</InputAdornment>,
+                  inputMode: 'numeric'
+                }}
+              />
+            </Box>
+            <Box>
+              <TextField
+                onFocus={e => e?.target?.select()}
+                label='Stok Saat Ini'
+                variant='outlined'
+                sx={{ mt: 5 }}
+                // fullWidth
+                // disabled
+                onChange={e => handleChangeEl('stok', e, valueModal, setValueModal, schemaData, setErrorsField)}
+                value={format_rupiah(valueModal?.stok)}
+                error={errorsField?.stok}
+                helperText={errorsField?.stok}
+                InputProps={{
+                  endAdornment: <InputAdornment position='end'>Qty</InputAdornment>,
+                  inputMode: 'numeric'
+                }}
+              />
+            </Box>
+            <Box>
+              <TextField
+                onFocus={e => e?.target?.select()}
+                label='Harga Tambahan'
+                variant='outlined'
+                sx={{ mt: 5 }}
+                onChange={e =>
+                  handleChangeEl('harga_tambahan', e, valueModal, setValueModal, schemaData, setErrorsField)
+                }
+                value={format_rupiah(valueModal?.harga_tambahan ?? '0')}
+                error={errorsField?.harga_tambahan}
+                helperText={errorsField?.harga_tambahan}
+                InputProps={{
+                  startAdornment: <InputAdornment position='start'>Rp</InputAdornment>,
+                  inputMode: 'numeric'
+                }}
+              />
+            </Box>
+            <Box>
+              <TextField
+                onFocus={e => e?.target?.select()}
+                label='Stok Tambahan'
+                variant='outlined'
+                sx={{ mt: 5 }}
+                // fullWidth
+                onChange={e =>
+                  handleChangeEl('stok_tambahan', e, valueModal, setValueModal, schemaData, setErrorsField)
+                }
+                value={format_rupiah(valueModal?.stok_tambahan ?? '0')}
+                error={errorsField?.stok_tambahan}
+                helperText={errorsField?.stok_tambahan}
+                InputProps={{
+                  endAdornment: <InputAdornment position='end'>Qty</InputAdornment>,
+                  inputMode: 'numeric'
+                }}
+              />
+            </Box>
+          </>
+        )}
         <Box>
-          <TextField
-            label='Stok'
-            variant='outlined'
-            sx={{ mt: 5 }}
-            fullWidth
-            onChange={e => handleChangeEl('stok', e, valueModal, setValueModal, schemaData, setErrorsField)}
-            value={valueModal?.stok}
-            error={errorsField?.stok}
-            helperText={errorsField?.stok}
-            type='number'
-            InputProps={{
-              endAdornment: <InputAdornment position='end'>Qty</InputAdornment>
-            }}
-          />
-        </Box>
-        <Box>
-          <InputLabel id='demo-simple-select-label'>Satuan Bahan</InputLabel>
+          <InputLabel id='satuan'>Satuan Bahan</InputLabel>
           <Select
-            fullWidth
-            labelId='demo-simple-select-label'
-            id='demo-simple-select'
-            value={valueModal?.satuan_bahan || ''}
-            label='Satuan Bahan'
-            onChange={e => handleChangeEl('satuan_bahan', e, valueModal, setValueModal, schemaData, setErrorsField)}
+            disabled={valueModal?.id_bahan?.length > 0}
+            value={valueModal?.id_satuan || ''}
+            onChange={e => handleChangeEl('id_satuan', e, valueModal, setValueModal, schemaData, setErrorsField)}
           >
             {dataSatuan?.map(item => (
               <MenuItem key={item?.id_satuan} value={item?.id_satuan}>
