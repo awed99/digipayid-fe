@@ -8,8 +8,12 @@ import {
   Chip,
   CircularProgress,
   Divider,
+  FormControl,
   InputAdornment,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Snackbar,
   TextField
 } from '@mui/material'
@@ -73,6 +77,8 @@ const MUITable = () => {
   const [errorsField, setErrorsField] = useState({})
   const [valuePM, setValuePM] = useState()
   const [oTPWA, setOTPWA] = useState('')
+  const [filterWhere, setFilterWhere] = useState('1=1')
+  const [filterWhereType, setFilterWhereType] = useState('1=1')
 
   const [dateFilter, setDateFilter] = useState({
     startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
@@ -261,7 +267,11 @@ const MUITable = () => {
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
           },
-          body: JSON.stringify({ start_date: startDate, end_date: endDate })
+          body: JSON.stringify({
+            start_date: startDate,
+            end_date: endDate,
+            where: `(${filterWhere} and ${filterWhereType})`
+          })
         })
           .then(res => res.json())
           .then(res => {
@@ -415,7 +425,7 @@ const MUITable = () => {
               ___data.push(____data)
             })
 
-            console.log({ _data, ___data })
+            // console.log({ _data, ___data })
             await setPaymentMethods(_data)
             await setWithdrawMethods(___data)
 
@@ -972,6 +982,10 @@ const MUITable = () => {
     }
   }, [countDown])
 
+  useEffect(() => {
+    getData(dateFilter?.startDate, dateFilter?.endDate)
+  }, [filterWhere, filterWhereType])
+
   return (
     <Grid container spacing={6}>
       <Grid item xs={12}>
@@ -1266,6 +1280,51 @@ const MUITable = () => {
           <Box sx={{ width: '100%', overflow: 'auto' }}>
             <Box>
               <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} /> &emsp;
+              <FormControl size='small' sx={{ mt: 2 }}>
+                <InputLabel id='demo-simple-select-label'>Filter Status</InputLabel>
+                <Select value={filterWhere} label='Filter Status' onChange={e => setFilterWhere(e.target.value)}>
+                  <MenuItem value={'1=1'}>Semua</MenuItem>
+                  <MenuItem value={'status = 0'}>Dalam Proses</MenuItem>
+                  <MenuItem value={'status = 1'}>Proses Kliring</MenuItem>
+                  <MenuItem value={'(status = 1 or status = 2)'}>Sukses</MenuItem>
+                  <MenuItem value={'status = 2'}>Selesai</MenuItem>
+                  <MenuItem value={'status = 9'}>Batal</MenuItem>
+                </Select>
+              </FormControl>{' '}
+              &emsp;
+              <FormControl size='small' sx={{ mt: 2 }}>
+                <InputLabel id='demo-simple-select-label'>Tipe Transaksi</InputLabel>
+                <Select
+                  value={filterWhereType}
+                  label='Tipe Transaksi'
+                  onChange={e => setFilterWhereType(e.target.value)}
+                >
+                  <MenuItem value={'1=1'}>Semua</MenuItem>
+                  <MenuItem value={'amount_debet = 0'}>Uang Masuk</MenuItem>
+                  <MenuItem value={'amount_credit = 0'}>Uang Keluar</MenuItem>
+                  <MenuItem
+                    value={
+                      '((amount_debet = 0) and (accounting_type = 1001 or accounting_type = 2001 or accounting_type = 3001))'
+                    }
+                  >
+                    Keuntungan
+                  </MenuItem>
+                  <MenuItem value={'(accounting_type = 1 or accounting_type = 101 or accounting_type = 5)'}>
+                    Penjualan & Fee
+                  </MenuItem>
+                  <MenuItem value={'accounting_type = 1'}>Penjualan</MenuItem>
+                  <MenuItem value={'(accounting_type = 2 or accounting_type = 201)'}>Deposit & Fee</MenuItem>
+                  <MenuItem value={'accounting_type = 2'}>Deposit</MenuItem>
+                  <MenuItem value={'(accounting_type = 3 or accounting_type = 301)'}>Penarikan & Fee</MenuItem>
+                  <MenuItem value={'accounting_type = 3'}>Penarikan</MenuItem>
+                  <MenuItem value={'(accounting_type = 7001 or accounting_type = 7002)'}>Fee Affiliator</MenuItem>
+                  <MenuItem value={'(accounting_type = 8001 or accounting_type = 8002 or accounting_type = 8003)'}>
+                    Penarikan Affiliator
+                  </MenuItem>
+                  <MenuItem value={'(accounting_type = 9001 or accounting_type = 9002)'}>Penggajian</MenuItem>
+                </Select>
+              </FormControl>{' '}
+              &emsp;
               <Button onClick={() => getData(dateFilter?.startDate, dateFilter?.endDate)} variant='contained'>
                 Refresh
               </Button>

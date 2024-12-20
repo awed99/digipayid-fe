@@ -1,5 +1,18 @@
 // ** MUI Imports
-import { Autocomplete, Backdrop, Button, Card, Chip, CircularProgress, Divider, TextField } from '@mui/material'
+import {
+  Autocomplete,
+  Backdrop,
+  Button,
+  Card,
+  Chip,
+  CircularProgress,
+  Divider,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField
+} from '@mui/material'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
@@ -42,6 +55,12 @@ const MUITable = () => {
   const [openModalConfirmationDelete, setOpenModalConfirmationDelete] = useState(false)
   const [openModalPayment, setOpenModalPayment] = useState(false)
   const [dataSelected, setDataSelected] = useState({})
+  const [filterWhere, setFilterWhere] = useState('1=1')
+
+  const [dateFilter, setDateFilter] = useState({
+    startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
+    endDate: dayjs().endOf('month').format('YYYY-MM-DD')
+  })
   let _loopNumber = 1
 
   // ** Hooks
@@ -222,6 +241,7 @@ const MUITable = () => {
     endDate = dayjs().endOf('month').format('YYYY-MM-DD')
   ) => {
     setLoading(true)
+    setDateFilter({ startDate: startDate, endDate: endDate })
     const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
@@ -260,7 +280,12 @@ const MUITable = () => {
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
           },
-          body: JSON.stringify({ start_date: startDate, end_date: endDate, id_merchant: IdMerchantSelected })
+          body: JSON.stringify({
+            start_date: startDate,
+            end_date: endDate,
+            id_merchant: IdMerchantSelected,
+            where: filterWhere
+          })
         })
           .then(res => res.json())
           .then(res => {
@@ -463,6 +488,10 @@ const MUITable = () => {
     }
   }, [])
 
+  useEffect(() => {
+    getData(dateFilter?.startDate, dateFilter?.endDate)
+  }, [filterWhere])
+
   return (
     <Grid container spacing={6}>
       <Grid item xs={12}>
@@ -479,10 +508,23 @@ const MUITable = () => {
                 onChange={(_startDate, _endDate) => IdMerchantSelected > 0 && getData(_startDate, _endDate)}
               />{' '}
               &emsp;
+              <FormControl size='small' sx={{ mt: 2 }}>
+                <InputLabel id='demo-simple-select-label'>Filter Status</InputLabel>
+                <Select value={filterWhere} label='Filter Status' onChange={e => setFilterWhere(e.target.value)}>
+                  <MenuItem value={'1=1'}>Semua</MenuItem>
+                  <MenuItem value={'status_transaction = 0'}>Menunggu Pembayaran</MenuItem>
+                  <MenuItem value={'status_transaction = 1'}>Proses Kliring</MenuItem>
+                  <MenuItem value={'(status_transaction = 1 or status_transaction = 2)'}>Sukses</MenuItem>
+                  <MenuItem value={'status_transaction = 2'}>Selesai</MenuItem>
+                  <MenuItem value={'status_transaction = 9'}>Batal</MenuItem>
+                </Select>
+              </FormControl>{' '}
+              &emsp;
               <Autocomplete
                 disablePortal
                 id='combo-box-demo'
                 options={merchants}
+                size='small'
                 sx={{ width: 300, display: 'inline-block', verticalAlign: 'middle' }}
                 value={filter(merchants, ['id', IdMerchantSelected])[0]}
                 onChange={(_event, newValue) => {
@@ -512,6 +554,17 @@ const MUITable = () => {
                       <TablePagination />
                     </Box>
                     <Divider />
+                    <Typography>
+                      <b>
+                        Qty Terjual :&nbsp;
+                        {format_rupiah(
+                          filter(
+                            data,
+                            item => item?.status_transaction === '2' || item?.status_transaction === '1'
+                          )?.reduce((total, item) => parseInt(total) + parseInt(item?.total_qty ?? 0), 0)
+                        )}
+                      </b>
+                    </Typography>
                     <Typography>
                       <b>
                         Jumlah Produk :

@@ -1,6 +1,7 @@
 // ** MUI Imports
 import {
   Alert,
+  Autocomplete,
   Backdrop,
   CircularProgress,
   IconButton,
@@ -18,11 +19,12 @@ import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+import { NumericFormat } from 'react-number-format'
 
 import { Edit, Visibility, VisibilityOff } from '@mui/icons-material'
 
 // ** React Imports
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 // ** Next Import
 import { useRouter } from 'next/router'
@@ -37,6 +39,7 @@ import CustomNoRowsOverlay from '/src/components/no-rows-table'
 import * as yup from 'yup'
 
 import CryptoJS from 'crypto-js'
+import { filter } from 'lodash'
 import ModalDialog from 'src/components/dialog'
 import { generateSignature } from '/helpers/general'
 import { handleChangeEl } from '/hooks/general'
@@ -52,9 +55,21 @@ const MUITable = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [openModal, setOpenModal] = useState(false)
   const [titleModal, setTitleModal] = useState('Tambah User')
-  const [valueModal, setValueModal] = useState({ id_user: null, username: '' })
   const [data, setData] = useState([])
   const [userPrivileges, setUserPrivileges] = useState([])
+  const [withdrawMethods, setWithdrawMethods] = useState([])
+  const [dataBank, setDataBank] = useState(null)
+  const [isEditableSelect, setIsEditableSelect] = useState(false)
+
+  const [valueModal, setValueModal] = useState({
+    id_user: null,
+    username: '',
+    salary: '0',
+    bank_short_name: '',
+    bank_name: '',
+    bank_account: '',
+    bank_account_name: ''
+  })
 
   const [alertMessage, setAlertMessage] = useState({
     open: false,
@@ -64,6 +79,8 @@ const MUITable = () => {
 
   // ** Hooks
   const router = useRouter()
+  const selectRef = useRef()
+  const textSelectRef = useRef()
 
   const passwordRegExp = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!?"'@#\$%\^&\*.,])(?=.{8,})/
 
@@ -73,7 +90,12 @@ const MUITable = () => {
     email: yup.string().email().required(),
     password: yup.string().matches(passwordRegExp, 'Min 8 Chars, Uppercase, Lowercase, Number and Special Character'),
     telp: yup.string().required(),
-    user_privilege: yup.string().required()
+    user_privilege: yup.string().required(),
+    salary: yup.string().min(4).max(11),
+    bank_short_name: yup.string().nullable(),
+    bank_name: yup.string().nullable(),
+    bank_account: yup.string().nullable(),
+    bank_account_name: yup.string().nullable()
   })
 
   let _loopNumber = 1
@@ -182,8 +204,71 @@ const MUITable = () => {
           .then(res => {
             // console.log(res?.data)
             setData(res?.data)
+            getPaymentMethods()
             getUserPrivileges()
             setLoading(false)
+          })
+          .catch(() => setLoading(false))
+      })
+      .catch(() => setLoading(false))
+  }
+
+  const getPaymentMethods = async () => {
+    const _uri0 = '/auth/check_auth'
+    const _secret0 = await generateSignature(_uri0)
+
+    await fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
+      method: 'POST',
+      headers: {
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(async res => await res.json())
+      .then(async res => {
+        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
+          router.push('/auth')
+
+          return false
+        } else {
+          return res
+        }
+      })
+      .then(async res => {
+        const _uri = '/master/withdraw_method/list'
+        const _secret = await generateSignature(_uri)
+
+        await fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
+          method: 'POST',
+          headers: {
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
+            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+              .toString(CryptoJS.enc.Utf8)
+              .replace(/\"/g, '')
+          },
+          body: JSON.stringify({ id: 0 })
+        })
+          .then(async res => await res.json())
+          .then(async res => {
+            // console.log('res?.data?.withdraw_methods: ', res?.data?.withdraw_methods)
+            const ___data = []
+
+            res?.data?.withdraw_methods?.map((item, index) => {
+              const ____data = { code: item?.payment_method_code, label: item?.bank_name, ...item }
+              ___data.push(____data)
+            })
+
+            // console.log('___data:', ___data)
+
+            // await setPaymentMethods(_data)
+            setWithdrawMethods(___data)
+
+            // return __data
           })
           .catch(() => setLoading(false))
       })
@@ -260,6 +345,12 @@ const MUITable = () => {
       handleChangeEl('telp', '', valueModal, setValueModal, schemaData, setErrorsField)
       handleChangeEl('user_privilege', '', valueModal, setValueModal, schemaData, setErrorsField)
       handleChangeEl('id_user', null, valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('salary', '0', valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('bank_name', '', valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('bank_short_name', '', valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('bank_account', '', valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('bank_account_name', '', valueModal, setValueModal, schemaData, setErrorsField)
+      setDataBank(withdrawMethods[0])
     } else {
       setIsAdd(false)
       setTitleModal('Ubah User')
@@ -267,15 +358,50 @@ const MUITable = () => {
       handleChangeEl('email', _params?.row?.email, valueModal, setValueModal, schemaData, setErrorsField)
       handleChangeEl('password', '', valueModal, setValueModal, schemaData, setErrorsField)
       handleChangeEl('telp', _params?.row?.telp, valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('salary', _params?.row?.salary ?? '0', valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl('bank_name', _params?.row?.bank_name ?? '', valueModal, setValueModal, schemaData, setErrorsField)
+      handleChangeEl(
+        'bank_account_name',
+        _params?.row?.bank_account_name ?? '',
+        valueModal,
+        setValueModal,
+        schemaData,
+        setErrorsField
+      )
+      handleChangeEl(
+        'bank_short_name',
+        _params?.row?.bank_short_name ?? '',
+        valueModal,
+        setValueModal,
+        schemaData,
+        setErrorsField
+      )
+      handleChangeEl(
+        'bank_account',
+        _params?.row?.bank_account ?? '',
+        valueModal,
+        setValueModal,
+        schemaData,
+        setErrorsField
+      )
+      handleChangeEl(
+        'bank_account_name',
+        _params?.row?.bank_account_name ?? '',
+        valueModal,
+        setValueModal,
+        schemaData,
+        setErrorsField
+      )
       handleChangeEl(
         'user_privilege',
-        _params?.row?.user_privilege,
+        _params?.row?.user_privilege ?? '',
         valueModal,
         setValueModal,
         schemaData,
         setErrorsField
       )
       handleChangeEl('id_user', _params?.row?.id_user, valueModal, setValueModal, schemaData, setErrorsField)
+      setDataBank(filter(withdrawMethods, ['bank_short_name', _params?.row?.bank_short_name])[0])
     }
 
     setOpenModal(true)
@@ -375,6 +501,12 @@ const MUITable = () => {
       router.push('/auth')
     }
   }, [])
+
+  useLayoutEffect(() => {
+    // console.log('dataBank: ', dataBank)
+    handleChangeEl('bank_short_name', dataBank?.bank_short_name, valueModal, setValueModal, schemaData, setErrorsField)
+    handleChangeEl('bank_name', dataBank?.bank_name, valueModal, setValueModal, schemaData, setErrorsField)
+  }, [dataBank])
 
   return (
     <Grid container spacing={6}>
@@ -495,6 +627,65 @@ const MUITable = () => {
               autoComplete: 'new-password',
               startAdornment: <InputAdornment position='start'>+62</InputAdornment>
             }}
+          />
+        </Box>
+        <Box sx={{ p: 2 }}>
+          <NumericFormat
+            customInput={TextField}
+            InputProps={{
+              startAdornment: <InputAdornment position='start'>IDR</InputAdornment>
+            }}
+            label='Nominal Gaji'
+            placeholder='Min. 10.000'
+            variant='outlined'
+            size='small'
+            fullWidth
+            thousandSeparator={'.'}
+            decimalSeparator={','}
+            value={valueModal?.salary}
+            onValueChange={e => {
+              handleChangeEl('salary', e, valueModal, setValueModal, schemaData, setErrorsField)
+            }}
+            onFocus={e => e.target.select()}
+            error={errorsField?.salary}
+            helperText={errorsField?.salary}
+          />
+        </Box>
+
+        <Box sx={{ mt: 2 }}>
+          <Autocomplete
+            value={dataBank}
+            onChange={(event, newvalueModal) => setDataBank(newvalueModal)}
+            size='small'
+            options={withdrawMethods}
+            renderInput={params => <TextField {...params} label='Metode Penggajian' />}
+          />
+        </Box>
+
+        <Box sx={{ mt: 2 }}>
+          <TextField
+            fullWidth
+            inputProps={{ inputMode: 'numeric' }}
+            size='small'
+            label='Nomor Rekening/E-Wallet'
+            value={valueModal?.bank_account}
+            onChange={e => handleChangeEl('bank_account', e, valueModal, setValueModal, schemaData, setErrorsField)}
+            error={errorsField?.bank_account}
+            helperText={errorsField?.bank_account}
+          />
+        </Box>
+
+        <Box sx={{ mt: 2 }}>
+          <TextField
+            fullWidth
+            size='small'
+            label='Nama Rekening/E-Wallet'
+            value={valueModal?.bank_account_name}
+            onChange={e =>
+              handleChangeEl('bank_account_name', e, valueModal, setValueModal, schemaData, setErrorsField)
+            }
+            error={errorsField?.bank_account_name}
+            helperText={errorsField?.bank_account_name}
           />
         </Box>
         <Box sx={{ p: 2 }}>

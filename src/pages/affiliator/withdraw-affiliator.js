@@ -8,8 +8,12 @@ import {
   Chip,
   CircularProgress,
   Divider,
+  FormControl,
   InputAdornment,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Snackbar,
   TextField
 } from '@mui/material'
@@ -27,6 +31,7 @@ import { useRouter } from 'next/router'
 import { AccessTime, Close, Done } from '@mui/icons-material'
 import Box from '@mui/material/Box'
 import { styled } from '@mui/material/styles'
+import { MuiOtp } from 'mui-otp-input-field'
 
 // ** Demo Components Imports
 import { DataGrid, GridToolbar } from '@mui/x-data-grid'
@@ -34,7 +39,6 @@ import CryptoJS from 'crypto-js'
 import dayjs from 'dayjs'
 import { filter, forEach } from 'lodash'
 import moment from 'moment'
-import { MuiOtp } from 'mui-otp-input-field'
 import { NumericFormat } from 'react-number-format'
 import DateRangePicker from 'src/components/date-range-picker'
 import ModalDialog from 'src/components/dialog'
@@ -57,10 +61,10 @@ const MUITable = () => {
   const [openModal, setOpenModal] = useState(false)
   const [openModalPayment, setOpenModalPayment] = useState(false)
   const [openModalPaymentInfo, setOpenModalPaymentInfo] = useState(false)
+  const [openModalOTP, setOpenModalOTP] = useState(false)
   const [data, setData] = useState([])
   const [dataBank, setDataBank] = useState([])
-
-  // const [amountDeposit, setAmountDeposit] = useState(0)
+  const [amountDeposit, setAmountDeposit] = useState(0)
   const [isEditableSelect, setIsEditableSelect] = useState(false)
   const [dataPM, setDataPM] = useState({})
   const [inputValuePM, setInputValuePM] = useState()
@@ -72,8 +76,14 @@ const MUITable = () => {
   const [saldo, setSaldo] = useState(0)
   const [errorsField, setErrorsField] = useState({})
   const [valuePM, setValuePM] = useState()
-  const [openModalOTP, setOpenModalOTP] = useState(false)
   const [oTPWA, setOTPWA] = useState('')
+  const [filterWhere, setFilterWhere] = useState('1=1')
+  const [filterWhereType, setFilterWhereType] = useState('1=1')
+
+  const [dateFilter, setDateFilter] = useState({
+    startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
+    endDate: dayjs().endOf('month').format('YYYY-MM-DD')
+  })
 
   const [valueWD, setValueWD] = useState({
     amount: 0,
@@ -122,6 +132,17 @@ const MUITable = () => {
                 ? 'warning'
                 : 'secondary'
             }
+            // onClick={() => {
+            //   ;(parseInt(params?.row?.accounting_type) === 1 || parseInt(params?.row?.accounting_type) === 2) &&
+            //     handleCheckDeposit(
+            //       params?.row?.amount_credit,
+            //       params?.row?.invoice_number,
+            //       filter(paymentMethods, [
+            //         'payment_method_name',
+            //         params?.row?.description?.split('(')[1]?.replace(')', '')
+            //       ])[0]?.payment_method_code
+            //     )
+            // }}
             deleteIcon={<AccessTime />}
             size='small'
             sx={{
@@ -180,8 +201,19 @@ const MUITable = () => {
     {
       field: 'description',
       headerName: 'Keterangan',
-      width: 350
+      width: 500
     }
+
+    // {
+    //   field: 'proses',
+    //   headerName: 'Proses',
+    //   minWidth: 30,
+    //   width: 100,
+    //   align: 'left',
+    //   renderCell: params => <Chip label={params?.value} color='primary' />
+
+    //   // format: value => value.toFixed(2)
+    // },
   ]
 
   let schemaDataWithdraw = yup.object().shape({
@@ -196,6 +228,7 @@ const MUITable = () => {
     endDate = dayjs().endOf('month').format('YYYY-MM-DD'),
     _withdrawMethods = withdrawMethods
   ) => {
+    setDateFilter({ startDate: startDate, endDate: endDate })
     setLoading(true)
     const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
@@ -222,7 +255,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/affiliator/transactions/journal/list_ewallet'
+        const _uri = '/transactions/journal/list_ewallet'
         const _secret = await generateSignature(_uri)
 
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
@@ -234,7 +267,11 @@ const MUITable = () => {
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
           },
-          body: JSON.stringify({ start_date: startDate, end_date: endDate })
+          body: JSON.stringify({
+            start_date: startDate,
+            end_date: endDate,
+            where: `(${filterWhere} and ${filterWhereType})`
+          })
         })
           .then(res => res.json())
           .then(res => {
@@ -248,7 +285,6 @@ const MUITable = () => {
               bank_account_name: res?.data_bank?.bank_account_name,
               data_bank: {
                 id: 0,
-                label: '',
                 bank_short_name: res?.data_bank?.bank_short_name,
                 bank_name: res?.data_bank?.bank_name
               }
@@ -300,7 +336,10 @@ const MUITable = () => {
                 bank_account: res?.data_bank?.bank_account,
                 bank_account_name: res?.data_bank?.bank_account_name,
                 data_bank: filter(withdrawMethods, {
-                  bank_short_name: res?.data_bank?.bank_short_name
+                  payment_method_code: res?.data_bank?.payment_method_code,
+                  payment_method_name: res?.data_bank?.payment_method_name,
+                  bank_short_name: res?.data_bank?.bank_short_name,
+                  bank_name: res?.data_bank?.bank_name
                 })[0]
               })
             }
@@ -337,7 +376,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/master/payment_method/lists'
+        const _uri = '/master/withdraw_method/list'
         const _secret = await generateSignature(_uri)
 
         await fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
@@ -354,31 +393,41 @@ const MUITable = () => {
           .then(async res => await res.json())
           .then(async res => {
             // console.log(res?.data)
+            // await setPaymentMethods(res?.data?.payment_methods)
             const _data = []
             const __data = []
+            const ___data = []
 
             // const _dataMain = (res?.data).filter(({ id_payment_method }) =>
             //   console.log('id_payment_method: ', id_payment_method)
             // )
-            const _dataMain = (res?.data).filter(({ id_payment_method }) => parseInt(id_payment_method) > 0)
+            const _dataMain = (res?.data?.payment_methods).filter(
+              ({ payment_method_code }) => payment_method_code === 'QRIS' || payment_method_code === 'QRIS_PAYLATER'
+            )
 
             // console.log('_dataMain: ', _dataMain)
             forEach(_dataMain, (item, index) => {
               const ___data = {
                 id: item?.id_payment_method,
-                label: item?.payment_method_name + ' (Proses ' + item?.settlement_day + ' hari)',
+                label:
+                  parseInt(item?.settlement_day) === 0
+                    ? item?.payment_method_name
+                    : item?.payment_method_name + ' (Proses ' + item?.settlement_day + ' hari)',
                 ...item
               }
               _data.push(___data)
               if (item?.can_withdraw === '1') {
-                const ____data = { id: item?.id_payment_method, label: item?.bank_short_name, ...item }
-                __data.push(____data)
               }
             })
 
-            // console.log({ _data, __data })
+            forEach(res?.data?.withdraw_methods, (item, index) => {
+              const ____data = { code: item?.payment_method_code, label: item?.bank_name, ...item }
+              ___data.push(____data)
+            })
+
+            console.log({ _data, ___data })
             await setPaymentMethods(_data)
-            await setWithdrawMethods(__data)
+            await setWithdrawMethods(___data)
 
             return __data
           })
@@ -394,6 +443,229 @@ const MUITable = () => {
           //   }
           // })
           .catch(() => setLoading(false))
+      })
+      .catch(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    setLoading(true)
+    getPaymentMethods()
+  }, [])
+
+  useEffect(() => {
+    if (withdrawMethods?.length > 0) {
+      // console.log('withdrawMethods: ', withdrawMethods)
+      // getData(
+      //   dayjs().startOf('month').format('YYYY-MM-DD'),
+      //   dayjs().endOf('month').format('YYYY-MM-DD'),
+      //   withdrawMethods
+      // )
+    }
+  }, [withdrawMethods])
+
+  const handleDeposit = async () => {
+    setOpenModalPayment(false)
+
+    // console.log('amountDeposit:', amountDeposit)
+    // return false
+
+    if (amountDeposit?.length < 1) {
+      setAlertMessage({
+        open: true,
+        type: 'error',
+        message: 'Isikan nominal deposit IDR 10.000'
+      })
+
+      return false
+    }
+    if (!parseInt(amountDeposit) || parseInt(amountDeposit) < 10000) {
+      setAlertMessage({
+        open: true,
+        type: 'error',
+        message: 'Isikan nominal deposit IDR 10.000'
+      })
+
+      return false
+    }
+    setLoading(true)
+    const _uri0 = '/auth/check_auth'
+    const _secret0 = await generateSignature(_uri0)
+
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
+      method: 'POST',
+      headers: {
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
+          router.push('/auth')
+
+          return false
+        } else {
+          return res
+        }
+      })
+      .then(async res => {
+        const _uri = '/transactions/journal/deposit_ewallet'
+        const _secret = await generateSignature(_uri)
+
+        const _total_amount = parseInt(amountDeposit)
+
+        const _pg_fee_amount = parseFloat(
+          filter(paymentMethods, { id_payment_method: valuePM?.id })[0]?.fee_original ?? '0'
+        )
+
+        const _pg_fee_percent =
+          parseFloat(filter(paymentMethods, { id_payment_method: valuePM?.id })[0]?.fee_original_percent ?? '0') / 100
+
+        const isQrisPaylater =
+          filter(paymentMethods, { id_payment_method: valuePM?.id })[0]?.payment_method_code === 'QRIS_PAYLATER'
+            ? true
+            : false
+
+        const uniqueCode = Math.floor(Math.random() * 900) + 100
+        const _uniqueCode = isQrisPaylater ? uniqueCode : 0
+        const _pg_fee = _total_amount * _pg_fee_percent + _pg_fee_amount
+        const _app_fee = 2000
+        const _fee = _pg_fee + _app_fee + _uniqueCode
+        const _amount_deposit = _total_amount + _fee
+
+        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
+          method: 'POST',
+          headers: {
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
+            Authorization: CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+              .toString(CryptoJS.enc.Utf8)
+              .replace(/\"/g, '')
+          },
+          body: JSON.stringify({
+            payment_method_code: valuePM?.payment_method_code,
+            payment_method_name: valuePM?.payment_method_name,
+            amount: _amount_deposit,
+            fee: _fee,
+            app_fee: _app_fee,
+            pg_fee: _pg_fee
+          })
+        })
+          .then(res => res.json())
+          .then(res => {
+            setAlertMessage({
+              open: true,
+              type: res?.code == 1 ? 'error' : 'success',
+              message: res?.message
+            })
+            getPaymentMethods()
+
+            // setData(res?.data)
+            // setDataBank(res?.data_bank)
+            setPaymentDetail(res?.payment)
+            setLoading(false)
+            setOpenModalPayment(true)
+            setDataBank(res?.data_bank)
+            setData([...res?.data])
+            setValueWD({
+              amount: valueWD?.amount ?? 0,
+              bank_account: res?.data_bank?.bank_account,
+              bank_account_name: res?.data_bank?.bank_account_name,
+              data_bank: {
+                id: 0,
+                label: '',
+                payment_method_code: res?.data_bank?.payment_method_code,
+                payment_method_name: res?.data_bank?.payment_method_name,
+                bank_short_name: res?.data_bank?.bank_short_name,
+                bank_name: res?.data_bank?.bank_name
+              }
+            })
+          })
+      })
+      .catch(() => setLoading(false))
+  }
+
+  const handleCheckDeposit = async (_amount, _inv_no, _pg_method) => {
+    setOpenModalPaymentInfo(false)
+    setLoading(true)
+    const _uri0 = '/auth/check_auth'
+    const _secret0 = await generateSignature(_uri0)
+
+    setDataPM(filter(paymentMethods, ['payment_method_code', _pg_method])[0])
+    setValuePM(filter(paymentMethods, ['payment_method_code', _pg_method])[0])
+
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
+      method: 'POST',
+      headers: {
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          // console.log(res?.auth?.user)
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
+          router.push('/auth')
+
+          return false
+        } else {
+          return res
+        }
+      })
+      .then(async res => {
+        const _uri = '/transactions/journal/check_deposit_ewallet'
+        const _secret = await generateSignature(_uri)
+
+        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
+          method: 'POST',
+          headers: {
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
+            Authorization: CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+              .toString(CryptoJS.enc.Utf8)
+              .replace(/\"/g, '')
+          },
+          body: JSON.stringify({
+            invoice_number: _inv_no,
+            amount: _amount,
+            payment_method: _pg_method
+          })
+        })
+          .then(res => res.json())
+          .then(res => {
+            getPaymentMethods()
+            setPaymentDetail(res?.payment)
+            setPaymentDetailInfo(res?.payment)
+            setLoading(false)
+            setOpenModalPaymentInfo(true)
+            setDataBank(res?.data_bank)
+            setData([...res?.data])
+            setValueWD({
+              amount: valueWD?.amount ?? 0,
+              bank_account: res?.data_bank?.bank_account,
+              bank_account_name: res?.data_bank?.bank_account_name,
+              data_bank: {
+                id: 0,
+                label: '',
+                payment_method_code: res?.data_bank?.payment_method_code,
+                payment_method_name: res?.data_bank?.payment_method_name,
+                bank_short_name: res?.data_bank?.bank_short_name,
+                bank_name: res?.data_bank?.bank_name
+              }
+            })
+            setAlertMessage({
+              open: true,
+              type: res?.code == 1 ? 'error' : 'success',
+              message: res?.message
+            })
+          })
       })
       .catch(() => setLoading(false))
   }
@@ -425,10 +697,32 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/affiliator/transactions/journal/withdraw_ewallet'
+        const _uri = '/transactions/journal/withdraw_ewallet'
         const _secret = await generateSignature(_uri)
 
         const _total_amount = parseInt(valueWD?.amount)
+
+        const _pg_fee = 0
+        const _app_fee = 5000
+        const _fee = _pg_fee + _app_fee
+        const _amount_withdraw = _total_amount - _fee
+
+        // console.log({
+        //   payment_method: valueWD?.data_bank?.bank_short_name,
+        //   payment_method_code: valueWD?.data_bank?.bank_short_name,
+        //   payment_method_name: valueWD?.data_bank?.bank_name,
+        //   amount: _amount_withdraw,
+        //   data_bank: valueWD?.data_bank,
+        //   bank_account: valueWD?.bank_account ?? dataBank?.bank_account,
+        //   bank_account_name: valueWD?.bank_account_name ?? dataBank?.bank_account_name,
+        //   fee: _fee,
+        //   app_fee: _app_fee,
+        //   pg_fee: _pg_fee
+        // })
+
+        // setLoading(false)
+
+        // return false
 
         fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
           method: 'POST',
@@ -441,17 +735,15 @@ const MUITable = () => {
           },
           body: JSON.stringify({
             payment_method: valueWD?.data_bank?.bank_short_name,
-            payment_method_name:
-              filter(withdrawMethods, ['bank_short_name', valueWD?.data_bank?.bank_short_name])[0]
-                ?.payment_method_name ?? valueWD?.data_bank?.bank_short_name,
-            amount: _total_amount,
-            data_bank: filter(withdrawMethods, ['bank_short_name', valueWD?.data_bank?.bank_short_name])[0],
-            bank_account: valueWD?.data_bank?.bank_account ?? dataBank?.bank_account,
-            bank_account_name: valueWD?.data_bank?.bank_account_name ?? dataBank?.bank_account_name
-
-            // fee: _fee,
-            // app_fee: _app_fee,
-            // pg_fee: _pg_fee
+            payment_method_code: valueWD?.data_bank?.bank_short_name,
+            payment_method_name: valueWD?.data_bank?.bank_name,
+            amount: _amount_withdraw,
+            data_bank: valueWD?.data_bank,
+            bank_account: valueWD?.bank_account ?? dataBank?.bank_account,
+            bank_account_name: valueWD?.bank_account_name ?? dataBank?.bank_account_name,
+            fee: _fee,
+            app_fee: _app_fee,
+            pg_fee: _pg_fee
           })
         })
           .then(res => res.json())
@@ -461,7 +753,9 @@ const MUITable = () => {
               type: res?.code == 1 ? 'error' : 'success',
               message: res?.message
             })
-            setData([...res?.data])
+            if (res?.code == 0) {
+              setData([...res?.data])
+            }
             getPaymentMethods()
             setOpenModal(false)
             setLoading(false)
@@ -469,6 +763,24 @@ const MUITable = () => {
       })
       .catch(() => setLoading(false))
   }
+
+  useEffect(() => {
+    // console.log('textSelectRef: ', textSelectRef)
+    // selectRef?.current
+  }, [textSelectRef])
+
+  // useEffect(() => {
+  //   console.log('valueWD: ', valueWD)
+  // }, [valueWD])
+
+  useLayoutEffect(() => {
+    // componentWillMount events
+    if (!localStorage.getItem('data-module')) {
+      localStorage.removeItem('data-module')
+      localStorage.removeItem('module')
+      router.push('/auth')
+    }
+  }, [])
 
   const handleBeforeSubmit = async () => {
     setLoading(true)
@@ -497,7 +809,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/affiliator/transactions/journal/getOTP'
+        const _uri = '/transactions/journal/getOTP'
 
         const _secret = await generateSignature(_uri)
 
@@ -510,10 +822,7 @@ const MUITable = () => {
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
           },
-          body: JSON.stringify({
-            email: JSON.parse(localStorage.getItem('data-module'))?.email,
-            amount: parseInt(valueWD?.amount)
-          })
+          body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
         })
           .then(res => res.json())
           .then(res => {
@@ -523,81 +832,9 @@ const MUITable = () => {
               message: res?.message
             })
 
-            if (res?.code !== 0) {
-              setLoading(false)
-              setOpenModalOTP(false)
-              setOpenModal(false)
-
-              return false
-            }
-
             setLoading(false)
             setOpenModal(false)
             setOpenModalOTP(true)
-          })
-          .catch(() => setLoading(false))
-      })
-      .catch(() => setLoading(false))
-  }
-
-  const _handleCheckValidOTP = async _type => {
-    setLoading(true)
-
-    const _uri0 = '/auth/check_auth'
-    const _secret0 = await generateSignature(_uri0)
-
-    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
-      method: 'POST',
-      headers: {
-        'X-Signature': _secret0?.signature,
-        'X-Timestamp': _secret0?.timestamp
-      },
-      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
-    })
-      .then(res => res.json())
-      .then(async res => {
-        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
-          localStorage.removeItem('data-module')
-          localStorage.removeItem('module')
-          router.push('/auth')
-
-          return false
-        } else {
-          return res
-        }
-      })
-      .then(async res => {
-        const _uri = '/affiliator/transactions/journal/check_valid_otp'
-
-        const _secret = await generateSignature(_uri)
-
-        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
-          method: 'POST',
-          headers: {
-            'X-Signature': _secret?.signature,
-            'X-Timestamp': _secret?.timestamp,
-            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
-              .toString(CryptoJS.enc.Utf8)
-              .replace(/\"/g, '')
-          },
-          body: JSON.stringify({ otp_wa: oTPWA })
-        })
-          .then(res => res.json())
-          .then(res => {
-            setAlertMessage({
-              open: true,
-              type: res?.code === 0 ? 'primary' : 'error',
-              message: res?.message ?? 'Invalid OTP'
-            })
-
-            console.log(res)
-
-            if (res?.code === 0) {
-              handleWithdraw(true)
-            }
-
-            setLoading(false)
-            setOpenModalOTP(false)
           })
           .catch(() => setLoading(false))
       })
@@ -647,7 +884,7 @@ const MUITable = () => {
         }
       })
       .then(async res => {
-        const _uri = '/affiliator/transactions/journal/resend_otp'
+        const _uri = '/transactions/journal/resend_otp'
 
         const _secret = await generateSignature(_uri)
 
@@ -677,43 +914,77 @@ const MUITable = () => {
       .catch(() => setLoading(false))
   }
 
-  useEffect(() => {
-    // console.log('textSelectRef: ', textSelectRef)
-    // selectRef?.current
-  }, [textSelectRef])
-
-  // useEffect(() => {
-  //   console.log('valueWD: ', valueWD)
-  // }, [valueWD])
-
-  useLayoutEffect(() => {
-    // componentWillMount events
-    if (!localStorage.getItem('data-module')) {
-      localStorage.removeItem('data-module')
-      localStorage.removeItem('module')
-      router.push('/auth')
-    }
-  }, [])
-  useEffect(() => {
+  const _handleCheckValidOTP = async _type => {
     setLoading(true)
-    getPaymentMethods()
-  }, [])
 
-  useEffect(() => {
-    if (withdrawMethods?.length > 0) {
-      // console.log('withdrawMethods: ', withdrawMethods)
-      // getData(
-      //   dayjs().startOf('month').format('YYYY-MM-DD'),
-      //   dayjs().endOf('month').format('YYYY-MM-DD'),
-      //   withdrawMethods
-      // )
-    }
-  }, [withdrawMethods])
+    const _uri0 = '/auth/check_auth'
+    const _secret0 = await generateSignature(_uri0)
+
+    fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
+      method: 'POST',
+      headers: {
+        'X-Signature': _secret0?.signature,
+        'X-Timestamp': _secret0?.timestamp
+      },
+      body: JSON.stringify({ email: JSON.parse(localStorage.getItem('data-module'))?.email })
+    })
+      .then(res => res.json())
+      .then(async res => {
+        if (res?.auth?.user === undefined || res?.auth?.token === undefined) {
+          localStorage.removeItem('data-module')
+          localStorage.removeItem('module')
+          router.push('/auth')
+
+          return false
+        } else {
+          return res
+        }
+      })
+      .then(async res => {
+        const _uri = '/transactions/journal/check_valid_otp'
+
+        const _secret = await generateSignature(_uri)
+
+        fetch(`${process.env.NEXT_PUBLIC_API}${_uri}`, {
+          method: 'POST',
+          headers: {
+            'X-Signature': _secret?.signature,
+            'X-Timestamp': _secret?.timestamp,
+            Authorization: await CryptoJS.AES.decrypt(res?.auth?.token ?? '', process.env.NEXT_PUBLIC_BE_API_KEY)
+              .toString(CryptoJS.enc.Utf8)
+              .replace(/\"/g, '')
+          },
+          body: JSON.stringify({ otp_wa: oTPWA })
+        })
+          .then(res => res.json())
+          .then(res => {
+            setAlertMessage({
+              open: true,
+              type: res?.code === 0 ? 'primary' : 'error',
+              message: res?.message ?? 'Invalid OTP'
+            })
+
+            if (res?.code === 0) {
+              handleWithdraw(true)
+            }
+
+            setLoading(false)
+            setOpenModalOTP(false)
+          })
+          .catch(() => setLoading(false))
+      })
+      .catch(() => setLoading(false))
+  }
+
   useEffect(() => {
     if (countDown > 0) {
       setTimeout(() => setCountDown(countDown - 1), 1000)
     }
   }, [countDown])
+
+  useEffect(() => {
+    getData(dateFilter?.startDate, dateFilter?.endDate)
+  }, [filterWhere, filterWhereType])
 
   return (
     <Grid container spacing={6}>
@@ -728,7 +999,83 @@ const MUITable = () => {
 
       <Grid item xs={12} flex={1} justifyContent={'space-between'} sx={{ display: 'flex' }}>
         <Grid container spacing={6} flex={1} justifyContent={'space-between'} sx={{ display: 'flex' }}>
-          <Grid item xs={12} md={5}></Grid>
+          <Grid item xs={12} md={5} sx={{ display: 'none' }}>
+            <div style={{ width: '100%', display: 'inline-block' }}>
+              <div>
+                <Paper sx={{ padding: '20px', paddingTop: '5px', paddingBottom: '30px' }}>
+                  <h5>Deposit Uang ke Dompet Digital Kamu.</h5>
+                  <Typography sx={{ fontSize: '12px' }}>Minimal deposit IDR 10.000.</Typography>
+                  <Typography sx={{ fontSize: '10px' }}>Biaya admin penarikan bersifat variatif.</Typography>
+                  <Typography sx={{ fontSize: '10px' }}>Uang yang anda terima akan dikurangi biaya admin.</Typography>
+                  <br />
+                  <NumericFormat
+                    value={amountDeposit}
+                    customInput={TextField}
+                    InputProps={{
+                      startAdornment: <InputAdornment position='start'>IDR</InputAdornment>
+                    }}
+                    label='*Deposit belum termasuk biaya'
+                    placeholder='Min. 10.000'
+                    variant='outlined'
+                    size='small'
+                    fullWidth
+                    thousandSeparator={'.'}
+                    decimalSeparator={','}
+                    onFocus={e => e?.target?.select()}
+                    onBlur={e => {
+                      e && e?.target?.value && e?.target?.value.toString() !== ''
+                        ? setAmountDeposit(parseInt(e?.target?.value.toString()?.replace(/\./g, '').replace(/\,/g, '')))
+                        : setAmountDeposit(0)
+                    }}
+                    onValueChange={values => {
+                      if (parseInt(values?.value) < 10000) {
+                        setErrorsField({ ...errorsField, amountTP: 'Min. 10.000' })
+                      } else if (parseInt(values?.value) > 100000000) {
+                        setErrorsField({ ...errorsField, amountTP: 'Max. 100.000.000' })
+                      } else if (!values?.value) {
+                        setErrorsField({ ...errorsField, amountTP: 'Min. 10.000' })
+                      } else {
+                        setErrorsField({ ...errorsField, amountTP: false })
+                        setAmountDeposit(parseInt(values?.value.toString()?.replace(/\./g, '').replace(/\,/g, '')))
+                      }
+                    }}
+                    error={errorsField?.amountTP}
+                    helperText={errorsField?.amountTP}
+                  />
+
+                  <Box sx={{ mt: 2 }}>
+                    <Autocomplete
+                      value={valuePM}
+                      onChange={(event, newValuePM) => {
+                        setValuePM(newValuePM)
+                      }}
+                      inputValue={inputValuePM}
+                      onInputChange={(event, newInputValuePM) => {
+                        setInputValuePM(newInputValuePM)
+                      }}
+                      id='combo-box-demo'
+                      size='small'
+                      options={paymentMethods}
+                      renderInput={params => <TextField size='small' {...params} label='Metode Pembayaran' />}
+                    />
+                  </Box>
+                  <br />
+                  <br />
+                  <br />
+                  <Button
+                    variant='contained'
+                    onClick={() => handleDeposit(true)}
+                    style={{ marginTop: '-30px', float: 'right' }}
+                    disabled={
+                      amountDeposit?.length < 1 || parseInt(amountDeposit) < 10000 || !valuePM?.payment_method_code
+                    }
+                  >
+                    Deposit Uang
+                  </Button>
+                </Paper>
+              </div>
+            </div>
+          </Grid>
 
           <Grid item xs={12} md={5}>
             <div style={{ width: '100%', display: 'inline-block' }}>
@@ -802,7 +1149,7 @@ const MUITable = () => {
                       id='combo-box-demo'
                       size='small'
                       autoSelect={true}
-                      options={filter(withdrawMethods, ['can_withdraw', '1'])}
+                      options={withdrawMethods}
                       renderInput={params => (
                         <TextField
                           size='small'
@@ -817,7 +1164,7 @@ const MUITable = () => {
                     <TextField
                       fullWidth
                       size='small'
-                      value={valueWD?.data_bank?.bank_short_name}
+                      value={valueWD?.data_bank?.bank_name}
                       label='Metode Penarikan Uang'
                       error={errorsField?.data_bank}
                       helperText={errorsField?.data_bank}
@@ -903,6 +1250,7 @@ const MUITable = () => {
                     variant='contained'
                     color='error'
                     onClick={() => setOpenModal(true)}
+                    // onClick={() => handleWithdraw()}
                     style={{ marginTop: '-30px', float: 'right' }}
                     disabled={
                       parseInt(saldo) < 50000 || Object.keys(errorsField)?.length > 0 || valueWD?.amount < 50000
@@ -931,7 +1279,37 @@ const MUITable = () => {
         <Card>
           <Box sx={{ width: '100%', overflow: 'auto' }}>
             <Box>
-              <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} />
+              <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} /> &emsp;
+              <FormControl size='small' sx={{ mt: 2 }}>
+                <InputLabel id='demo-simple-select-label'>Filter Status</InputLabel>
+                <Select value={filterWhere} label='Filter Status' onChange={e => setFilterWhere(e.target.value)}>
+                  <MenuItem value={'1=1'}>Semua</MenuItem>
+                  <MenuItem value={'status = 0'}>Dalam Proses</MenuItem>
+                  <MenuItem value={'status = 1'}>Proses Kliring</MenuItem>
+                  <MenuItem value={'(status = 1 or status = 2)'}>Sukses</MenuItem>
+                  <MenuItem value={'status = 2'}>Selesai</MenuItem>
+                  <MenuItem value={'status = 9'}>Batal</MenuItem>
+                </Select>
+              </FormControl>{' '}
+              &emsp;
+              <FormControl size='small' sx={{ mt: 2 }}>
+                <InputLabel id='demo-simple-select-label'>Tipe Transaksi</InputLabel>
+                <Select
+                  value={filterWhereType}
+                  label='Tipe Transaksi'
+                  onChange={e => setFilterWhereType(e.target.value)}
+                >
+                  <MenuItem value={'1=1'}>Semua</MenuItem>
+                  <MenuItem value={'(accounting_type = 7001 or accounting_type = 7002)'}>Fee Affiliator</MenuItem>
+                  <MenuItem value={'(accounting_type = 8001 or accounting_type = 8002 or accounting_type = 8003)'}>
+                    Penarikan Affiliator
+                  </MenuItem>
+                </Select>
+              </FormControl>{' '}
+              &emsp;
+              <Button onClick={() => getData(dateFilter?.startDate, dateFilter?.endDate)} variant='contained'>
+                Refresh
+              </Button>
             </Box>
 
             <DataGrid
@@ -941,7 +1319,7 @@ const MUITable = () => {
               columns={columns}
               getRowId={row => row.id}
               initialState={{
-                ...data.initialState,
+                ...data?.initialState,
                 pagination: { paginationModel: { pageSize: 25 } }
               }}
               slots={{
@@ -1055,6 +1433,12 @@ const MUITable = () => {
                 </Box>
                 <Box>
                   <Typography>Berlaku dalam 10 Menit</Typography>
+                  {filter(paymentMethods, ['id_payment_method', valuePM?.id])[0]?.payment_method_code ===
+                    'QRIS_PAYLATER' && (
+                    <Typography sx={{ fontSize: 14, fontWeight: 'bold' }}>
+                      BAYAR SESUAI NOMINAL, AGAR PEMBAYARANMU BERHASIL.
+                    </Typography>
+                  )}
                 </Box>
                 <Box>
                   <Typography>
@@ -1063,9 +1447,11 @@ const MUITable = () => {
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'center', mb: 7 }}>
-                  {parseInt(valuePM?.id) == 18 || parseInt(valuePM?.id) == 19 ? (
+                  {filter(paymentMethods, ['id_payment_method', valuePM?.id])[0]?.payment_method_code === 'QRIS' ||
+                  filter(paymentMethods, ['id_payment_method', valuePM?.id])[0]?.payment_method_code ===
+                    'QRIS_PAYLATER' ? (
                     <>
-                      <img src={`/${paymentDetail?.image_src}`} />
+                      <img src={`${paymentDetail?.res?.data?.qr_link}`} height={250} />
                     </>
                   ) : parseInt(valuePM?.id) >= 1 && parseInt(valuePM?.id) <= 10 ? (
                     <>
@@ -1134,13 +1520,17 @@ const MUITable = () => {
                 </Box>
                 <Box>
                   <Typography>Berlaku dalam 10 Menit</Typography>
+                  {filter(paymentMethods, ['id_payment_method', valuePM?.id])[0]?.payment_method_code ===
+                    'QRIS_PAYLATER' && (
+                    <Typography sx={{ fontSize: 14, fontWeight: 'bold' }}>
+                      BAYAR SESUAI NOMINAL, AGAR PEMBAYARANMU BERHASIL.
+                    </Typography>
+                  )}
                 </Box>
                 <Box>
                   <Typography>
                     Metode Pembayaran :{' '}
-                    <b>
-                      {filter(paymentMethods, ['id_payment_method', dataPM?.id_payment_method])[0]?.payment_method_name}
-                    </b>
+                    <b>{filter(paymentMethods, ['id_payment_method', valuePM?.id])[0]?.payment_method_name}</b>
                   </Typography>
                 </Box>
                 <Box>
@@ -1153,9 +1543,11 @@ const MUITable = () => {
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'center', mb: 7 }}>
-                  {parseInt(valuePM?.id) == 18 || parseInt(valuePM?.id) == 19 ? (
+                  {filter(paymentMethods, ['id_payment_method', valuePM?.id])[0]?.payment_method_code === 'QRIS' ||
+                  filter(paymentMethods, ['id_payment_method', valuePM?.id])[0]?.payment_method_code ===
+                    'QRIS_PAYLATER' ? (
                     <>
-                      <img src={`/${paymentDetail?.image_src}`} />
+                      <img src={`${paymentDetail?.res?.data?.qr_link}`} height={250} />
                     </>
                   ) : parseInt(valuePM?.id) >= 1 && parseInt(valuePM?.id) <= 10 ? (
                     <>

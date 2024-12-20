@@ -7,8 +7,12 @@ import {
   Chip,
   CircularProgress,
   Divider,
+  FormControl,
   InputAdornment,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Snackbar,
   TextField
 } from '@mui/material'
@@ -50,6 +54,12 @@ const MUITable = () => {
   const [amount, setAmount] = useState(0)
   const [fee, setFee] = useState(5000)
   const [openModal, setOpenModal] = useState(false)
+  const [filterWhere, setFilterWhere] = useState('1=1')
+
+  const [dateFilter, setDateFilter] = useState({
+    startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
+    endDate: dayjs().endOf('month').format('YYYY-MM-DD')
+  })
 
   const [alertMessage, setAlertMessage] = useState({
     open: false,
@@ -178,6 +188,7 @@ const MUITable = () => {
     const _uri0 = '/auth/check_auth'
     const _secret0 = await generateSignature(_uri0)
 
+    setDateFilter({ startDate: startDate, endDate: endDate })
     fetch(`${process.env.NEXT_PUBLIC_API}/auth/check_auth`, {
       method: 'POST',
       headers: {
@@ -212,7 +223,7 @@ const MUITable = () => {
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
           },
-          body: JSON.stringify({ start_date: startDate, end_date: endDate })
+          body: JSON.stringify({ start_date: startDate, end_date: endDate, where: filterWhere })
         })
           .then(res => res.json())
           .then(res => {
@@ -309,6 +320,10 @@ const MUITable = () => {
     }
   }, [])
 
+  useEffect(() => {
+    getData(dateFilter?.startDate, dateFilter?.endDate)
+  }, [filterWhere])
+
   return (
     <Grid container spacing={6}>
       <Grid item xs={12}>
@@ -328,8 +343,8 @@ const MUITable = () => {
                   <Typography sx={{ fontSize: '12px' }}>
                     <b>Saldo : IDR {format_rupiah(saldo)}</b>
                   </Typography>
-                  <Typography sx={{ fontSize: '12px' }}>Minimal penarikan IDR 100.000.</Typography>
-                  <Typography sx={{ fontSize: '12px' }}>Maximal penarikan IDR 100.000.000.</Typography>
+                  <Typography sx={{ fontSize: '12px' }}>Minimal penarikan IDR 100.000</Typography>
+                  <Typography sx={{ fontSize: '12px' }}>Maximal penarikan IDR 100.000.000</Typography>
                   <Typography sx={{ fontSize: '10px' }}>Biaya admin penarikan PG IDR {format_rupiah(fee)}.</Typography>
                   <Typography sx={{ fontSize: '10px' }}>Uang yang diterima akan dikurangi biaya admin PG.</Typography>
                   <br />
@@ -388,7 +403,22 @@ const MUITable = () => {
         <Card>
           <Box sx={{ width: '100%', overflow: 'auto' }}>
             <Box>
-              <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} />
+              <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} /> &emsp;
+              <FormControl size='small' sx={{ mt: 2 }}>
+                <InputLabel id='demo-simple-select-label'>Filter Status</InputLabel>
+                <Select value={filterWhere} label='Filter Status' onChange={e => setFilterWhere(e.target.value)}>
+                  <MenuItem value={'1=1'}>Semua</MenuItem>
+                  <MenuItem value={'status = 0'}>Dalam Proses</MenuItem>
+                  <MenuItem value={'status = 1'}>Proses Kliring</MenuItem>
+                  <MenuItem value={'(status = 1 or status = 2)'}>Sukses</MenuItem>
+                  <MenuItem value={'status = 2'}>Selesai</MenuItem>
+                  <MenuItem value={'status = 9'}>Batal</MenuItem>
+                </Select>
+              </FormControl>{' '}
+              &emsp;
+              <Button onClick={() => getData(dateFilter?.startDate, dateFilter?.endDate)} variant='contained'>
+                Refresh
+              </Button>
             </Box>
 
             <DataGrid

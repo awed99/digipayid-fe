@@ -442,8 +442,9 @@ const MUITable = () => {
           })[0]?.payment_method_code === 'CASH'
 
         const _uniqueCode = isQrisPaylater ? uniqueCode : 0
+        const _fee0 = _fee_on_merchant ? 0 : _pg_fee + _app_fee + _uniqueCode
         const _fee = _pg_fee + _app_fee + _uniqueCode
-        const __final_amount = _total_amount + _fee + _tax_amount - _discount_all_products
+        const __final_amount = _total_amount + _fee0 + _tax_amount - _discount_all_products
 
         // console.log(
         //   'payment_method_code: ',
@@ -503,7 +504,14 @@ const MUITable = () => {
             //       (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
             //       0
             //     ) +
-            //       parseInt(valueModalTransaction?.fee) +
+            //       parseInt(
+            //   filter(paymentMethodsFiltered, [
+            //     'id_payment_method',
+            //     valueModalTransaction?.id_payment_method?.toString()
+            //   ])[0]?.fee_on_merchant == '1'
+            //     ? 0
+            //     : valueModalTransaction?.fee
+            // ) +
             //       (dataFinal?.reduce(
             //         (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
             //         0
@@ -1068,7 +1076,14 @@ const MUITable = () => {
               (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
               0
             ) +
-              parseInt(valueModalTransaction?.fee) +
+              parseInt(
+                filter(paymentMethodsFiltered, [
+                  'id_payment_method',
+                  valueModalTransaction?.id_payment_method?.toString()
+                ])[0]?.fee_on_merchant == '1'
+                  ? 0
+                  : valueModalTransaction?.fee
+              ) +
               (dataFinal?.reduce(
                 (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                 0
@@ -1080,7 +1095,14 @@ const MUITable = () => {
               (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
               0
             ) +
-              parseInt(valueModalTransaction?.fee) +
+              parseInt(
+                filter(paymentMethodsFiltered, [
+                  'id_payment_method',
+                  valueModalTransaction?.id_payment_method?.toString()
+                ])[0]?.fee_on_merchant == '1'
+                  ? 0
+                  : valueModalTransaction?.fee
+              ) +
               (dataFinal?.reduce(
                 (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                 0
@@ -1868,7 +1890,14 @@ const MUITable = () => {
                       (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                       0
                     ) +
-                      parseInt(valueModalTransaction?.fee) +
+                      parseInt(
+                        filter(paymentMethodsFiltered, [
+                          'id_payment_method',
+                          valueModalTransaction?.id_payment_method?.toString()
+                        ])[0]?.fee_on_merchant == '1'
+                          ? 0
+                          : valueModalTransaction?.fee
+                      ) +
                       (dataFinal?.reduce(
                         (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                         0
@@ -1880,7 +1909,14 @@ const MUITable = () => {
                       (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                       0
                     ) +
-                      parseInt(valueModalTransaction?.fee) +
+                      parseInt(
+                        filter(paymentMethodsFiltered, [
+                          'id_payment_method',
+                          valueModalTransaction?.id_payment_method?.toString()
+                        ])[0]?.fee_on_merchant == '1'
+                          ? 0
+                          : valueModalTransaction?.fee
+                      ) +
                       (dataFinal?.reduce(
                         (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                         0
@@ -1941,7 +1977,14 @@ const MUITable = () => {
                         (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                         0
                       ) +
-                        parseInt(valueModalTransaction?.fee) -
+                        parseInt(
+                          filter(paymentMethodsFiltered, [
+                            'id_payment_method',
+                            valueModalTransaction?.id_payment_method?.toString()
+                          ])[0]?.fee_on_merchant == '1'
+                            ? 0
+                            : valueModalTransaction?.fee
+                        ) -
                         (dataFinal?.reduce(
                           (total, item) =>
                             parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
@@ -1988,7 +2031,14 @@ const MUITable = () => {
                     (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                     0
                   ) +
-                    parseInt(valueModalTransaction?.fee) +
+                    parseInt(
+                      filter(paymentMethodsFiltered, [
+                        'id_payment_method',
+                        valueModalTransaction?.id_payment_method?.toString()
+                      ])[0]?.fee_on_merchant == '1'
+                        ? 0
+                        : valueModalTransaction?.fee
+                    ) +
                     (dataFinal?.reduce(
                       (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                       0
@@ -2022,7 +2072,14 @@ const MUITable = () => {
                       (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                       0
                     ) +
-                      parseInt(valueModalTransaction?.fee) -
+                      parseInt(
+                        filter(paymentMethodsFiltered, [
+                          'id_payment_method',
+                          valueModalTransaction?.id_payment_method?.toString()
+                        ])[0]?.fee_on_merchant == '1'
+                          ? 0
+                          : valueModalTransaction?.fee
+                      ) -
                       (dataFinal?.reduce(
                         (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                         0
@@ -2055,7 +2112,14 @@ const MUITable = () => {
                               parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                             0
                           ) +
-                            parseInt(valueModalTransaction?.fee) -
+                            parseInt(
+                              filter(paymentMethodsFiltered, [
+                                'id_payment_method',
+                                valueModalTransaction?.id_payment_method?.toString()
+                              ])[0]?.fee_on_merchant == '1'
+                                ? 0
+                                : valueModalTransaction?.fee
+                            ) -
                             (dataFinal?.reduce(
                               (total, item) =>
                                 parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
@@ -2148,7 +2212,16 @@ const MUITable = () => {
                 startAdornment: <InputAdornment position='start'>IDR</InputAdornment>
               }}
               disabled
-              value={format_rupiah(Math.round(valueModalTransaction?.fee))}
+              value={format_rupiah(
+                Math.round(
+                  filter(paymentMethodsFiltered, [
+                    'id_payment_method',
+                    valueModalTransaction?.id_payment_method?.toString()
+                  ])[0]?.fee_on_merchant == '1'
+                    ? 0
+                    : valueModalTransaction?.fee
+                )
+              )}
             />
           </Box>
           <Box>
@@ -2186,7 +2259,14 @@ const MUITable = () => {
                   (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                   0
                 ) +
-                  parseInt(valueModalTransaction?.fee) -
+                  parseInt(
+                    filter(paymentMethodsFiltered, [
+                      'id_payment_method',
+                      valueModalTransaction?.id_payment_method?.toString()
+                    ])[0]?.fee_on_merchant == '1'
+                      ? 0
+                      : valueModalTransaction?.fee
+                  ) -
                   (dataFinal?.reduce(
                     (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                     0

@@ -1,5 +1,19 @@
 // ** MUI Imports
-import { Alert, Backdrop, Button, Card, Chip, CircularProgress, Divider, Snackbar, TextField } from '@mui/material'
+import {
+  Alert,
+  Backdrop,
+  Button,
+  Card,
+  Chip,
+  CircularProgress,
+  Divider,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Snackbar,
+  TextField
+} from '@mui/material'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
@@ -26,7 +40,7 @@ import { filter, size } from 'lodash'
 import moment from 'moment'
 import DateRangePicker from 'src/components/date-range-picker'
 import ModalDialog from 'src/components/dialog'
-import { format_rupiah, generateSignature, spacing4Char } from '/helpers/general'
+import { currency_format, format_rupiah, generateSignature, spacing4Char } from '/helpers/general'
 import TablePagination from '/src/components/table-pagination'
 
 import dayjs from 'dayjs'
@@ -48,6 +62,7 @@ const MUITable = () => {
   const [openModalPayment, setOpenModalPayment] = useState(false)
   const [dataSelected, setDataSelected] = useState({})
   const [loopCheckStatus, setLoopCheckStatus] = useState(0)
+  const [filterWhere, setFilterWhere] = useState('1=1')
 
   const [dateFilter, setDateFilter] = useState({
     startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
@@ -299,7 +314,7 @@ const MUITable = () => {
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
           },
-          body: JSON.stringify({ start_date: startDate, end_date: endDate })
+          body: JSON.stringify({ start_date: startDate, end_date: endDate, where: filterWhere })
         })
           .then(res => res.json())
           .then(res => {
@@ -673,6 +688,10 @@ const MUITable = () => {
     }
   }, [openModalPayment])
 
+  useEffect(() => {
+    getData(dateFilter?.startDate, dateFilter?.endDate)
+  }, [filterWhere])
+
   return (
     <Grid container spacing={6}>
       <Grid item xs={12}>
@@ -686,6 +705,18 @@ const MUITable = () => {
           <Box sx={{ width: '100%', overflow: 'auto' }}>
             <Box>
               <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} /> &emsp;
+              <FormControl size='small' sx={{ mt: 2 }}>
+                <InputLabel id='demo-simple-select-label'>Filter Status</InputLabel>
+                <Select value={filterWhere} label='Filter Status' onChange={e => setFilterWhere(e.target.value)}>
+                  <MenuItem value={'1=1'}>Semua</MenuItem>
+                  <MenuItem value={'status_transaction = 0'}>Menunggu Pembayaran</MenuItem>
+                  <MenuItem value={'status_transaction = 1'}>Proses Kliring</MenuItem>
+                  <MenuItem value={'(status_transaction = 1 or status_transaction = 2)'}>Sukses</MenuItem>
+                  <MenuItem value={'status_transaction = 2'}>Selesai</MenuItem>
+                  <MenuItem value={'status_transaction = 9'}>Batal</MenuItem>
+                </Select>
+              </FormControl>{' '}
+              &emsp;
               <Button onClick={() => getData(dateFilter?.startDate, dateFilter?.endDate)} variant='contained'>
                 Refresh
               </Button>
@@ -713,19 +744,19 @@ const MUITable = () => {
                     <Divider />
                     <Typography>
                       <b>
-                        Qty Terjual :
-                        {format_rupiah(
+                        Qty Terjual :&nbsp;
+                        {currency_format(
                           filter(
                             data,
                             item => item?.status_transaction === '2' || item?.status_transaction === '1'
-                          )?.reduce((total, item) => parseInt(total) + parseInt(item?.total_qty) * 1, 0)
+                          )?.reduce((total, item) => parseInt(total) + parseInt(item?.total_qty ?? 0), 0)
                         )}
                       </b>
                     </Typography>
                     <Typography>
                       <b>
-                        Produk Terjual :
-                        {format_rupiah(
+                        Produk Terjual :&nbsp;
+                        {currency_format(
                           filter(
                             data,
                             item => item?.status_transaction === '2' || item?.status_transaction === '1'
@@ -734,23 +765,23 @@ const MUITable = () => {
                       </b>
                     </Typography>
                     <Typography>
-                      <b>Transaksi Kliring :{format_rupiah(filter(data, ['status_transaction', '1'])?.length)}</b>
+                      <b>Transaksi Kliring : {currency_format(filter(data, ['status_transaction', '1'])?.length)}</b>
                     </Typography>
                     <Typography>
-                      <b>Transaksi Selesai :{format_rupiah(filter(data, ['status_transaction', '2'])?.length)}</b>
+                      <b>Transaksi Selesai : {currency_format(filter(data, ['status_transaction', '2'])?.length)}</b>
                     </Typography>
                     <Typography>
                       <b>
-                        Transaksi Belum terbayar :{format_rupiah(filter(data, ['status_transaction', '0'])?.length)}
+                        Transaksi Belum terbayar : {currency_format(filter(data, ['status_transaction', '0'])?.length)}
                       </b>
                     </Typography>
                     <Typography>
-                      <b>Transaksi Batal :{format_rupiah(filter(data, ['status_transaction', '9'])?.length)}</b>
+                      <b>Transaksi Batal : {currency_format(filter(data, ['status_transaction', '9'])?.length)}</b>
                     </Typography>
                     <Typography>
                       <b>
                         Total Terbayar : IDR{' '}
-                        {format_rupiah(
+                        {currency_format(
                           filter(
                             data,
                             item => item?.status_transaction === '2' || item?.status_transaction === '1'
@@ -761,7 +792,7 @@ const MUITable = () => {
                     <Typography>
                       <b>
                         Total Diterima : IDR{' '}
-                        {format_rupiah(
+                        {currency_format(
                           filter(
                             data,
                             item => item?.status_transaction === '2' || item?.status_transaction === '1'

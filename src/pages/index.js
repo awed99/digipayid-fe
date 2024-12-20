@@ -269,10 +269,6 @@ const Dashboard = () => {
                 subtitle='Bulan Ini'
               />
             </Grid>
-          </Grid>
-        </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <Grid container spacing={2}>
             <Grid item xs={6}>
               <CardStatisticsVerticalComponent
                 stats={format_rupiah(data?.trends?.deposit) ?? 0}
@@ -297,6 +293,9 @@ const Dashboard = () => {
             </Grid>
           </Grid>
         </Grid>
+        {/* <Grid item xs={12} md={6} lg={4}>
+          <Grid container spacing={2}></Grid>
+        </Grid> */}
         {/* <Grid item xs={12} md={6} lg={4}>
           <SalesByCountries />
         </Grid>

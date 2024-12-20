@@ -72,7 +72,12 @@ const TotalEarning = ({ data = [] }) => {
                   backgroundColor: theme => `rgba(${theme.palette.customColors.main}, 0.04)`
                 }}
               >
-                <img src={item.imgSrc} alt={item.title} height={item.imgHeight} />
+                <img
+                  src={`${process.env.NEXT_PUBLIC_API}${item.imgSrc}`}
+                  srcSet={`${process.env.NEXT_PUBLIC_API}${item.imgSrc}`}
+                  alt={item.title}
+                  height={item.imgHeight}
+                />
               </Avatar>
               <Box
                 sx={{
