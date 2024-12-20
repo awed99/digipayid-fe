@@ -100,6 +100,7 @@ const MUITable = () => {
   const [searchCategory, setSearchCategory] = useState([])
   const [selectedFile, setSelectedFile] = useState()
   const [uniqueCode, setUniqueCode] = useState(Math.floor(Math.random() * 900) + 100)
+  const [hasSubmitted, setHasSubmitted] = useState(false)
 
   const [isFree, setIsFree] = useState(false)
 
@@ -554,8 +555,9 @@ const MUITable = () => {
           })[0]?.payment_method_code === 'CASH'
 
         const _uniqueCode = isQrisPaylater ? uniqueCode : 0
+        const _fee0 = _fee_on_merchant ? 0 : _pg_fee + _app_fee + _uniqueCode
         const _fee = _pg_fee + _app_fee + _uniqueCode
-        const __final_amount = _total_amount + _fee + _tax_amount - _discount_all_products
+        const __final_amount = _total_amount + _fee0 + _tax_amount - _discount_all_products
 
         // console.log(
         //   'payment_method_code: ',
@@ -602,6 +604,10 @@ const MUITable = () => {
 
         // return false
 
+        // console.log(
+        //   'valueModalTransaction?.amount_to_pay: ',
+        //   valueModalTransaction?.amount_to_pay?.toString().replace(/\./g, '')
+        // )
         if (isCash)
           if (
             parseInt(valueModalTransaction?.amount_to_pay?.toString().replace(/\./g, '')) < __final_amount ||
@@ -723,6 +729,7 @@ const MUITable = () => {
 
             // Finish And Go To New Payment
             setLoading(false)
+            setHasSubmitted(true)
           })
           .catch(() => setLoading(false))
       })
@@ -1294,6 +1301,10 @@ const MUITable = () => {
       // })
 
       // setIsWaitingForPayment(false)
+    }
+
+    if (!openModal4 && hasSubmitted) {
+      router.push('/pembayaran')
     }
 
     if (!openModal4) {
@@ -2409,7 +2420,14 @@ const MUITable = () => {
                       (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                       0
                     ) +
-                      parseInt(valueModalTransaction?.fee) +
+                      parseInt(
+                        filter(paymentMethodsFiltered, [
+                          'id_payment_method',
+                          valueModalTransaction?.id_payment_method?.toString()
+                        ])[0]?.fee_on_merchant == '1'
+                          ? 0
+                          : valueModalTransaction?.fee
+                      ) +
                       (dataFinal?.reduce(
                         (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                         0
@@ -2421,7 +2439,14 @@ const MUITable = () => {
                       (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                       0
                     ) +
-                      parseInt(valueModalTransaction?.fee) +
+                      parseInt(
+                        filter(paymentMethodsFiltered, [
+                          'id_payment_method',
+                          valueModalTransaction?.id_payment_method?.toString()
+                        ])[0]?.fee_on_merchant == '1'
+                          ? 0
+                          : valueModalTransaction?.fee
+                      ) +
                       (dataFinal?.reduce(
                         (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                         0
@@ -2480,7 +2505,14 @@ const MUITable = () => {
                         (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                         0
                       ) +
-                        parseInt(valueModalTransaction?.fee) -
+                        parseInt(
+                          filter(paymentMethodsFiltered, [
+                            'id_payment_method',
+                            valueModalTransaction?.id_payment_method?.toString()
+                          ])[0]?.fee_on_merchant == '1'
+                            ? 0
+                            : valueModalTransaction?.fee
+                        ) -
                         (dataFinal?.reduce(
                           (total, item) =>
                             parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
@@ -2519,7 +2551,7 @@ const MUITable = () => {
           <Divider />
 
           <Box>
-            <p>
+            <h3>
               Total Tagihan : IDR{' '}
               {format_rupiah(
                 parseInt(
@@ -2527,7 +2559,14 @@ const MUITable = () => {
                     (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                     0
                   ) +
-                    parseInt(valueModalTransaction?.fee) +
+                    parseInt(
+                      filter(paymentMethodsFiltered, [
+                        'id_payment_method',
+                        valueModalTransaction?.id_payment_method?.toString()
+                      ])[0]?.fee_on_merchant == '1'
+                        ? 0
+                        : valueModalTransaction?.fee
+                    ) +
                     (dataFinal?.reduce(
                       (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                       0
@@ -2536,7 +2575,7 @@ const MUITable = () => {
                       100
                 )?.toString()
               )}
-            </p>
+            </h3>
             <p>
               Diskon : IDR {discountAllProducts == 0 ? '' : '-'}
               {format_rupiah(
@@ -2561,7 +2600,14 @@ const MUITable = () => {
                       (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                       0
                     ) +
-                      parseInt(valueModalTransaction?.fee) -
+                      parseInt(
+                        filter(paymentMethodsFiltered, [
+                          'id_payment_method',
+                          valueModalTransaction?.id_payment_method?.toString()
+                        ])[0]?.fee_on_merchant == '1'
+                          ? 0
+                          : valueModalTransaction?.fee
+                      ) -
                       (dataFinal?.reduce(
                         (total, item) => parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                         0
@@ -2594,7 +2640,14 @@ const MUITable = () => {
                               parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
                             0
                           ) +
-                            parseInt(valueModalTransaction?.fee) -
+                            parseInt(
+                              filter(paymentMethodsFiltered, [
+                                'id_payment_method',
+                                valueModalTransaction?.id_payment_method?.toString()
+                              ])[0]?.fee_on_merchant == '1'
+                                ? 0
+                                : valueModalTransaction?.fee
+                            ) -
                             (dataFinal?.reduce(
                               (total, item) =>
                                 parseInt(total) + parseInt(item?.product_price) * parseInt(item?.product_qty),
@@ -2710,7 +2763,7 @@ const MUITable = () => {
               )}
             />
           </Box>
-          <Box>
+          <Box sx={{ display: 'none' }}>
             <TextField
               label='Total Tagihan'
               variant='outlined'

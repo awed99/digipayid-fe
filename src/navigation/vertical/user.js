@@ -10,7 +10,6 @@ import Cog from 'mdi-material-ui/Cog'
 import InvoiceTextCheckOutline from 'mdi-material-ui/InvoiceTextCheckOutline'
 import PackageVariant from 'mdi-material-ui/PackageVariant'
 import PackageVariantClosedPlus from 'mdi-material-ui/PackageVariantClosedPlus'
-import PotMix from 'mdi-material-ui/PotMix'
 import Scale from 'mdi-material-ui/Scale'
 import StoreSettingsOutline from 'mdi-material-ui/StoreSettingsOutline'
 import ViewDashboard from 'mdi-material-ui/ViewDashboard'
@@ -57,6 +56,11 @@ const navigation = () => {
       path: '/jurnal-keuangan'
     },
     {
+      title: 'Penggajian',
+      icon: BankTransferOut,
+      path: '/penggajian'
+    },
+    {
       title: 'Pengaturan',
       icon: Cog,
       children: [
@@ -91,8 +95,8 @@ const navigation = () => {
       path: '/master/master-satuan'
     },
     {
-      title: 'Ingredient',
-      icon: PotMix,
+      title: 'Stok Opname',
+      icon: PackageVariant,
       path: '/master/ingredient'
     },
     {

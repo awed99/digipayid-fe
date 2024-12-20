@@ -1,5 +1,16 @@
 // ** MUI Imports
-import { Backdrop, Button, Card, Chip, CircularProgress, Divider } from '@mui/material'
+import {
+  Backdrop,
+  Button,
+  Card,
+  Chip,
+  CircularProgress,
+  Divider,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select
+} from '@mui/material'
 import Grid from '@mui/material/Grid'
 import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
@@ -18,6 +29,7 @@ import Box from '@mui/material/Box'
 import { DataGrid, GridToolbar } from '@mui/x-data-grid'
 
 // import CryptoJS from 'crypto-js/aes'
+import { filter } from 'lodash'
 import moment from 'moment'
 import DateRangePicker from 'src/components/date-range-picker'
 import { format_rupiah, generateSignature } from '/helpers/general'
@@ -32,7 +44,8 @@ const MUITable = () => {
   // ** States
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
-  const [dateRange, setDateRange] = useState([])
+  const [filterWhere, setFilterWhere] = useState('1=1')
+  const [filterWhereType, setFilterWhereType] = useState('1=1')
 
   const [dateFilter, setDateFilter] = useState({
     startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
@@ -197,7 +210,11 @@ const MUITable = () => {
               .toString(CryptoJS.enc.Utf8)
               .replace(/\"/g, '')
           },
-          body: JSON.stringify({ start_date: startDate, end_date: endDate })
+          body: JSON.stringify({
+            start_date: startDate,
+            end_date: endDate,
+            where: `(${filterWhere} and ${filterWhereType})`
+          })
         })
           .then(res => res.json())
           .then(res => {
@@ -223,6 +240,10 @@ const MUITable = () => {
     }
   }, [])
 
+  useEffect(() => {
+    getData(dateFilter?.startDate, dateFilter?.endDate)
+  }, [filterWhere, filterWhereType])
+
   return (
     <Grid container spacing={6}>
       <Grid item xs={12}>
@@ -236,6 +257,47 @@ const MUITable = () => {
           <Box sx={{ width: '100%', overflow: 'auto' }}>
             <Box>
               <DateRangePicker onChange={(_startDate, _endDate) => getData(_startDate, _endDate)} /> &emsp;
+              <FormControl size='small' sx={{ mt: 2 }}>
+                <InputLabel id='demo-simple-select-label'>Filter Status</InputLabel>
+                <Select value={filterWhere} label='Filter Status' onChange={e => setFilterWhere(e.target.value)}>
+                  <MenuItem value={'1=1'}>Semua</MenuItem>
+                  <MenuItem value={'status = 0'}>Dalam Proses</MenuItem>
+                  <MenuItem value={'status = 1'}>Proses Kliring</MenuItem>
+                  <MenuItem value={'(status = 1 or status = 2)'}>Sukses</MenuItem>
+                  <MenuItem value={'status = 2'}>Selesai</MenuItem>
+                  <MenuItem value={'status = 9'}>Batal</MenuItem>
+                </Select>
+              </FormControl>{' '}
+              &emsp;
+              <FormControl size='small' sx={{ mt: 2 }}>
+                <InputLabel id='demo-simple-select-label'>Tipe Transaksi</InputLabel>
+                <Select
+                  value={filterWhereType}
+                  label='Tipe Transaksi'
+                  onChange={e => setFilterWhereType(e.target.value)}
+                >
+                  <MenuItem value={'1=1'}>Semua</MenuItem>
+                  <MenuItem value={'amount_debet = 0'}>Uang Masuk</MenuItem>
+                  <MenuItem value={'amount_credit = 0'}>Uang Keluar</MenuItem>
+                  <MenuItem
+                    value={
+                      '((amount_debet = 0) and (accounting_type = 1001 or accounting_type = 2001 or accounting_type = 3001))'
+                    }
+                  >
+                    Keuntungan
+                  </MenuItem>
+                  <MenuItem value={'(accounting_type = 1 or accounting_type = 101 or accounting_type = 5)'}>
+                    Penjualan & Fee
+                  </MenuItem>
+                  <MenuItem value={'accounting_type = 1'}>Penjualan</MenuItem>
+                  <MenuItem value={'(accounting_type = 2 or accounting_type = 201)'}>Deposit & Fee</MenuItem>
+                  <MenuItem value={'accounting_type = 2'}>Deposit</MenuItem>
+                  <MenuItem value={'(accounting_type = 3 or accounting_type = 301)'}>Penarikan & Fee</MenuItem>
+                  <MenuItem value={'accounting_type = 3'}>Penarikan</MenuItem>
+                  <MenuItem value={'(accounting_type = 9001 or accounting_type = 9002)'}>Penggajian</MenuItem>
+                </Select>
+              </FormControl>{' '}
+              &emsp;
               <Button onClick={() => getData(dateFilter?.startDate, dateFilter?.endDate)} variant='contained'>
                 Refresh
               </Button>
@@ -265,7 +327,9 @@ const MUITable = () => {
                       <b>
                         Kredit : IDR{' '}
                         {format_rupiah(
-                          data?.reduce((total, item) => parseInt(total) + parseInt(item?.amount_credit), 0)?.toString()
+                          filter(data, ['status', '2'])
+                            ?.reduce((total, item) => parseInt(total) + parseInt(item?.amount_credit), 0)
+                            ?.toString()
                         )}
                       </b>
                     </Typography>
@@ -273,7 +337,9 @@ const MUITable = () => {
                       <b>
                         Debet : IDR{' '}
                         {format_rupiah(
-                          data?.reduce((total, item) => parseInt(total) + parseInt(item?.amount_debet), 0)?.toString()
+                          filter(data, ['status', '2'])
+                            ?.reduce((total, item) => parseInt(total) + parseInt(item?.amount_debet), 0)
+                            ?.toString()
                         )}
                       </b>
                     </Typography>
@@ -281,8 +347,14 @@ const MUITable = () => {
                       <b>
                         Keuntungan : IDR{' '}
                         {format_rupiah(
-                          data?.reduce((total1, item) => parseInt(total1) + parseInt(item?.amount_credit), 0) -
-                            data?.reduce((total2, item) => parseInt(total2) + parseInt(item?.amount_debet), 0)
+                          filter(data, ['status', '2'])?.reduce(
+                            (total1, item) => parseInt(total1) + parseInt(item?.amount_credit),
+                            0
+                          ) -
+                            filter(data, ['status', '2'])?.reduce(
+                              (total2, item) => parseInt(total2) + parseInt(item?.amount_debet),
+                              0
+                            )
                         )}
                       </b>
                     </Typography>

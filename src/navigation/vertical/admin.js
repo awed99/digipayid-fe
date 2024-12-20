@@ -32,7 +32,7 @@ const navigation = () => {
       path: '/admin/master/list-affiliator'
     },
     {
-      title: 'Withdraw Affiliator Request',
+      title: 'Withdraw Affiliator',
       icon: Cash100,
       path: '/admin/withdraw-request-affiliator'
     },
@@ -58,6 +58,11 @@ const navigation = () => {
       path: '/admin/jurnal-keuangan-admin'
     },
     {
+      title: 'Penggajian',
+      icon: BankTransferOut,
+      path: '/penggajian'
+    },
+    {
       title: 'Pengaturan',
       icon: Cog,
       children: [
@@ -80,7 +85,7 @@ const navigation = () => {
       sectionTitle: 'Transaksi Merchants'
     },
     {
-      title: 'Withdraw Request',
+      title: 'Withdraw Merchant',
       icon: Cash100,
       path: '/admin/withdraw-request'
     },

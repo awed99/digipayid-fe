@@ -12,10 +12,7 @@ export const number_format = x => {
 export const currency_format = x => {
   // return x?.toString()?.replace(/\,/g, '')?.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(x ?? 0)
+  return new Intl.NumberFormat('id-ID').format(x ?? 0)
 }
 
 export const format_rupiah = (angka, prefix) => {
@@ -81,6 +78,14 @@ export const spacing4Char = x => {
   const joy = x?.match(/.{1,4}/g)
 
   return joy?.join(' ')
+}
+
+export const randomString = (length = 6) => {
+  const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  var result = ''
+  for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)]
+
+  return result
 }
 
 const operator = {
